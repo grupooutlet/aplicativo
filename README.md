@@ -2,9 +2,9 @@
 
 Site estático com catálogo público e painel privado, conectado ao projeto Supabase **Aplicativo** da conta **Grupo Outlet**. O acesso administrativo usa o e-mail `grupooutlet.rj@gmail.com`. A loja pode ser hospedada em qualquer serviço que sirva arquivos estáticos; o arquivo publicado é `index.html`.
 
-Site publicado: https://rwxqytomiorsrxpgtjin.supabase.co/functions/v1/loja/#/loja
+Site publicado: https://grupooutlet.github.io/aplicativo/#/loja
 
-O código-fonte e o `index.html` também estão no GitHub em https://github.com/grupooutlet/aplicativo. GitHub Pages depende de ativação nas configurações do repositório; a URL acima já serve o site pelo Supabase Edge Functions.
+O código-fonte e o `index.html` estão no GitHub em https://github.com/grupooutlet/aplicativo. O GitHub Pages publica a branch `main` pela raiz do repositório. A implantação alternativa no Supabase Edge Functions fica em https://rwxqytomiorsrxpgtjin.supabase.co/functions/v1/loja/#/loja.
 
 ## Endereços
 
@@ -37,4 +37,4 @@ npm start
 
 Abra `http://127.0.0.1:4173/#/loja`. O build incorpora CSS, JavaScript e a logo em `index.html`; o manifesto e o ícone permanecem separados. O arquivo `assets/logo.base64.txt` permite reconstruir o HTML após clonar o repositório público sem publicar a imagem binária separadamente.
 
-O painel exige autenticação por link ou código enviado pelo Supabase. Para que links de e-mail voltem ao site publicado, configure a URL da hospedagem na lista de redirecionamento do Supabase Auth.
+O painel exige autenticação por link ou código enviado pelo Supabase. A URL principal do Supabase Auth aponta para o GitHub Pages; as URLs do GitHub Pages e do Supabase Edge Functions estão autorizadas para redirecionamento.
