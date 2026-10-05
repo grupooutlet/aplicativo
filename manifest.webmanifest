@@ -1,0 +1,19 @@
+{
+  "name": "Forte Outlet",
+  "short_name": "Forte Outlet",
+  "description": "Loja online e gestão da Forte Outlet",
+  "lang": "pt-BR",
+  "start_url": "index.html#/loja",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F4F4",
+  "theme_color": "#1C2228",
+  "icons": [
+    {
+      "src": "assets/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
