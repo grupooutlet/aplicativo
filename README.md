@@ -25,6 +25,8 @@ As rotas usam `#` para funcionar em hospedagem estática sem redirecionamentos.
 
 O banco está em `supabase/schema.sql`. O estado inicial foi criado com produtos de exemplo, **sem pedidos e com estoque zero**. Confirme preços, quantidades e WhatsApp antes de abrir vendas. O arquivo local `supabase/seed-state.json` contém custos e fica fora do GitHub.
 
+O projeto usa o serviço padrão de e-mail do Supabase, que só envia para integrantes da organização. Por isso, o acesso de clientes e a finalização de pedidos estão temporariamente desativados por `customerEmailEnabled = false` em `production.js`. Para abrir vendas, configure SMTP próprio em Supabase Auth, altere essa opção para `true`, confirme os dados comerciais e publique um novo build. O acesso do proprietário ao painel continua disponível pelo e-mail da organização.
+
 ## Desenvolvimento
 
 Requer Node.js. Não há dependências de npm.
