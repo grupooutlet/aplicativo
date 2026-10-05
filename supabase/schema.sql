@@ -43,6 +43,7 @@ declare
   reserved_qty integer;
 begin
   for product in select value from jsonb_array_elements(new.data->'products') loop
+    if not coalesce((product->>'active')::boolean, false) then continue; end if;
     select coalesce(sum((item.value->>'qty')::integer), 0) into reserved_qty
       from jsonb_array_elements(coalesce(new.data->'orders', '[]'::jsonb)) as ord
       cross join lateral jsonb_array_elements(ord.value->'items') as item
