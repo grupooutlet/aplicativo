@@ -158,7 +158,7 @@ function ownerLoginPage() {
       <label class="field">E-mail<input type="email" value="${ownerEmail}" readonly></label>
       <button class="btn primary auth-submit">Enviar acesso</button>
     </form>
-    <a class="text-link" href="${basePath}#/loja">Voltar à loja</a>
+    <a class="text-link" href="#/loja">Voltar à loja</a>
   </section></main>`;
   document.title = 'Acesso à gestão · Grupo Outlet';
 }
@@ -272,7 +272,7 @@ checkoutPage = () => originalCheckoutPage()
 accountPage = () => {
   if (!authSession && !customerEmailEnabled) return `<div class="store-content" style="max-width:510px;padding-top:55px"><section class="card pad">
     <h1>Meus pedidos</h1><p class="muted" style="margin:16px 0 8px">O acompanhamento de pedidos por e-mail estará disponível em breve.</p>
-    <a class="text-link" href="${basePath}#/loja">Voltar à loja</a>
+    <a class="text-link" href="#/loja">Voltar à loja</a>
   </section></div>`;
   if (!authSession) return `<div class="store-content" style="max-width:510px;padding-top:55px"><section class="card pad">
     <h1>Meus pedidos</h1><p class="muted" style="margin:16px 0 24px">Entre com seu e-mail para acompanhar seus pedidos.</p>
