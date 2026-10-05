@@ -1,0 +1,6 @@
+node_modules/
+*.log
+*.local
+*.tmp
+supabase/seed-state.json
+supabase/site/generated/
