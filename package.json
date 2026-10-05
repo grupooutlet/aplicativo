@@ -1,0 +1,13 @@
+{
+  "name": "forte-outlet-prototipo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site responsivo e sistema web da Forte Outlet",
+  "scripts": {
+    "build": "node build.cjs",
+    "edge:build": "node build.cjs && node supabase/site/make-edge.cjs",
+    "start": "node build.cjs && node server.cjs",
+    "start:lan": "node build.cjs && node server.cjs --lan",
+    "check": "node --check app.js && node --check production.js && node --check storefront-editor.js && node --check build.cjs && node --check server.cjs"
+  }
+}
