@@ -2,6 +2,10 @@
 
 Site estático com catálogo público e painel privado, conectado ao projeto Supabase **Aplicativo** da conta **Grupo Outlet**. O acesso administrativo usa o e-mail `grupooutlet.rj@gmail.com`. A loja pode ser hospedada em qualquer serviço que sirva arquivos estáticos; o arquivo publicado é `index.html`.
 
+Site publicado: https://rwxqytomiorsrxpgtjin.supabase.co/functions/v1/loja/#/loja
+
+O código-fonte e o `index.html` também estão no GitHub em https://github.com/grupooutlet/aplicativo. GitHub Pages depende de ativação nas configurações do repositório; a URL acima já serve o site pelo Supabase Edge Functions.
+
 ## Endereços
 
 - Loja: `#/loja`
