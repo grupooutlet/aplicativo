@@ -227,8 +227,8 @@ dashboard = () => originalDashboard()
   .replace('Bem-vindo de volta, Gabriel', 'Bem-vindo de volta, Grupo Outlet')
   .replace('Histórico de demonstração', 'Histórico de vendas')
   .replace('Vendas por semana · setembro e outubro', 'Vendas dos últimos sete dias')
-  .replace('forteoutlet.com.br', 'grupooutlet.github.io/aplicativo')
-  .replace('Domínio planejado · ainda não conectado', 'Site publicado no GitHub Pages')
+  .replace('forteoutlet.com.br', 'Loja online Grupo Outlet')
+  .replace('Domínio planejado · ainda não conectado', 'Site publicado no Supabase')
   .replace('Prévia disponível', 'Loja publicada');
 salesChart = orders => {
   const days = Array.from({ length: 7 }, (_, index) => {
