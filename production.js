@@ -2,8 +2,6 @@
 const backendUrl = 'https://rwxqytomiorsrxpgtjin.supabase.co';
 const backendKey = 'sb_publishable_blKM9wQxpyILSjEn1RnTmw_sLcoanYo';
 const ownerEmail = 'grupooutlet.rj@gmail.com';
-// Customer email delivery requires a custom SMTP provider in Supabase Auth.
-const customerEmailEnabled = false;
 const authStorageKey = 'forte-auth-v1';
 const cartStorageKey = 'forte-cart-v1';
 let authSession = null;
@@ -15,8 +13,6 @@ let savedState = '';
 let pendingState = '';
 let persistTimer = 0;
 let persisting = false;
-let pendingLoginEmail = '';
-let pendingCheckout = null;
 
 const originalRender = render;
 const originalAvailable = available;
@@ -74,24 +70,6 @@ async function refreshAuth() {
   }
   rememberAuth(await response.json());
 }
-async function acceptMagicLink() {
-  const fragment = location.hash.slice(1);
-  if (!fragment.includes('access_token=')) return;
-  const parameters = new URLSearchParams(fragment);
-  const accessToken = parameters.get('access_token');
-  const refreshToken = parameters.get('refresh_token');
-  if (!accessToken || !refreshToken) return;
-  const response = await fetch(backendUrl + '/auth/v1/user', {
-    headers: { ...requestHeaders(), Authorization: `Bearer ${accessToken}` }
-  });
-  if (!response.ok) throw new Error('Não foi possível confirmar o link de acesso.');
-  const user = await response.json();
-  rememberAuth({
-    access_token: accessToken, refresh_token: refreshToken, user,
-    expires_in: Number(parameters.get('expires_in') || 3600)
-  });
-  history.replaceState({}, '', basePath + '#' + (pendingCheckout ? '/loja/checkout' : '/app'));
-}
 async function loadCatalog() {
   const rows = await backendRequest('/rest/v1/shop_public?select=data&id=eq.1');
   if (!rows?.[0]?.data) throw new Error('O catálogo ainda não está disponível.');
@@ -121,9 +99,7 @@ async function boot() {
   bootError = '';
   render();
   try {
-    pendingCheckout = safeJson(sessionStore.getItem('forte-pending-checkout'), null);
     authSession = safeJson(sessionStore.getItem(authStorageKey), null);
-    await acceptMagicLink();
     if (authSession) {
       try { await refreshAuth(); } catch { authSession = null; }
     }
@@ -136,12 +112,6 @@ async function boot() {
     }
     booted = true;
     render();
-    if (pendingCheckout && currentEmail() === pendingCheckout.email?.toLowerCase()) {
-      const checkoutData = pendingCheckout;
-      pendingCheckout = null;
-      sessionStore.removeItem('forte-pending-checkout');
-      await submitCheckout(checkoutData);
-    }
   } catch (error) {
     bootError = error.message;
     booted = true;
@@ -152,15 +122,37 @@ function ownerLoginPage() {
   $('#app').innerHTML = `<main class="auth-page"><section class="card pad auth-card">
     <img src="assets/logo.webp" alt="Grupo Outlet" class="auth-logo">
     <h1>Acesso à gestão</h1>
-    <p>Entre com o e-mail da conta proprietária para receber um link ou código de acesso.</p>
+    <p>Entre com as credenciais da conta Master.</p>
     ${bootError ? `<div class="notice">${esc(bootError)}</div>` : ''}
-    <form onsubmit="event.preventDefault();requestEmailAccess('${ownerEmail}')">
-      <label class="field">E-mail<input type="email" value="${ownerEmail}" readonly></label>
-      <button class="btn primary auth-submit">Enviar acesso</button>
+    <form onsubmit="event.preventDefault();signInMaster(this)">
+      <label class="field">E-mail<input type="email" name="email" value="${ownerEmail}" autocomplete="username" readonly></label>
+      <label class="field">Senha<input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="btn primary auth-submit">Entrar</button>
     </form>
     <a class="text-link" href="#/loja">Voltar à loja</a>
   </section></main>`;
   document.title = 'Acesso à gestão · Grupo Outlet';
+}
+async function signInMaster(form) {
+  const button = form.querySelector('button[type="submit"], button:not([type])');
+  const passwordInput = form.elements.namedItem('password');
+  if (button) button.disabled = true;
+  try {
+    const response = await fetch(backendUrl + '/auth/v1/token?grant_type=password', {
+      method: 'POST', headers: requestHeaders(),
+      body: JSON.stringify({ email: ownerEmail, password: passwordInput.value })
+    });
+    if (!response.ok) throw new Error('E-mail ou senha incorretos.');
+    const session = await response.json();
+    if (session.user?.email?.toLowerCase() !== ownerEmail) throw new Error('Conta sem acesso à gestão.');
+    rememberAuth(session);
+    await boot();
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    passwordInput.value = '';
+    if (button) button.disabled = false;
+  }
 }
 render = function () {
   if (!booted) {
@@ -217,13 +209,16 @@ roleModal = () => modal('Conta da loja', `<p>Conectado como <strong>${esc(curren
   <div class="form-actions"><button class="btn" onclick="closeModal()">Voltar</button>
   <button class="btn danger" onclick="signOut()">Sair da conta</button></div>`);
 applyRole = () => {};
-teamPage = () => heading('Equipe e permissões', 'O acesso administrativo está restrito ao e-mail proprietário.') +
-  `<section class="card pad"><h2>Proprietário</h2><p style="margin-top:12px">${esc(ownerEmail)}</p>
-  <p class="subtle" style="margin-top:12px">Convites e perfis adicionais ainda não estão disponíveis.</p></section>`;
-teamModal = () => toast('Apenas a conta proprietária pode acessar a gestão neste momento.');
+teamPage = () => heading('Equipe e permissões', 'A conta Master tem acesso total e não pode ser excluída.') +
+  `<section class="card pad"><h2>Conta Master</h2><p style="margin-top:12px">${esc(ownerEmail)}</p>
+  <p class="subtle" style="margin-top:12px">Esta conta inicia e administra o sistema. Convites e perfis adicionais ainda não estão disponíveis.</p></section>`;
+teamModal = () => toast('A conta Master não pode ser excluída.');
 resetModal = () => toast('A restauração de demonstração foi desativada na loja publicada.');
 periodModal = () => modal('Sobre os indicadores', '<p>Os indicadores usam os pedidos salvos nesta loja. Uma venda entra no faturamento depois da saída da mercadoria.</p>');
-shell = (...args) => originalShell(...args).replace('Ambiente de demonstração · Dados salvos neste navegador', 'Dados sincronizados com a loja');
+shell = (...args) => originalShell(...args)
+  .replace('Ambiente de demonstração · Dados salvos neste navegador', 'Dados sincronizados com a loja')
+  .replace('<div class="avatar">GA</div><span>Gabriel<small>Proprietário</small>',
+    '<div class="avatar">GO</div><span>Grupo Outlet<small>Master</small>');
 storeFooter = () => originalStoreFooter().replace('Prévia visual · Sem pagamentos reais', 'Pedidos sem cobrança online · Confirmação pela equipe');
 dashboard = () => originalDashboard()
   .replace('Bem-vindo de volta, Gabriel', 'Bem-vindo de volta, Grupo Outlet')
@@ -270,57 +265,14 @@ checkoutPage = () => originalCheckoutPage()
   .replace('Estou ciente de que esta é uma demonstração e usarei dados de teste.', 'Confirmo o uso destes dados para atender meu pedido.')
   .replace('Nenhuma cobrança será feita agora. Seu pedido ficará pendente até a confirmação do pagamento pela equipe.', 'Nenhuma cobrança será feita agora. A equipe confirmará os próximos passos.');
 accountPage = () => {
-  if (!authSession && !customerEmailEnabled) return `<div class="store-content" style="max-width:510px;padding-top:55px"><section class="card pad">
-    <h1>Meus pedidos</h1><p class="muted" style="margin:16px 0 8px">O acompanhamento de pedidos por e-mail estará disponível em breve.</p>
+  if (!authSession) return `<div class="store-content" style="max-width:510px;padding-top:55px"><section class="card pad">
+    <h1>Meus pedidos</h1><p class="muted" style="margin:16px 0 8px">Pedidos online ainda não estão disponíveis.</p>
     <a class="text-link" href="#/loja">Voltar à loja</a>
   </section></div>`;
-  if (!authSession) return `<div class="store-content" style="max-width:510px;padding-top:55px"><section class="card pad">
-    <h1>Meus pedidos</h1><p class="muted" style="margin:16px 0 24px">Entre com seu e-mail para acompanhar seus pedidos.</p>
-    <form onsubmit="event.preventDefault();requestEmailAccess(this.email.value)">
-      ${field('E-mail','email','','email','required autocomplete="email"')}
-      <button class="btn primary" style="width:100%;margin-top:20px">Receber acesso</button>
-    </form></section></div>`;
   return originalAccountPage()
-    .replace('Conta de demonstração. A autenticação segura será conectada na próxima etapa.', 'Seus pedidos estão vinculados ao e-mail confirmado.')
+    .replace('Conta de demonstração. A autenticação segura será conectada na próxima etapa.', 'Seus pedidos são gerenciados pela loja.')
     .replace(/sessionStore\.removeItem\([^)]*\);render\(\)/, 'signOut()');
 };
-
-async function requestEmailAccess(email) {
-  email = String(email || '').trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('Informe um e-mail válido.');
-  if (routePath().startsWith('/app') && email !== ownerEmail) return toast('Use o e-mail proprietário.');
-  try {
-    const response = await fetch(backendUrl + '/auth/v1/otp?redirect_to=' + encodeURIComponent(location.origin + basePath), {
-      method: 'POST', headers: requestHeaders(), body: JSON.stringify({ email, create_user: true })
-    });
-    if (!response.ok) {
-      const problem = await response.json().catch(() => ({}));
-      throw new Error(problem.msg || problem.message || `Falha ao enviar acesso (${response.status}).`);
-    }
-    pendingLoginEmail = email;
-    modal('Confira seu e-mail', `<p>Enviamos um link ou código de acesso para <strong>${esc(email)}</strong>.</p>
-      <p>Se receber um link, abra-o neste navegador. Se receber um código, digite abaixo.</p>
-      <form onsubmit="event.preventDefault();verifyEmailCode(this)">
-        <label class="field">Código de acesso<input name="token" inputmode="numeric" autocomplete="one-time-code" minlength="6" required></label>
-        <div class="form-actions"><button class="btn primary">Confirmar código</button></div>
-      </form>`);
-  } catch (error) { toast(error.message); }
-}
-async function verifyEmailCode(form) {
-  try {
-    const response = await fetch(backendUrl + '/auth/v1/verify', {
-      method: 'POST', headers: requestHeaders(),
-      body: JSON.stringify({ type: 'email', email: pendingLoginEmail, token: form.token.value.trim() })
-    });
-    if (!response.ok) {
-      const problem = await response.json().catch(() => ({}));
-      throw new Error(problem.msg || problem.message || 'Código inválido.');
-    }
-    rememberAuth(await response.json());
-    closeModal();
-    await boot();
-  } catch (error) { toast(error.message); }
-}
 async function signOut() {
   try { await backendRequest('/auth/v1/logout', { method: 'POST' }, true); } catch {}
   authSession = null;
@@ -331,44 +283,6 @@ async function signOut() {
   await boot();
 }
 
-checkout = async function (form) {
-  if (!customerEmailEnabled) return toast('Pedidos online serão liberados após a configuração do acesso por e-mail.');
-  const fields = Object.fromEntries(new FormData(form));
-  if (String(fields.cpf || '').replace(/\D/g, '').length !== 11) return toast('Informe um CPF com 11 números.');
-  if (!db.cart.length) return toast('Seu carrinho está vazio.');
-  for (const item of db.cart) {
-    const product = db.products.find(p => p.id === item.id);
-    if (!product?.active || item.qty > available(item.id)) return toast('O estoque mudou. Revise o carrinho.');
-  }
-  const request = {
-    customer: fields.customer.trim(), email: fields.email.trim().toLowerCase(),
-    phone: fields.phone.trim(), cpf: fields.cpf.trim(),
-    address: fields.delivery === 'Retirada' ? db.settings.address :
-      `${fields.street}, ${fields.number}${fields.complement ? ' · ' + fields.complement : ''} · ${fields.neighborhood} · ${fields.city} · CEP ${fields.cep}`,
-    delivery: fields.delivery, payment: fields.payment, notes: fields.notes || '',
-    items: db.cart.map(item => ({ id: item.id, qty: item.qty }))
-  };
-  if (currentEmail() !== request.email) {
-    pendingCheckout = request;
-    sessionStore.setItem('forte-pending-checkout', JSON.stringify(request));
-    await requestEmailAccess(request.email);
-    return;
-  }
-  await submitCheckout(request);
-};
-async function submitCheckout(request) {
-  try {
-    const result = await backendRequest('/rest/v1/rpc/place_order', {
-      method: 'POST', body: JSON.stringify({ p_request: request })
-    }, true);
-    db.cart = [];
-    localStore.setItem(cartStorageKey, '[]');
-    pendingCheckout = null;
-    sessionStore.removeItem('forte-pending-checkout');
-    if (isOwner) await loadAdminState(); else await loadMyOrders();
-    go('/loja/pedido/' + result.id);
-    toast('Pedido enviado à loja. Nossa equipe confirmará os próximos passos.');
-  } catch (error) { toast(error.message); }
-}
+checkout = () => toast('Pedidos online ainda não estão disponíveis.');
 
 boot();
