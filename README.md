@@ -27,7 +27,7 @@ As rotas usam `#` para funcionar em hospedagem estática sem redirecionamentos.
 - A chave em `production.js` é **publishable**, destinada ao navegador. Nunca inclua uma chave secreta ou `service_role` no site.
 - Pagamentos são confirmados manualmente pela equipe; o site não cobra cartões nem emite nota fiscal.
 
-O banco está em `supabase/schema.sql` e nas migrações `supabase/master-account.sql`, `supabase/customer-accounts-and-photos.sql` e `supabase/order-account-pricing.sql`. O estado inicial foi criado com produtos de exemplo, **sem pedidos e com estoque zero**. Confirme preços, quantidades e WhatsApp antes de abrir vendas. O arquivo local `supabase/seed-state.json` contém custos e fica fora do GitHub.
+O banco está em `supabase/schema.sql` e nas migrações `supabase/master-account.sql`, `supabase/customer-accounts-and-photos.sql`, `supabase/order-account-pricing.sql` e `supabase/harden-promotion.sql`. O estado inicial foi criado com produtos de exemplo, **sem pedidos e com estoque zero**. Confirme preços, quantidades e WhatsApp antes de abrir vendas. O arquivo local `supabase/seed-state.json` contém custos e fica fora do GitHub.
 
 O site não envia e-mails nem pede confirmação por e-mail. A conta principal foi preparada diretamente no Supabase.
 
