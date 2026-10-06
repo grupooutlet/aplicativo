@@ -650,26 +650,31 @@ function authPage(mode = 'login') {
 }
 async function signInAccount(form) {
   const button = form.querySelector('button');
+  const emailInput = form.elements.namedItem('email');
+  const passwordInput = form.elements.namedItem('password');
   button.disabled = true;
   try {
     const response = await fetch(backendUrl + '/auth/v1/token?grant_type=password', {
       method: 'POST', headers: requestHeaders(),
-      body: JSON.stringify({ email: form.email.value.trim().toLowerCase(), password: form.password.value })
+      body: JSON.stringify({ email: emailInput.value.trim().toLowerCase(), password: passwordInput.value })
     });
     if (!response.ok) throw new Error('E-mail ou senha incorretos.');
     rememberAuth(await response.json());
     await boot();
     if (isOwner) go('/app'); else go('/loja/conta');
   } catch (error) { toast(error.message); }
-  finally { form.password.value = ''; button.disabled = false; }
+  finally { passwordInput.value = ''; button.disabled = false; }
 }
 async function registerAccount(form) {
   const button = form.querySelector('button');
+  const emailInput = form.elements.namedItem('email');
+  const passwordInput = form.elements.namedItem('password');
+  const nameInput = form.elements.namedItem('name');
   button.disabled = true;
   try {
-    const email = form.email.value.trim().toLowerCase();
-    const password = form.password.value;
-    const name = form.name.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
+    const password = passwordInput.value;
+    const name = nameInput.value.trim();
     if (name.length < 2) throw new Error('Informe seu nome completo.');
     const response = await fetch(backendUrl + '/auth/v1/signup', {
       method: 'POST', headers: requestHeaders(),
@@ -683,7 +688,7 @@ async function registerAccount(form) {
     go('/loja/conta');
     toast('Conta criada. Boas-vindas ao Grupo Outlet!');
   } catch (error) { toast(error.message); }
-  finally { form.password.value = ''; button.disabled = false; }
+  finally { passwordInput.value = ''; button.disabled = false; }
 }
 
 const renderBeforeAccounts = render;
@@ -749,7 +754,7 @@ async function promoteCustomer(form, id) {
   const button = form.querySelector('button[type=submit],button:not([type])');
   button.disabled = true;
   try {
-    await backendRequest('/rest/v1/rpc/promote_customer', { method: 'POST', body: JSON.stringify({ p_user_id: id, p_position: form.position.value }) }, true);
+    await backendRequest('/rest/v1/rpc/promote_customer', { method: 'POST', body: JSON.stringify({ p_user_id: id, p_position: form.elements.namedItem('position').value }) }, true);
     accountProfiles = await backendRequest('/rest/v1/profiles?select=user_id,email,name,role,position,created_at&order=created_at.desc', {}, true);
     closeModal(); render(); toast('Perfil de administrador atualizado.');
   } catch (error) { toast(error.message); button.disabled = false; }
@@ -824,7 +829,7 @@ async function uploadProductPhoto(file) {
 }
 async function saveProduct(form, id) {
   if (!canManage()) return;
-  const files = Array.from(form.photos.files);
+  const files = Array.from(form.querySelector('input[name="photos"]').files);
   if (draftImages.length + files.length > maxPhotos) return toast('O produto pode ter no máximo 10 fotos.');
   if (files.some(file => file.size > maxPhotoBytes || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type))) return toast('Cada foto deve ser JPG, PNG ou WebP e ter no máximo 7 MB.');
   if (!draftImages.length && !files.length) return toast('Envie pelo menos uma foto do produto.');
@@ -904,7 +909,7 @@ newOrder = () => {
   newOrderBeforePromotions();
   const form = $('#order-form');
   if (!form) return;
-  for (const option of form.product.options) {
+  for (const option of form.elements.namedItem('product').options) {
     const product = db.products.find(p => p.id === Number(option.value));
     if (product) option.textContent = `${product.name} · ${money(salePrice(product))} · ${available(product.id)} disponíveis`;
   }
@@ -913,8 +918,8 @@ newOrder = () => {
 updateOrderEstimate = () => {
   const form = $('#order-form');
   if (!form) return;
-  const product = db.products.find(p => p.id === Number(form.product.value));
-  $('#order-estimate').textContent = money(salePrice(product) * Number(form.qty.value || 0) + Number(form.freight.value || 0));
+  const product = db.products.find(p => p.id === Number(form.elements.namedItem('product').value));
+  $('#order-estimate').textContent = money(salePrice(product) * Number(form.elements.namedItem('qty').value || 0) + Number(form.elements.namedItem('freight').value || 0));
 };
 createAdminOrder = form => {
   if (!canSell()) return;
