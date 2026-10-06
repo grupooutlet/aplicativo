@@ -244,11 +244,7 @@ salesChart = orders => {
 };
 settingsPage = () => originalSettingsPage()
   .replace('Nenhuma mensagem é enviada automaticamente nesta demonstração.', 'Nenhuma mensagem é enviada automaticamente.')
-  .replace(/<section class="card pad"><h2>Sobre esta demonstração<\/h2>[\s\S]*?<\/section>/,
-    `<section class="card pad"><h2>Dados publicados</h2>
-    <p style="font-size:14px;line-height:1.8;margin:15px 0">Produtos, pedidos e configurações são salvos no Supabase. O acesso à gestão está limitado ao e-mail proprietário.</p>
-    <p class="subtle" style="line-height:1.8">Confirme os preços, o estoque e o WhatsApp comercial antes de aceitar pedidos. Pagamentos e reembolsos são tratados pela equipe fora deste site. O documento impresso não é fiscal.</p>
-  </section>`);
+  .replace(/<section class="card pad"><h2>Sobre esta demonstração<\/h2>[\s\S]*?<\/section>/, '');
 paymentModal = id => {
   originalPaymentModal(id);
   if ($('#modal').open) $('#modal').innerHTML = $('#modal').innerHTML.replace('Use um arquivo de teste.', 'Anexe o comprovante recebido e confira o valor antes de confirmar.');
@@ -262,11 +258,11 @@ renderReceipt = id => {
   $('#app').innerHTML = $('#app').innerHTML.replace('Ambiente de demonstração', 'Pedido registrado pela loja');
 };
 checkoutPage = () => originalCheckoutPage()
-  .replace('Estou ciente de que esta é uma demonstração e usarei dados de teste.', 'Confirmo o uso destes dados para atender meu pedido.')
+  .replace(/<label style="display:flex;gap:9px;font-size:12px;line-height:1.7"><input type="checkbox" required>[\s\S]*?<\/label>/, '')
   .replace('Nenhuma cobrança será feita agora. Seu pedido ficará pendente até a confirmação do pagamento pela equipe.', 'Nenhuma cobrança será feita agora. A equipe confirmará os próximos passos.');
 accountPage = () => {
   if (!authSession) return `<div class="store-content" style="max-width:510px;padding-top:55px"><section class="card pad">
-    <h1>Meus pedidos</h1><p class="muted" style="margin:16px 0 8px">Pedidos online ainda não estão disponíveis.</p>
+    <h1>Meus pedidos</h1><p class="muted" style="margin:16px 0 8px">Entre na sua conta para acompanhar seus pedidos.</p>
     <a class="text-link" href="#/loja">Voltar à loja</a>
   </section></div>`;
   return originalAccountPage()
@@ -282,7 +278,5 @@ async function signOut() {
   if ($('#modal').open) closeModal();
   await boot();
 }
-
-checkout = () => toast('Pedidos online ainda não estão disponíveis.');
 
 // boot is started after the account and catalog enhancements are installed.
