@@ -213,7 +213,7 @@ async function promoteCustomer(form, id) {
 }
 teamPage = () => heading('Equipe e permissões', 'Pessoas com acesso à gestão.') +
   `<section class="card"><div class="tablewrap"><table><thead><tr><th>Pessoa</th><th>E-mail</th><th>Cargo</th></tr></thead><tbody>
-  ${accountProfiles.filter(p => p.role !== 'customer' && (p.role !== 'master' || currentProfile?.role === 'master')).map(p => `<tr><td>${esc(p.name || 'Administrador')}</td><td>${esc(p.email)}</td><td>${p.role === 'master' ? 'Principal' : esc(p.position || 'Outro')}</td></tr>`).join('')}
+  ${accountProfiles.filter(p => p.role !== 'customer' && (p.role !== 'master' || (currentProfile?.role === 'master' && masterPreviewPosition === 'Principal'))).map(p => `<tr><td>${esc(p.name || 'Administrador')}</td><td>${esc(p.email)}</td><td>${p.role === 'master' ? 'Principal' : esc(p.position || 'Outro')}</td></tr>`).join('')}
   </tbody></table></div></section>`;
 const productionShell = shell;
 shell = (...args) => {

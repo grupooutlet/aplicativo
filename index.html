@@ -884,7 +884,7 @@ async function promoteCustomer(form, id) {
 }
 teamPage = () => heading('Equipe e permissões', 'Pessoas com acesso à gestão.') +
   `<section class="card"><div class="tablewrap"><table><thead><tr><th>Pessoa</th><th>E-mail</th><th>Cargo</th></tr></thead><tbody>
-  ${accountProfiles.filter(p => p.role !== 'customer' && (p.role !== 'master' || currentProfile?.role === 'master')).map(p => `<tr><td>${esc(p.name || 'Administrador')}</td><td>${esc(p.email)}</td><td>${p.role === 'master' ? 'Principal' : esc(p.position || 'Outro')}</td></tr>`).join('')}
+  ${accountProfiles.filter(p => p.role !== 'customer' && (p.role !== 'master' || (currentProfile?.role === 'master' && masterPreviewPosition === 'Principal'))).map(p => `<tr><td>${esc(p.name || 'Administrador')}</td><td>${esc(p.email)}</td><td>${p.role === 'master' ? 'Principal' : esc(p.position || 'Outro')}</td></tr>`).join('')}
   </tbody></table></div></section>`;
 const productionShell = shell;
 shell = (...args) => {
@@ -1680,7 +1680,7 @@ orderDetail = id => {
   const order = visibleOrders().find(item => item.id === id);
   if (!order) return orderDetailBeforeFulfillment(id);
   const mayRelease = role === 'Proprietário' || role === 'Gerente' || role === 'Estoque';
-  const mayDelete = currentProfile?.role === 'master' ||
+  const mayDelete = (currentProfile?.role === 'master' && ['Proprietário', 'Gerente'].includes(role)) ||
     (currentProfile?.role === 'admin' && currentProfile.position === 'Gerente');
   const canEdit = canPay() && ['pending', 'ready'].includes(order.status);
   const release = mayRelease && ['pending', 'ready'].includes(order.status)
@@ -1826,7 +1826,7 @@ async function commitFinishOrder(id, form) {
 }
 
 function deleteOrderModal(id) {
-  if (!(currentProfile?.role === 'master' ||
+  if (!((currentProfile?.role === 'master' && ['Proprietário', 'Gerente'].includes(role)) ||
     (currentProfile?.role === 'admin' && currentProfile.position === 'Gerente'))) return;
   const order = db.orders.find(item => item.id === id);
   if (!order) return;
@@ -1842,7 +1842,7 @@ async function settleAdminWrites() {
   if (pendingState || persisting) throw new Error('Aguarde a sincronização das alterações anteriores.');
 }
 async function deleteOrder(id) {
-  if (!(currentProfile?.role === 'master' ||
+  if (!((currentProfile?.role === 'master' && ['Proprietário', 'Gerente'].includes(role)) ||
     (currentProfile?.role === 'admin' && currentProfile.position === 'Gerente'))) return;
   try {
     await settleAdminWrites();
