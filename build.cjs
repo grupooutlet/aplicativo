@@ -8,7 +8,9 @@ const logoBase64 = fs.existsSync(path.join(root, 'assets/logo.webp'))
   ? fs.readFileSync(path.join(root, 'assets/logo.webp')).toString('base64')
   : read('assets/logo.base64.txt').trim();
 const logo = `data:image/webp;base64,${logoBase64}`;
-const icon = `data:image/svg+xml;base64,${fs.readFileSync(path.join(root, 'assets/app-icon.svg')).toString('base64')}`;
+const logoIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 272 272"><rect width="272" height="272" rx="54" fill="#f5f4ef"/><image href="${logo}" x="0" y="0" width="767" height="272"/></svg>`;
+fs.writeFileSync(path.join(root, 'assets/app-icon.svg'), logoIconSvg, 'utf8');
+const icon = logo;
 const css = [read('styles.css'), read('storefront.css')].join('\n').replace(/<\/style/gi, '<\\/style');
 const script = name => read(name).replaceAll('assets/logo.webp', logo).replace(/<\/script/gi, '<\\/script');
 
@@ -23,7 +25,7 @@ const html = `<!doctype html>
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="description" content="Forte Outlet: loja online e gestão em um só lugar.">
   <title>Forte Outlet · Loja online</title>
-  <link rel="icon" href="${icon}" type="image/svg+xml">
+  <link rel="icon" href="${icon}" type="image/webp">
   <script>
     const base = document.createElement('base');
     const path = location.pathname;
@@ -46,12 +48,13 @@ const html = `<!doctype html>
   <script>${script('storefront-editor.js')}</script>
   <script>${script('app.js')}</script>
   <script>${script('production.js')}</script>
+  <script>${script('enhancements.js')}</script>
 </body>
 </html>
 `;
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
-if (inlineScripts.length !== 4) throw new Error(`Esperados 4 scripts embutidos; encontrados ${inlineScripts.length}.`);
+if (inlineScripts.length !== 5) throw new Error(`Esperados 5 scripts embutidos; encontrados ${inlineScripts.length}.`);
 inlineScripts.forEach((match, index) => new vm.Script(match[1], { filename: `index.html:script-${index + 1}` }));
 fs.writeFileSync(path.join(root, 'index.html'), html, 'utf8');
 console.log(`index.html gerado (${Buffer.byteLength(html, 'utf8')} bytes).`);
