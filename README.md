@@ -21,13 +21,15 @@ As rotas usam `#` para funcionar em hospedagem estática sem redirecionamentos.
 - O estado operacional fica em `app_state`, com RLS e acesso somente a administradores autenticados. Cadastros novos recebem o papel `customer` pelo trigger do banco.
 - A conta Master é confirmada no Supabase, tem papel `master` e é protegida contra exclusão, remoção lógica e troca de e-mail pela migração `supabase/master-account.sql`.
 - Clientes e administradores usam a mesma tela de login com senha. Apenas a conta principal pode promover um cliente a administrador e definir o cargo Gerente, Vendedor ou Outro. A senha e seu hash não fazem parte do repositório ou do código do site.
+- O perfil Principal só aparece em Equipe e permissões para a própria conta Master; a política RLS também impede que outros administradores consultem esse perfil pela API.
 - O Supabase Auth permite cadastro e não exige confirmação de e-mail. O site não envia e-mails. Por isso, o acesso aos pedidos do cliente é vinculado ao ID da conta, nunca apenas ao endereço de e-mail.
 - As fotos dos produtos são armazenadas no bucket público `product-photos`; só administradores podem enviar ou remover arquivos. O limite é de 10 fotos por produto e 7 MB por foto. A capa e a galeria, o preço promocional e o estoque são salvos no catálogo.
-- A finalização de pedidos online permanece desativada enquanto preços, quantidades e WhatsApp comerciais não forem confirmados. O RPC de pedidos mantém validação de preços, promoções e estoque no servidor.
+- Produtos podem ter opções como cor, tamanho e tecido. O cliente escolhe as variações antes de adicionar ao carrinho; elas ficam registradas no pedido e no documento impresso. O preço e o estoque são compartilhados pelo produto.
+- O RPC de pedidos valida preços, promoções, variações e estoque no servidor.
 - A chave em `production.js` é **publishable**, destinada ao navegador. Nunca inclua uma chave secreta ou `service_role` no site.
 - Pagamentos são confirmados manualmente pela equipe; o site não cobra cartões nem emite nota fiscal.
 
-O banco está em `supabase/schema.sql` e nas migrações `supabase/master-account.sql`, `supabase/customer-accounts-and-photos.sql`, `supabase/order-account-pricing.sql` e `supabase/harden-promotion.sql`. O estado inicial foi criado com produtos de exemplo, **sem pedidos e com estoque zero**. Confirme preços, quantidades e WhatsApp antes de abrir vendas. O arquivo local `supabase/seed-state.json` contém custos e fica fora do GitHub.
+O banco está em `supabase/schema.sql` e nas migrações `supabase/master-account.sql`, `supabase/customer-accounts-and-photos.sql`, `supabase/order-account-pricing.sql` e `supabase/harden-promotion.sql` e `supabase/product-variations-and-master-visibility.sql`. O estado inicial foi criado com produtos de exemplo, **sem pedidos e com estoque zero**. Confirme preços, quantidades e WhatsApp antes de abrir vendas. O arquivo local `supabase/seed-state.json` contém custos e fica fora do GitHub.
 
 O site não envia e-mails nem pede confirmação por e-mail. A conta principal foi preparada diretamente no Supabase.
 
@@ -37,10 +39,11 @@ Requer Node.js. Não há dependências de npm.
 
 ```sh
 npm run check
+npm test
 npm run build
 npm start
 ```
 
-Abra `http://127.0.0.1:4173/#/loja`. O build incorpora CSS, JavaScript e a logo em `index.html`; o manifesto e o ícone permanecem separados. O arquivo `assets/logo.base64.txt` permite reconstruir o HTML após clonar o repositório público sem publicar a imagem binária separadamente.
+Abra `http://127.0.0.1:4173/#/loja`. O build incorpora CSS, JavaScript e as marcas em `index.html`; o manifesto e o ícone permanecem separados. Os arquivos `assets/logo.base64.txt` e `assets/magemind-mark.base64.txt` permitem reconstruir o HTML após clonar o repositório público sem publicar as imagens binárias separadamente.
 
 O painel e a loja usam os endpoints de senha e cadastro do Supabase Auth. A URL principal do projeto continua apontando para o GitHub Pages.

@@ -192,7 +192,7 @@ async function promoteCustomer(form, id) {
 }
 teamPage = () => heading('Equipe e permissões', 'Pessoas com acesso à gestão.') +
   `<section class="card"><div class="tablewrap"><table><thead><tr><th>Pessoa</th><th>E-mail</th><th>Cargo</th></tr></thead><tbody>
-  ${accountProfiles.filter(p => p.role !== 'customer').map(p => `<tr><td>${esc(p.name || 'Administrador')}</td><td>${esc(p.email)}</td><td>${p.role === 'master' ? 'Principal' : esc(p.position || 'Outro')}</td></tr>`).join('')}
+  ${accountProfiles.filter(p => p.role !== 'customer' && (p.role !== 'master' || currentProfile?.role === 'master')).map(p => `<tr><td>${esc(p.name || 'Administrador')}</td><td>${esc(p.email)}</td><td>${p.role === 'master' ? 'Principal' : esc(p.position || 'Outro')}</td></tr>`).join('')}
   </tbody></table></div></section>`;
 const productionShell = shell;
 shell = (...args) => {
@@ -238,6 +238,7 @@ productModal = id => {
       ${field('Custo do produto (R$)', 'cost', p.cost, 'number', 'min="0" step="0.01" required')}
       <label class="field">Visibilidade<select name="active"><option value="true" ${p.active ? 'selected' : ''}>Ativo na loja online</option><option value="false" ${!p.active ? 'selected' : ''}>Rascunho</option></select></label>
       <label class="field full">Descrição<textarea name="description" required>${esc(p.description)}</textarea></label>
+      ${variationEditor(p)}
       <label class="field full">Enviar fotos<input name="photos" type="file" accept="image/png,image/jpeg,image/webp" multiple><small>Até 10 fotos por produto, com até 7 MB cada. JPG, PNG ou WebP.</small></label>
       <div id="draft-gallery" class="full">${draftGallery()}</div>
     </div><div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Salvar produto</button></div>
@@ -267,6 +268,9 @@ async function saveProduct(form, id) {
   const f = Object.fromEntries(new FormData(form));
   const price = Number(f.price), promoPrice = f.promoPrice ? Number(f.promoPrice) : null;
   const stock = Number(f.stock), min = Number(f.min);
+  let variations;
+  try { variations = readVariationEditor(form); }
+  catch (error) { return toast(error.message); }
   if (!(price > 0) || (promoPrice !== null && !(promoPrice > 0 && promoPrice < price))) return toast('O preço promocional deve ser maior que zero e menor que o preço de venda.');
   if (!Number.isInteger(stock) || !Number.isInteger(min) || stock < 0 || min < 0 || (id && stock < reserved(id))) return toast('Confira o estoque. A quantidade não pode ficar abaixo do total reservado.');
   const button = form.querySelector('button.btn.primary');
@@ -278,7 +282,7 @@ async function saveProduct(form, id) {
     const previous = db.products.find(p => p.id === id);
     const newId = id || Math.max(Number(db.nextProductId) || 1, Math.max(0, ...db.products.map(p => p.id)) + 1);
     const sku = previous?.sku || `GO-${String(newId).padStart(5, '0')}`;
-    const data = { name: f.name.trim(), sku, category: f.category, description: f.description.trim(), price, promoPrice, cost: Number(f.cost), stock, min, active: f.active === 'true', image: images[0], images };
+    const data = { name: f.name.trim(), sku, category: f.category, description: f.description.trim(), price, promoPrice, cost: Number(f.cost), stock, min, active: f.active === 'true', image: images[0], images, variations };
     if (!data.name || !data.description || !Number.isFinite(data.cost) || data.cost < 0) throw new Error('Confira os dados do produto.');
     if (previous) {
       const difference = stock - previous.stock;
@@ -354,8 +358,10 @@ checkout = async form => {
   if (f.email.trim().toLowerCase() !== currentEmail()) return toast('Use o e-mail da sua conta.');
   for (const item of db.cart) {
     const product = db.products.find(p => p.id === item.id && p.active);
-    if (!product || !Number.isInteger(item.qty) || item.qty < 1 || item.qty > available(item.id))
+    if (!product || !Number.isInteger(item.qty) || item.qty < 1 || cartQuantity(item.id) > available(item.id))
       return toast('O estoque mudou. Revise o carrinho antes de continuar.');
+    try { validateProductOptions(product, item.options || {}); }
+    catch { return toast('Uma variação do carrinho mudou. Remova o item e escolha novamente.'); }
   }
   const address = f.delivery === 'Retirada' ? db.settings.address
     : `${f.street}, ${f.number}${f.complement ? ' · ' + f.complement : ''} · ${f.neighborhood} · ${f.city} · CEP ${f.cep}`;
@@ -365,7 +371,7 @@ checkout = async form => {
   try {
     const request = { customer: f.customer.trim(), email: currentEmail(), phone: f.phone.trim(), cpf: f.cpf.trim(),
       address: address.trim(), delivery: f.delivery, payment: f.payment, notes: f.notes,
-      items: db.cart.map(item => ({ id: item.id, qty: item.qty })) };
+      items: db.cart.map(item => ({ id: item.id, qty: item.qty, options: item.options || {} })) };
     const result = await backendRequest('/rest/v1/rpc/place_order', {
       method: 'POST', body: JSON.stringify({ p_request: request })
     }, true);
@@ -424,4 +430,3 @@ createAdminOrder = form => {
   if (save()) { closeModal(); go('/app/orders/' + order.id); toast('Pré-venda criada. Produtos reservados.'); }
 };
 
-boot();
