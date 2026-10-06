@@ -37,17 +37,34 @@ async function boot() {
     isOwner = false;
     currentProfile = null;
     accountProfiles = [];
+    customerContacts = [];
+    driverDeliveries = [];
     if (authSession) {
       const id = authSession.user?.id;
       const rows = await backendRequest(`/rest/v1/profiles?select=user_id,email,name,role,position&user_id=eq.${encodeURIComponent(id)}`, {}, true);
       currentProfile = rows?.[0] || null;
       if (currentProfile?.role === 'master' || currentProfile?.role === 'admin') {
         await loadAdminState();
-        role = 'Proprietário';
+        role = currentProfile.role === 'master' ? 'Proprietário'
+          : currentProfile.position === 'Gerente' ? 'Gerente'
+          : currentProfile.position === 'Vendedor' ? 'Vendedor' : 'Estoque';
+        currentSeller = currentProfile.name || '';
         accountProfiles = await backendRequest('/rest/v1/profiles?select=user_id,email,name,role,position,created_at&order=created_at.desc', {}, true);
+        customerContacts = await backendRequest('/rest/v1/customer_contacts?select=id,name,email,phone,cpf,address,created_at&order=created_at.desc', {}, true);
+      } else if (currentProfile?.role === 'driver') {
+        role = 'Entregador';
+        driverDeliveries = await backendRequest('/rest/v1/rpc/driver_deliveries', { method: 'POST', body: '{}' }, true);
       } else {
         await loadMyOrders();
       }
+    }
+    const orderId = Number(routePath().match(/^\/loja\/pedido\/(\d+)$/)?.[1]);
+    const token = orderId && sessionStore.getItem('forte-guest-order-' + orderId);
+    if (token && !db.orders.some(order => order.id === orderId)) {
+      const order = await backendRequest('/rest/v1/rpc/guest_order', {
+        method: 'POST', body: JSON.stringify({ p_order_id: orderId, p_token: token })
+      });
+      if (order?.id) db.orders.unshift(order);
     }
     booted = true;
     render();
@@ -90,7 +107,9 @@ async function signInAccount(form) {
     if (!response.ok) throw new Error('E-mail ou senha incorretos.');
     rememberAuth(await response.json());
     await boot();
-    if (isOwner) go('/app'); else go(sessionStore.getItem('forte-after-login') || '/loja/conta');
+    if (currentProfile?.role === 'driver') go('/app/deliveries');
+    else if (isOwner) go('/app');
+    else go(sessionStore.getItem('forte-after-login') || '/loja/conta');
     sessionStore.removeItem('forte-after-login');
   } catch (error) { toast(error.message); }
   finally { passwordInput.value = ''; button.disabled = false; }
@@ -167,10 +186,12 @@ const oldSignOut = signOut;
 signOut = async () => { currentProfile = null; accountProfiles = []; await oldSignOut(); };
 
 customersPage = () => {
-  const customers = accountProfiles.filter(p => p.role === 'customer');
-  return heading('Clientes', 'Contas cadastradas na loja.') + `<section class="card"><div class="card-header"><h2>${customers.length} clientes</h2></div>
-    <div class="tablewrap"><table><thead><tr><th>Cliente</th><th>E-mail</th><th>Cadastro</th><th></th></tr></thead><tbody>
-    ${customers.map(p => `<tr><td><div class="customer"><span class="avatar">${esc(initials(p.name || p.email))}</span>${esc(p.name || 'Cliente')}</div></td><td>${esc(p.email)}</td><td>${new Date(p.created_at).toLocaleDateString('pt-BR')}</td><td>${currentProfile?.role === 'master' ? button('Tornar admin', `onclick="promoteModal('${p.user_id}')"`, 'small') : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Nenhum cliente cadastrado.</td></tr>'}
+  const accounts = accountProfiles.filter(p => p.role === 'customer');
+  const contacts = customerContacts.filter(c => !accounts.some(a => a.email?.toLowerCase() === c.email?.toLowerCase()));
+  return heading('Clientes', 'Cadastros de pedidos e contas da loja.') + `<section class="card"><div class="card-header"><h2>${accounts.length + contacts.length} clientes</h2></div>
+    <div class="tablewrap"><table><thead><tr><th>Cliente</th><th>Contato</th><th>Pedidos</th><th></th></tr></thead><tbody>
+    ${accounts.map(p => { const orders = db.orders.filter(o => o.user_id === p.user_id || o.email?.toLowerCase() === p.email?.toLowerCase()); return `<tr><td><div class="customer"><span class="avatar">${esc(initials(p.name || p.email))}</span>${esc(p.name || 'Cliente')}</div></td><td>${esc(p.email)}</td><td>${orders.length}</td><td>${currentProfile?.role === 'master' ? button('Tornar da equipe', `onclick="promoteModal('${p.user_id}')"`, 'small') : ''}</td></tr>`; }).join('')}
+    ${contacts.map(c => `<tr><td><div class="customer"><span class="avatar">${esc(initials(c.name || c.email))}</span>${esc(c.name || 'Cliente')}</div></td><td>${esc(c.phone)}<small style="display:block">${esc(c.email)}</small></td><td>${db.orders.filter(o => o.customer_id === c.id).length}</td><td><span class="subtle">Cadastro pelo pedido</span></td></tr>`).join('') || (!accounts.length ? '<tr><td colspan="4" class="empty">Nenhum cliente cadastrado.</td></tr>' : '')}
     </tbody></table></div></section>`;
 };
 function promoteModal(id) {
@@ -178,7 +199,7 @@ function promoteModal(id) {
   const profile = accountProfiles.find(p => p.user_id === id && p.role === 'customer');
   if (!profile) return toast('Cliente não encontrado.');
   modal('Transformar em admin', `<p><strong>${esc(profile.name || profile.email)}</strong> terá acesso à gestão e sairá da lista de clientes.</p>
-    <form onsubmit="event.preventDefault();promoteCustomer(this,'${id}')"><label class="field">Cargo<select name="position"><option>Gerente</option><option>Vendedor</option><option>Outro</option></select></label>
+    <form onsubmit="event.preventDefault();promoteCustomer(this,'${id}')"><label class="field">Cargo<select name="position"><option>Gerente</option><option>Vendedor</option><option>Entregador</option><option>Outro</option></select></label>
     <div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Confirmar alteração</button></div></form>`);
 }
 async function promoteCustomer(form, id) {
@@ -337,16 +358,8 @@ cartPage = () => `<div class="store-content">${heading('Seu carrinho', 'Falta po
 const checkoutBeforePromotions = checkoutPage;
 checkoutPage = () => {
   if (!db.cart.length) return cartPage();
-  if (!authSession) return `<div class="store-content" style="max-width:620px"><section class="card pad">
-    <h1>Entre para finalizar seu pedido</h1>
-    <p class="muted" style="margin:16px 0 24px">Acesse sua conta ou cadastre-se para acompanhar o pedido.</p>
-    <div class="actions" style="flex-wrap:wrap">
-      <a class="btn primary" href="/loja/conta" onclick="sessionStore.setItem('forte-after-login','/loja/checkout')">Fazer login</a>
-      <a class="btn" href="/loja/conta" onclick="sessionStore.setItem('forte-open-signup','1');sessionStore.setItem('forte-after-login','/loja/checkout')">Criar conta</a>
-      <a class="btn" href="/loja/carrinho">Voltar ao carrinho</a>
-    </div></section></div>`;
   let html = checkoutBeforePromotions();
-  html = html.replace(/name="customer" type="text" value="[^"]*"/, `name="customer" type="text" value="${esc(currentProfile?.name || '')}"`)
+  if (authSession) html = html.replace(/name="customer" type="text" value="[^"]*"/, `name="customer" type="text" value="${esc(currentProfile?.name || '')}"`)
     .replace(/name="email" type="email" value="[^"]*"/, `name="email" type="email" value="${esc(currentEmail())}" readonly`);
   for (const item of db.cart) {
     const product = db.products.find(p => p.id === item.id);

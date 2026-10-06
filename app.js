@@ -24,10 +24,10 @@ let role='Proprietário',currentSeller='Loja online',orderFilter='all',productQu
 let save=()=>true;
 const allowed=page=>({Proprietário:['dashboard','orders','products','collections','inventory','customers','reports','store-editor','pages','team','settings'],Gerente:['dashboard','orders','products','collections','inventory','customers','reports','store-editor','pages','team'],Vendedor:['dashboard','orders','customers'],Estoque:['dashboard','orders','inventory']}[role]||[]).includes(page);
 const canManage=()=>['Proprietário','Gerente'].includes(role);
-const canSell=()=>role!=='Estoque';
+const canSell=()=>['Proprietário','Gerente','Vendedor'].includes(role);
 const canPay=()=>['Proprietário','Gerente','Vendedor'].includes(role);
 const orderTotal=o=>o.items.reduce((n,i)=>n+i.price*i.qty,0)+(Number(o.freight)||0);
-const completed=o=>['transit','delivered'].includes(o.status);
+const completed=o=>Boolean(o.paid)&&(o.paymentTiming==='Na entrega'?o.status==='delivered':['transit','delivered'].includes(o.status));
 const visibleOrders=()=>role==='Vendedor'?db.orders.filter(o=>o.seller===currentSeller):db.orders;
 const reserved=id=>db.orders.filter(o=>['pending','ready'].includes(o.status)).reduce((n,o)=>n+o.items.filter(i=>i.id===id).reduce((a,i)=>a+i.qty,0),0);
 let available=id=>{const p=db.products.find(p=>p.id===id);return p?Math.max(0,p.stock-reserved(id)):0};

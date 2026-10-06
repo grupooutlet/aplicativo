@@ -8,7 +8,7 @@
     "edge:build": "node build.cjs && node supabase/site/make-edge.cjs",
     "start": "node build.cjs && node server.cjs",
     "start:lan": "node build.cjs && node server.cjs --lan",
-    "check": "node --check app.js && node --check production.js && node --check enhancements.js && node --check variations.js && node --check storefront-editor.js && node --check build.cjs && node --check server.cjs",
-    "test": "node tests/variations.test.cjs"
+    "check": "node --check app.js && node --check production.js && node --check enhancements.js && node --check variations.js && node --check fulfillment.js && node --check storefront-editor.js && node --check build.cjs && node --check server.cjs",
+    "test": "node tests/variations.test.cjs && node tests/fulfillment.test.cjs"
   }
 }

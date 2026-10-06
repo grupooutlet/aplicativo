@@ -172,9 +172,10 @@ createAdminOrder = form => {
   const order = { ...data, addressParts, address: data.delivery === 'Retirada' ? db.settings.address : formatAddress(addressParts),
     id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), freight: Number(data.freight),
     items: [{ id: product.id, name: product.name + (detail ? ' · ' + detail : ''), options, price: salePrice(product), cost: product.cost, qty }],
-    status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: role === 'Vendedor' ? currentSeller : data.seller };
+    status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: role === 'Vendedor' ? currentSeller : data.seller,
+    paymentTiming: data.paymentTiming || (data.delivery === 'Entrega' ? 'Na entrega' : 'Na retirada') };
   db.orders.unshift(order);
   if (save()) { closeModal(); go('/app/orders/' + order.id); toast('Pré-venda criada. Produtos reservados.'); }
 };
 
-boot();
+// Startup is called after fulfillment extensions are installed.

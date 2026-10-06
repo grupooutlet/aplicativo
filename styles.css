@@ -71,3 +71,16 @@
   #admin-variation-fields:not([hidden]){grid-template-columns:1fr}
   .footer{flex-wrap:wrap}
 }
+/* Restricted delivery workspace */
+.driver-app{min-height:100vh;background:#f6f5f1;color:#18232d}
+.driver-header{display:flex;align-items:center;gap:16px;padding:16px max(24px,calc((100vw - 1180px)/2));background:#fff;border-bottom:1px solid #e5e4df}
+.driver-header img{width:140px;max-height:52px;object-fit:contain;object-position:left}
+.driver-header div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.driver-header small{color:#68717a}
+.driver-header .btn{margin-left:auto}
+.driver-title{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+.driver-title h1{margin-bottom:5px}
+.driver-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
+.driver-card{align-self:start}
+.driver-card>p{line-height:1.55;margin:8px 0}
+@media(max-width:640px){.driver-header{padding:14px 16px}.driver-header img{width:92px}.driver-title{align-items:flex-start}.driver-title .btn{white-space:nowrap}}

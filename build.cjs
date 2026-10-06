@@ -51,12 +51,13 @@ const html = `<!doctype html>
   <script>${script('production.js')}</script>
   <script>${script('enhancements.js')}</script>
   <script>${script('variations.js')}</script>
+  <script>${script('fulfillment.js')}</script>
 </body>
 </html>
 `;
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
-if (inlineScripts.length !== 6) throw new Error(`Esperados 6 scripts embutidos; encontrados ${inlineScripts.length}.`);
+if (inlineScripts.length !== 7) throw new Error(`Esperados 7 scripts embutidos; encontrados ${inlineScripts.length}.`);
 inlineScripts.forEach((match, index) => new vm.Script(match[1], { filename: `index.html:script-${index + 1}` }));
 fs.writeFileSync(path.join(root, 'index.html'), html, 'utf8');
 console.log(`index.html gerado (${Buffer.byteLength(html, 'utf8')} bytes).`);
