@@ -53,7 +53,7 @@ create policy "Staff updates operational state" on public.app_state
   for update to authenticated
   using ((select private.is_admin())) with check ((select private.is_admin()));
 
-create or replace function public.promote_customer(p_user_id uuid, p_position text)
+create or replace function private.promote_customer(p_user_id uuid, p_position text)
 returns void language plpgsql security definer
 set search_path = pg_catalog, public, private as $$
 begin
@@ -64,7 +64,14 @@ begin
   if not found then raise exception 'Cliente não encontrado.'; end if;
 end;
 $$;
-revoke all on function public.promote_customer(uuid,text) from public;
+revoke all on function private.promote_customer(uuid,text) from public, anon, authenticated;
+grant execute on function private.promote_customer(uuid,text) to authenticated;
+create or replace function public.promote_customer(p_user_id uuid, p_position text)
+returns void language sql security invoker
+set search_path = pg_catalog, public, private as $$
+  select private.promote_customer(p_user_id,p_position)
+$$;
+revoke all on function public.promote_customer(uuid,text) from public, anon, authenticated;
 grant execute on function public.promote_customer(uuid,text) to authenticated;
 
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
