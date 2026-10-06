@@ -113,7 +113,11 @@ render = function () {
     return;
   }
   const path = routePath();
-  if (path === '/loja/conta' && !authSession) return authPage();
+  if (path === '/loja/conta' && !authSession) {
+    const signup = sessionStore.getItem('forte-open-signup') === '1';
+    sessionStore.removeItem('forte-open-signup');
+    return authPage(signup ? 'signup' : 'login');
+  }
   if ((path.startsWith('/app') || path.startsWith('/imprimir/')) && !isOwner) {
     if (authSession) return go('/loja/conta');
     return authPage();
@@ -134,6 +138,14 @@ accountPage = () => {
 const oldStoreHeader = storeHeader;
 storeHeader = () => oldStoreHeader().replace('Olá, bem-vindo<small>Minha conta</small>',
   authSession ? `${esc(currentProfile?.name?.split(' ')[0] || 'Minha conta')}<small>Minha conta</small>` : 'Entre ou cadastre-se<small>Minha conta</small>');
+const storeRenderBeforeAccountPrompt = renderStore;
+renderStore = function () {
+  storeRenderBeforeAccountPrompt();
+  if (!authSession) {
+    const nav = $('.store-nav');
+    nav?.insertAdjacentHTML('afterend', `<div class="guest-prompt"><span>Já tem uma conta? Acesse seus pedidos. Novo por aqui? Cadastre-se em poucos passos.</span><div><a href="/loja/conta">Fazer login</a><a class="guest-signup" href="/loja/conta" onclick="sessionStore.setItem('forte-open-signup','1')">Criar conta</a></div></div>`);
+  }
+};
 const oldSignOut = signOut;
 signOut = async () => { currentProfile = null; accountProfiles = []; await oldSignOut(); };
 
