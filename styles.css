@@ -86,6 +86,26 @@
 .attribute-new:hover{background:#fff6d9}
 .attribute-help{display:block;font-size:11px}
 dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
+.bottom-grid:has(> :only-child){grid-template-columns:minmax(0,1fr)}
+.panel-preview-note{margin-bottom:18px;padding:12px 15px;border:1px solid #eadb9d;border-radius:8px;background:#fff9e7;color:#604f1c;font-size:13px}
+.shipping-settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.shipping-settings-head p{margin-top:6px;line-height:1.5}
+.shipping-settings-list{display:grid;gap:9px}
+.shipping-settings-row{display:flex;align-items:center;gap:14px;padding:13px 14px;border:1px solid var(--line);border-radius:8px;background:#fafaf9}
+.shipping-settings-row>div{flex:1;min-width:0}
+.shipping-settings-row strong,.shipping-settings-row small{display:block}
+.shipping-settings-row strong{font-size:13px}
+.shipping-settings-row small{margin-top:4px;font-size:11px}
+.shipping-settings-row>b{font-size:13px}
+.shipping-settings-note,.shipping-unavailable{margin-top:12px;padding:11px 13px;border:1px solid #eadb9d;border-radius:7px;background:#fff9e7;color:#604f1c;font-size:12px;line-height:1.5}
+#shipping-options{margin-top:16px}
+.shipping-choices{margin:0;padding:0;border:0;display:grid;gap:9px}
+.shipping-choices legend{margin-bottom:9px;font-size:13px;font-weight:650}
+.shipping-choice{display:flex;align-items:center;gap:10px;padding:13px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+.shipping-choice:has(input:checked){border-color:#dbb428;background:#fff9e4}
+.shipping-choice input{accent-color:#bd9914}
+.shipping-choice span{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;font-size:13px}
+.shipping-choice b{white-space:nowrap}
 .product-options{display:grid;gap:13px;margin:24px 0}
 .product-options .field{max-width:420px}
 .cart-options{display:block;color:#73797e;font-size:12px;line-height:1.5;margin:0 0 5px}
@@ -101,6 +121,8 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
   .attribute-value-list{grid-template-columns:1fr}
   .attribute-edit-actions{justify-content:flex-start}
   .attribute-edit-actions>.danger{width:100%;margin-right:0}
+  .shipping-settings-head{flex-direction:column}
+  .shipping-settings-row{flex-wrap:wrap}
   #admin-variation-fields:not([hidden]){grid-template-columns:1fr}
   .footer{flex-wrap:wrap}
 }
