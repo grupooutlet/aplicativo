@@ -2,6 +2,14 @@
 let currentProfile = null;
 let accountProfiles = [];
 let draftImages = [];
+function responsibleName(value) {
+  const recorded = String(value || '').trim();
+  if (!recorded) return 'Grupo Outlet';
+  const profile = accountProfiles.find(item => item.email?.toLowerCase() === recorded.toLowerCase());
+  if (profile?.name) return profile.name;
+  if (recorded.toLowerCase() === ownerEmail || recorded === 'Proprietário') return 'Grupo Outlet';
+  return recorded;
+}
 const photoBucket = 'product-photos';
 const maxPhotos = 10;
 const maxPhotoBytes = 7 * 1024 * 1024;
@@ -24,6 +32,8 @@ async function boot() {
     authSession = safeJson(sessionStore.getItem(authStorageKey), null);
     if (authSession) try { await refreshAuth(); } catch { authSession = null; }
     await loadCatalog();
+    db.cart = db.cart.filter(item => db.products.some(product => product.id === item.id && product.active));
+    localStore.setItem(cartStorageKey, JSON.stringify(db.cart));
     isOwner = false;
     currentProfile = null;
     accountProfiles = [];
@@ -80,7 +90,8 @@ async function signInAccount(form) {
     if (!response.ok) throw new Error('E-mail ou senha incorretos.');
     rememberAuth(await response.json());
     await boot();
-    if (isOwner) go('/app'); else go('/loja/conta');
+    if (isOwner) go('/app'); else go(sessionStore.getItem('forte-after-login') || '/loja/conta');
+    sessionStore.removeItem('forte-after-login');
   } catch (error) { toast(error.message); }
   finally { passwordInput.value = ''; button.disabled = false; }
 }
@@ -104,7 +115,8 @@ async function registerAccount(form) {
     if (!result.access_token) throw new Error('O cadastro não foi concluído. Tente novamente em instantes.');
     rememberAuth(result);
     await boot();
-    go('/loja/conta');
+    go(sessionStore.getItem('forte-after-login') || '/loja/conta');
+    sessionStore.removeItem('forte-after-login');
     toast('Conta criada. Boas-vindas ao Grupo Outlet!');
   } catch (error) { toast(error.message); }
   finally { passwordInput.value = ''; button.disabled = false; }
@@ -137,7 +149,7 @@ accountPage = () => {
   return `<div class="store-content account-content">${heading('Minha conta', esc(currentProfile?.name || currentEmail()),
     `${adminLink}${button('Sair', 'onclick="signOut()"', '', 'logout')}`)}
     <section class="card pad"><h2>Meus pedidos</h2><div class="stack" style="margin-top:18px">
-      ${orders.map(o => `<div class="total-line"><span>Pedido #${o.id} · ${esc(o.date)}</span><strong>${money(orderTotal(o))}</strong></div>`).join('') || '<p class="muted">Você ainda não tem pedidos. <a href="/loja/catalogo">Explore os produtos.</a></p>'}
+      ${orders.map(o => `<a class="total-line" href="/loja/pedido/${o.id}"><span>Pedido #${o.id} · ${esc(o.date)}</span><strong>${money(orderTotal(o))}</strong></a>`).join('') || '<p class="muted">Você ainda não tem pedidos. <a href="/loja/catalogo">Explore os produtos.</a></p>'}
     </div></section></div>`;
 };
 const oldStoreHeader = storeHeader;
@@ -271,7 +283,7 @@ async function saveProduct(form, id) {
     if (previous) {
       const difference = stock - previous.stock;
       Object.assign(previous, data);
-      if (difference) db.movements.unshift({ id: Date.now(), product: data.name, qty: difference, reason: 'Ajuste na edição do produto', date: new Date().toLocaleString('pt-BR'), by: currentEmail() });
+      if (difference) db.movements.unshift({ id: Date.now(), product: data.name, qty: difference, reason: 'Ajuste na edição do produto', date: new Date().toLocaleString('pt-BR'), by: currentProfile?.name || 'Grupo Outlet' });
     } else {
       db.products.push({ ...data, id: newId });
       db.nextProductId = newId + 1;
@@ -290,7 +302,7 @@ async function deleteProduct(id) {
   render(); toast('Produto excluído do catálogo.');
 }
 
-shopProduct = p => `<article class="shop-product"><a href="/loja/produto/${p.id}"><div class="product-photo"><span class="badge">Preço de outlet</span><img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy"></div><h3>${esc(p.name)}</h3></a>${priceMarkup(p)}<small>${available(p.id) > 0 ? 'Disponível · pagamento combinado com a loja' : 'Temporariamente indisponível'}</small>${button(available(p.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque', `onclick="addToCart(${p.id})" ${available(p.id) > 0 ? '' : 'disabled'}`, '', 'plus')}</article>`;
+shopProduct = p => `<article class="shop-product"><a href="/loja/produto/${p.id}"><div class="product-photo"><img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy"></div><h3>${esc(p.name)}</h3></a>${priceMarkup(p)}<small>${available(p.id) > 0 ? 'Disponível · pagamento combinado com a loja' : 'Temporariamente indisponível'}</small>${button(available(p.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque', `onclick="addToCart(${p.id})" ${available(p.id) > 0 ? '' : 'disabled'}`, '', 'plus')}</article>`;
 function selectProductPhoto(index) {
   const product = db.products.find(p => p.id === Number(routePath().split('/')[3]));
   const url = productImages(product)[index];
@@ -301,7 +313,7 @@ productPage = id => {
   const p = db.products.find(p => p.id === id && p.active);
   if (!p) return '<div class="empty">Este produto não está disponível. <a href="/loja/catalogo">Voltar ao catálogo</a></div>';
   const images = productImages(p);
-  return `<div class="store-content"><a class="text-link" href="/loja/catalogo">Loja / ${esc(p.category)}</a><section class="detail-product"><div><img id="main-product-photo" class="detail-main-photo" src="${esc(images[0])}" alt="${esc(p.name)}"><div class="detail-thumbs">${images.map((url, index) => `<button onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}"><img src="${esc(url)}" alt=""></button>`).join('')}</div></div><div><span class="badge yellow">Preço de outlet</span><h1>${esc(p.name)}</h1><span class="subtle">Código: ${esc(p.sku)}</span><p>${esc(p.description)}</p>${priceMarkup(p)}<p style="font-size:13px">Pagamento combinado com nossa equipe pelo WhatsApp.</p><div class="actions"><label class="field" style="max-width:85px">Qtd.<input id="detail-qty" type="number" value="1" min="1" max="${available(p.id)}"></label>${button(available(p.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque', `onclick="addToCart(${id},Number($('#detail-qty').value))" ${available(p.id) > 0 ? '' : 'disabled'}`, 'primary', 'bag')}</div><div class="notice" style="margin-top:25px">${available(p.id) > 0 ? 'Disponível para pedido. Frete e prazo serão confirmados no atendimento.' : 'Avise nossa equipe que você tem interesse neste produto.'}</div></div></section></div>`;
+  return `<div class="store-content"><a class="text-link" href="/loja/catalogo">Loja / ${esc(p.category)}</a><section class="detail-product"><div><img id="main-product-photo" class="detail-main-photo" src="${esc(images[0])}" alt="${esc(p.name)}"><div class="detail-thumbs">${images.map((url, index) => `<button onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}"><img src="${esc(url)}" alt=""></button>`).join('')}</div></div><div><h1>${esc(p.name)}</h1><span class="subtle">Código: ${esc(p.sku)}</span><p>${esc(p.description)}</p>${priceMarkup(p)}<p style="font-size:13px">Pagamento combinado com nossa equipe pelo WhatsApp.</p><div class="actions"><label class="field" style="max-width:85px">Qtd.<input id="detail-qty" type="number" value="1" min="1" max="${available(p.id)}"></label>${button(available(p.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque', `onclick="addToCart(${id},Number($('#detail-qty').value))" ${available(p.id) > 0 ? '' : 'disabled'}`, 'primary', 'bag')}</div></div></section></div>`;
 };
 
 cartPage = () => `<div class="store-content">${heading('Seu carrinho', 'Falta pouco para deixar sua casa do seu jeito.')}
@@ -315,13 +327,70 @@ cartPage = () => `<div class="store-content">${heading('Seu carrinho', 'Falta po
 
 const checkoutBeforePromotions = checkoutPage;
 checkoutPage = () => {
+  if (!db.cart.length) return cartPage();
+  if (!authSession) return `<div class="store-content" style="max-width:620px"><section class="card pad">
+    <h1>Entre para finalizar seu pedido</h1>
+    <p class="muted" style="margin:16px 0 24px">Acesse sua conta ou cadastre-se para acompanhar o pedido.</p>
+    <div class="actions" style="flex-wrap:wrap">
+      <a class="btn primary" href="/loja/conta" onclick="sessionStore.setItem('forte-after-login','/loja/checkout')">Fazer login</a>
+      <a class="btn" href="/loja/conta" onclick="sessionStore.setItem('forte-open-signup','1');sessionStore.setItem('forte-after-login','/loja/checkout')">Criar conta</a>
+      <a class="btn" href="/loja/carrinho">Voltar ao carrinho</a>
+    </div></section></div>`;
   let html = checkoutBeforePromotions();
+  html = html.replace(/name="customer" type="text" value="[^"]*"/, `name="customer" type="text" value="${esc(currentProfile?.name || '')}"`)
+    .replace(/name="email" type="email" value="[^"]*"/, `name="email" type="email" value="${esc(currentEmail())}" readonly`);
   for (const item of db.cart) {
     const product = db.products.find(p => p.id === item.id);
     if (product && salePrice(product) < product.price)
       html = html.replace(`${item.qty} × ${money(product.price)}`, `${item.qty} × ${money(salePrice(product))}`);
   }
   return html;
+};
+checkout = async form => {
+  if (!authSession?.user?.id) return toast('Entre na sua conta para finalizar o pedido.');
+  if (!db.cart.length) return toast('Seu carrinho está vazio.');
+  const f = Object.fromEntries(new FormData(form));
+  if (f.cpf.replace(/\D/g, '').length !== 11) return toast('Informe um CPF com 11 números.');
+  if (f.email.trim().toLowerCase() !== currentEmail()) return toast('Use o e-mail da sua conta.');
+  for (const item of db.cart) {
+    const product = db.products.find(p => p.id === item.id && p.active);
+    if (!product || !Number.isInteger(item.qty) || item.qty < 1 || item.qty > available(item.id))
+      return toast('O estoque mudou. Revise o carrinho antes de continuar.');
+  }
+  const address = f.delivery === 'Retirada' ? db.settings.address
+    : `${f.street}, ${f.number}${f.complement ? ' · ' + f.complement : ''} · ${f.neighborhood} · ${f.city} · CEP ${f.cep}`;
+  if (!address || address.trim().length < 8) return toast('Confira o endereço antes de continuar.');
+  const submit = form.querySelector('button[type="submit"],button.btn.primary');
+  submit.disabled = true;
+  try {
+    const request = { customer: f.customer.trim(), email: currentEmail(), phone: f.phone.trim(), cpf: f.cpf.trim(),
+      address: address.trim(), delivery: f.delivery, payment: f.payment, notes: f.notes,
+      items: db.cart.map(item => ({ id: item.id, qty: item.qty })) };
+    const result = await backendRequest('/rest/v1/rpc/place_order', {
+      method: 'POST', body: JSON.stringify({ p_request: request })
+    }, true);
+    if (!result?.id) throw new Error('O pedido não retornou um número. Consulte sua conta antes de tentar novamente.');
+    db.cart = [];
+    localStore.setItem(cartStorageKey, '[]');
+    sessionStore.setItem('forte-customer', currentEmail());
+    try {
+      await loadCatalog();
+      if (isOwner) await loadAdminState(); else await loadMyOrders();
+    } catch (syncError) {
+      await boot();
+    }
+    go('/loja/pedido/' + result.id);
+    toast(`Pedido #${result.id} recebido. Acompanhe os próximos passos na sua conta.`);
+  } catch (error) { toast(`Não foi possível enviar o pedido: ${error.message}`); }
+  finally { submit.disabled = false; }
+};
+const customerOrderBeforeAuth = customerOrderPage;
+customerOrderPage = id => {
+  if (!authSession) return accountPage();
+  const order = db.orders.find(item => item.id === id && item.user_id === authSession.user.id);
+  if (!order) return accountPage();
+  sessionStore.setItem('forte-customer', order.email);
+  return customerOrderBeforeAuth(id);
 };
 const newOrderBeforePromotions = newOrder;
 newOrder = () => {
