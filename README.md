@@ -1,6 +1,6 @@
 # Grupo Outlet — loja e gestão
 
-Site estático com catálogo público e painel privado, conectado ao projeto Supabase **Aplicativo** da conta **Grupo Outlet**. O acesso administrativo usa a conta Master `grupooutlet.rj@gmail.com` com senha. A loja pode ser hospedada em qualquer serviço que sirva arquivos estáticos; o arquivo publicado é `index.html`.
+Site estático com catálogo público, contas de clientes e painel privado, conectado ao projeto Supabase **Aplicativo** da conta **Grupo Outlet**. A conta principal é `grupooutlet.rj@gmail.com`. A loja pode ser hospedada em qualquer serviço que sirva arquivos estáticos; o arquivo publicado é `index.html`.
 
 Site publicado: https://grupooutlet.github.io/aplicativo/#/loja
 
@@ -10,6 +10,7 @@ O código-fonte e o `index.html` estão no GitHub em https://github.com/grupoout
 
 - Loja: `#/loja`
 - Catálogo: `#/loja/catalogo`
+- Login e cadastro: `#/loja/conta`
 - Painel: `#/app`
 
 As rotas usam `#` para funcionar em hospedagem estática sem redirecionamentos.
@@ -17,16 +18,18 @@ As rotas usam `#` para funcionar em hospedagem estática sem redirecionamentos.
 ## Segurança e dados
 
 - O catálogo público vem de `shop_public`, gerado no banco sem custos de produto, dados de clientes ou comprovantes.
-- O estado operacional fica em `app_state`, com RLS e acesso apenas ao ID da conta Master autenticada.
+- O estado operacional fica em `app_state`, com RLS e acesso somente a administradores autenticados. Cadastros novos recebem o papel `customer` pelo trigger do banco.
 - A conta Master é confirmada no Supabase, tem papel `master` e é protegida contra exclusão, remoção lógica e troca de e-mail pela migração `supabase/master-account.sql`.
-- O painel usa login com senha. A senha e seu hash não fazem parte do repositório ou do código do site.
-- Pedidos online e acesso de clientes permanecem desativados enquanto os dados comerciais e o fluxo de compra sem e-mails não forem definidos. O RPC de pedidos mantém validação de preços e estoque no servidor.
+- Clientes e administradores usam a mesma tela de login com senha. Apenas a conta principal pode promover um cliente a administrador e definir o cargo Gerente, Vendedor ou Outro. A senha e seu hash não fazem parte do repositório ou do código do site.
+- O Supabase Auth permite cadastro e não exige confirmação de e-mail. O site não envia e-mails. Por isso, o acesso aos pedidos do cliente é vinculado ao ID da conta, nunca apenas ao endereço de e-mail.
+- As fotos dos produtos são armazenadas no bucket público `product-photos`; só administradores podem enviar ou remover arquivos. O limite é de 10 fotos por produto e 7 MB por foto. A capa e a galeria, o preço promocional e o estoque são salvos no catálogo.
+- A finalização de pedidos online permanece desativada enquanto preços, quantidades e WhatsApp comerciais não forem confirmados. O RPC de pedidos mantém validação de preços, promoções e estoque no servidor.
 - A chave em `production.js` é **publishable**, destinada ao navegador. Nunca inclua uma chave secreta ou `service_role` no site.
 - Pagamentos são confirmados manualmente pela equipe; o site não cobra cartões nem emite nota fiscal.
 
-O banco está em `supabase/schema.sql`. O estado inicial foi criado com produtos de exemplo, **sem pedidos e com estoque zero**. Confirme preços, quantidades e WhatsApp antes de abrir vendas. O arquivo local `supabase/seed-state.json` contém custos e fica fora do GitHub.
+O banco está em `supabase/schema.sql` e nas migrações `supabase/master-account.sql`, `supabase/customer-accounts-and-photos.sql` e `supabase/order-account-pricing.sql`. O estado inicial foi criado com produtos de exemplo, **sem pedidos e com estoque zero**. Confirme preços, quantidades e WhatsApp antes de abrir vendas. O arquivo local `supabase/seed-state.json` contém custos e fica fora do GitHub.
 
-O site não envia e-mails nem pede confirmação por e-mail. A conta Master foi preparada diretamente no Supabase. Para abrir vendas, confirme os dados comerciais e implemente o fluxo de pedidos desejado sem e-mail.
+O site não envia e-mails nem pede confirmação por e-mail. A conta principal foi preparada diretamente no Supabase.
 
 ## Desenvolvimento
 
@@ -40,4 +43,4 @@ npm start
 
 Abra `http://127.0.0.1:4173/#/loja`. O build incorpora CSS, JavaScript e a logo em `index.html`; o manifesto e o ícone permanecem separados. O arquivo `assets/logo.base64.txt` permite reconstruir o HTML após clonar o repositório público sem publicar a imagem binária separadamente.
 
-O painel usa o endpoint de senha do Supabase Auth. A URL principal do projeto continua apontando para o GitHub Pages.
+O painel e a loja usam os endpoints de senha e cadastro do Supabase Auth. A URL principal do projeto continua apontando para o GitHub Pages.
