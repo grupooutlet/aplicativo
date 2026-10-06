@@ -803,10 +803,10 @@ signOut = async () => { currentProfile = null; accountProfiles = []; await oldSi
 
 customersPage = () => {
   const accounts = accountProfiles.filter(p => p.role === 'customer');
-  const contacts = customerContacts.filter(c => !accounts.some(a => a.email?.toLowerCase() === c.email?.toLowerCase()));
+  const contacts = customerContacts;
   return heading('Clientes', 'Cadastros de pedidos e contas da loja.') + `<section class="card"><div class="card-header"><h2>${accounts.length + contacts.length} clientes</h2></div>
     <div class="tablewrap"><table><thead><tr><th>Cliente</th><th>Contato</th><th>Pedidos</th><th></th></tr></thead><tbody>
-    ${accounts.map(p => { const orders = db.orders.filter(o => o.user_id === p.user_id || o.email?.toLowerCase() === p.email?.toLowerCase()); return `<tr><td><div class="customer"><span class="avatar">${esc(initials(p.name || p.email))}</span>${esc(p.name || 'Cliente')}</div></td><td>${esc(p.email)}</td><td>${orders.length}</td><td>${currentProfile?.role === 'master' ? button('Tornar da equipe', `onclick="promoteModal('${p.user_id}')"`, 'small') : ''}</td></tr>`; }).join('')}
+    ${accounts.map(p => { const orders = db.orders.filter(o => o.user_id === p.user_id); return `<tr><td><div class="customer"><span class="avatar">${esc(initials(p.name || p.email))}</span>${esc(p.name || 'Cliente')}</div><small class="subtle">Conta da loja</small></td><td>${esc(p.email)}</td><td>${orders.length}</td><td>${currentProfile?.role === 'master' ? button('Tornar da equipe', `onclick="promoteModal('${p.user_id}')"`, 'small') : ''}</td></tr>`; }).join('')}
     ${contacts.map(c => `<tr><td><div class="customer"><span class="avatar">${esc(initials(c.name || c.email))}</span>${esc(c.name || 'Cliente')}</div></td><td>${esc(c.phone)}<small style="display:block">${esc(c.email)}</small></td><td>${db.orders.filter(o => o.customer_id === c.id).length}</td><td><span class="subtle">Cadastro pelo pedido</span></td></tr>`).join('') || (!accounts.length ? '<tr><td colspan="4" class="empty">Nenhum cliente cadastrado.</td></tr>' : '')}
     </tbody></table></div></section>`;
 };
