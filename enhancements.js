@@ -211,7 +211,7 @@ productsPage = () => {
   return heading('Produtos', 'Um catálogo único para sua loja física e online.', button('Adicionar produto', 'onclick="productModal()"', 'primary', 'plus')) +
     `<section class="card"><div class="toolbar"><form class="search" onsubmit="event.preventDefault();productQuery=this.q.value;render()">${icon('search')}<input name="q" value="${esc(productQuery)}" placeholder="Buscar por nome, SKU ou coleção"><button aria-label="Buscar">${icon('chevron')}</button></form><span class="subtle">${products.length} produtos</span></div>
     <div class="tablewrap"><table><thead><tr><th>Produto</th><th>Status</th><th>Estoque</th><th>Coleção</th><th>Preço</th><th>Ações</th></tr></thead><tbody>
-    ${products.map(p => `<tr><td><div class="product-cell"><img src="${esc(p.image)}" alt=""><div>${esc(p.name)}<small>${esc(p.sku)}</small></div></div></td><td><span class="badge ${p.active ? 'green' : 'gray'}">${p.active ? 'Ativo' : 'Rascunho'}</span></td><td>${p.stock} un.</td><td>${esc(p.category)}</td><td>${priceMarkup(p)}</td><td><div class="actions">${button('Editar', `onclick="productModal(${p.id})"`, 'small')}${button('Excluir', `onclick="deleteProduct(${p.id})"`, 'small danger')}</div></td></tr>`).join('') || '<tr><td colspan="6" class="empty">Nenhum produto encontrado.</td></tr>'}
+    ${products.map(p => `<tr><td><div class="product-cell"><img src="${esc(p.image)}" alt=""><div>${esc(p.name)}<small>${esc(p.sku)}</small></div></div></td><td><span class="badge ${p.active ? 'green' : 'gray'}">${p.active ? 'Ativo' : 'Rascunho'}</span></td><td>${p.stock} un.</td><td>${esc(p.category)}</td><td>${priceMarkup(p)}</td><td><div class="actions">${button('Editar', `onclick="productModal(${p.id})"`, 'small')}${p.active ? `<a class="btn small" href="/loja/produto/${p.id}" target="_blank" rel="noopener noreferrer" aria-label="Visualizar ${esc(p.name)} na loja">${icon('eye')}Visualizar</a>` : '<button class="btn small" type="button" disabled title="Ative o produto para visualizá-lo na loja">Visualizar</button>'}${button('Excluir', `onclick="deleteProduct(${p.id})"`, 'small danger')}</div></td></tr>`).join('') || '<tr><td colspan="6" class="empty">Nenhum produto encontrado.</td></tr>'}
     </tbody></table></div></section>`;
 };
 function draftGallery() {
@@ -229,7 +229,9 @@ productModal = id => {
   modal(id ? 'Editar produto' : 'Novo produto', `<form onsubmit="event.preventDefault();saveProduct(this,${id || 0})">
     <div class="form-grid">
       ${field('Nome do produto', 'name', p.name, 'text', 'required data-full')}
-      <label class="field">SKU / código<input value="${esc(p.sku || 'Gerado automaticamente ao salvar')}" readonly></label>
+      <label class="field">SKU / código<input name="sku" type="text" maxlength="60" value="${esc(p.sku || '')}" placeholder="Automático"><small>Deixe em branco para gerar automaticamente.</small></label>
+      <label class="field full">Enviar fotos<input name="photos" type="file" accept="image/png,image/jpeg,image/webp" multiple><small>Até 10 fotos por produto, com até 7 MB cada. JPG, PNG ou WebP.</small></label>
+      <div id="draft-gallery" class="full">${draftGallery()}</div>
       <label class="field">Coleção<select name="category">${db.collections.map(c => `<option ${c === p.category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
       ${field('Preço de venda (R$)', 'price', p.price, 'number', 'min="0.01" step="0.01" required')}
       ${field('Preço promocional (R$)', 'promoPrice', p.promoPrice || '', 'number', 'min="0" step="0.01" placeholder="Opcional"')}
@@ -239,8 +241,6 @@ productModal = id => {
       <label class="field">Visibilidade<select name="active"><option value="true" ${p.active ? 'selected' : ''}>Ativo na loja online</option><option value="false" ${!p.active ? 'selected' : ''}>Rascunho</option></select></label>
       <label class="field full">Descrição<textarea name="description" required>${esc(p.description)}</textarea></label>
       ${variationEditor(p)}
-      <label class="field full">Enviar fotos<input name="photos" type="file" accept="image/png,image/jpeg,image/webp" multiple><small>Até 10 fotos por produto, com até 7 MB cada. JPG, PNG ou WebP.</small></label>
-      <div id="draft-gallery" class="full">${draftGallery()}</div>
     </div><div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Salvar produto</button></div>
   </form>`);
 };
@@ -267,21 +267,26 @@ async function saveProduct(form, id) {
   if (!draftImages.length && !files.length) return toast('Envie pelo menos uma foto do produto.');
   const f = Object.fromEntries(new FormData(form));
   const price = Number(f.price), promoPrice = f.promoPrice ? Number(f.promoPrice) : null;
+  const requestedSku = String(f.sku || '').trim();
   const stock = Number(f.stock), min = Number(f.min);
   let variations;
   try { variations = readVariationEditor(form); }
   catch (error) { return toast(error.message); }
   if (!(price > 0) || (promoPrice !== null && !(promoPrice > 0 && promoPrice < price))) return toast('O preço promocional deve ser maior que zero e menor que o preço de venda.');
   if (!Number.isInteger(stock) || !Number.isInteger(min) || stock < 0 || min < 0 || (id && stock < reserved(id))) return toast('Confira o estoque. A quantidade não pode ficar abaixo do total reservado.');
+  const previous = db.products.find(product => product.id === id);
+  if (id && !previous) return toast('Produto não encontrado. Atualize a página e tente novamente.');
+  const newId = id || Math.max(Number(db.nextProductId) || 1, Math.max(0, ...db.products.map(product => product.id)) + 1);
+  const sku = requestedSku || `GO-${String(newId).padStart(5, '0')}`;
+  if (sku.length > 60) return toast('O SKU pode ter até 60 caracteres.');
+  if (db.products.some(product => product.id !== newId && product.sku?.toLocaleLowerCase('pt-BR') === sku.toLocaleLowerCase('pt-BR')))
+    return toast('Já existe um produto com esse SKU / código.');
   const button = form.querySelector('button.btn.primary');
   button.disabled = true;
   try {
     const uploaded = [];
     for (const file of files) uploaded.push(await uploadProductPhoto(file));
     const images = [...draftImages, ...uploaded];
-    const previous = db.products.find(p => p.id === id);
-    const newId = id || Math.max(Number(db.nextProductId) || 1, Math.max(0, ...db.products.map(p => p.id)) + 1);
-    const sku = previous?.sku || `GO-${String(newId).padStart(5, '0')}`;
     const data = { name: f.name.trim(), sku, category: f.category, description: f.description.trim(), price, promoPrice, cost: Number(f.cost), stock, min, active: f.active === 'true', image: images[0], images, variations };
     if (!data.name || !data.description || !Number.isFinite(data.cost) || data.cost < 0) throw new Error('Confira os dados do produto.');
     if (previous) {

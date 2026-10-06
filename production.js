@@ -19,7 +19,6 @@ const originalAvailable = available;
 const originalCheckoutPage = checkoutPage;
 const originalAccountPage = accountPage;
 const originalShell = shell;
-const originalStoreFooter = storeFooter;
 const originalDashboard = dashboard;
 const originalSettingsPage = settingsPage;
 const originalPaymentModal = paymentModal;
@@ -219,7 +218,6 @@ shell = (...args) => originalShell(...args)
   .replace('Ambiente de demonstração · Dados salvos neste navegador', 'Dados sincronizados com a loja')
   .replace('<div class="avatar">GA</div><span>Gabriel<small>Proprietário</small>',
     '<div class="avatar">GO</div><span>Grupo Outlet<small>Master</small>');
-storeFooter = () => originalStoreFooter().replace('Prévia visual · Sem pagamentos reais', 'Pedidos sem cobrança online · Confirmação pela equipe');
 dashboard = () => originalDashboard()
   .replace('Bem-vindo de volta, Gabriel', 'Bem-vindo de volta, Grupo Outlet')
   .replace('Histórico de demonstração', 'Histórico de vendas')

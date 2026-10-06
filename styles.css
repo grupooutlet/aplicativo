@@ -49,7 +49,6 @@
 .topbar .global-search span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topbar .global-search .icon{width:18px;height:18px}
 .footer>span:first-child{display:inline-flex;align-items:center;gap:5px}
-.magemind-mark{width:15px;height:15px;object-fit:contain;filter:brightness(0);opacity:.48}
 .variation-editor{border:1px solid var(--line);border-radius:9px;padding:17px;background:#fafaf9}
 .variation-editor-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}
 .variation-editor-head strong{font-size:14px}

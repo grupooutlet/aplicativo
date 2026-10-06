@@ -44,6 +44,6 @@ npm run build
 npm start
 ```
 
-Abra `http://127.0.0.1:4173/#/loja`. O build incorpora CSS, JavaScript e as marcas em `index.html`; o manifesto e o ícone permanecem separados. Os arquivos `assets/logo.base64.txt` e `assets/magemind-mark.base64.txt` permitem reconstruir o HTML após clonar o repositório público sem publicar as imagens binárias separadamente.
+Abra `http://127.0.0.1:4173/#/loja`. O build incorpora CSS, JavaScript e a marca da loja em `index.html`; o manifesto e o ícone permanecem separados. O arquivo `assets/logo.base64.txt` permite reconstruir o HTML após clonar o repositório público sem publicar a imagem binária separadamente.
 
 O painel e a loja usam os endpoints de senha e cadastro do Supabase Auth. A URL principal do projeto continua apontando para o GitHub Pages.
