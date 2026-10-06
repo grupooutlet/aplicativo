@@ -262,7 +262,7 @@ productModal = id => {
       <label class="field">Visibilidade<select name="active"><option value="true" ${p.active ? 'selected' : ''}>Ativo na loja online</option><option value="false" ${!p.active ? 'selected' : ''}>Rascunho</option></select></label>
       <label class="field full">Descrição<textarea name="description" required>${esc(p.description)}</textarea></label>
       ${variationEditor(p)}
-    </div><div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Salvar produto</button></div>
+    </div><div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary product-save">Salvar produto</button></div>
   </form>`);
 };
 async function uploadProductPhoto(file) {
@@ -302,7 +302,7 @@ async function saveProduct(form, id) {
   if (sku.length > 60) return toast('O SKU pode ter até 60 caracteres.');
   if (db.products.some(product => product.id !== newId && product.sku?.toLocaleLowerCase('pt-BR') === sku.toLocaleLowerCase('pt-BR')))
     return toast('Já existe um produto com esse SKU / código.');
-  const button = form.querySelector('button.btn.primary');
+  const button = form.querySelector('button.product-save');
   button.disabled = true;
   try {
     const uploaded = [];

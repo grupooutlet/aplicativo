@@ -2,38 +2,135 @@
 function productVariations(product) {
   return Array.isArray(product?.variations) ? product.variations : [];
 }
-function variationRow(option = {}) {
-  return `<div class="variation-row">
-    <label class="field">Nome da opção<input class="variation-name" type="text" maxlength="40" value="${esc(option.name || '')}" placeholder="Ex.: Cor"></label>
-    <label class="field">Escolhas disponíveis<input class="variation-values" type="text" value="${esc((option.values || []).join(', '))}" placeholder="Ex.: Bege, Cinza, Azul"></label>
-    <button class="btn small danger" type="button" onclick="this.closest('.variation-row').remove()" aria-label="Remover opção">Remover</button>
-  </div>`;
+const attributeKey = value => String(value || '').trim().toLocaleLowerCase('pt-BR');
+function normalizedAttribute(option) {
+  const name = String(option?.name || '').trim();
+  const values = Array.isArray(option?.values) ? option.values : [];
+  return { name, values: [...new Set(values.map(value => String(value).trim()).filter(Boolean))] };
+}
+function attributeCatalog() {
+  // The first edit imports choices already used by products. Afterwards the catalog is authoritative.
+  const source = Array.isArray(db.attributeCatalog) ? db.attributeCatalog :
+    (db.products || []).flatMap(productVariations);
+  const catalog = [];
+  for (const sourceOption of source) {
+    const option = normalizedAttribute(sourceOption);
+    if (!option.name || !option.values.length) continue;
+    const existing = catalog.find(item => attributeKey(item.name) === attributeKey(option.name));
+    if (existing) {
+      for (const value of option.values)
+        if (!existing.values.some(item => attributeKey(item) === attributeKey(value))) existing.values.push(value);
+    } else catalog.push({ name: option.name, values: option.values });
+  }
+  return catalog;
+}
+function colorDot(name, value) {
+  if (attributeKey(name) !== 'cor') return '';
+  const colors = { preto: '#242424', azul: '#234cc7', cinza: '#989a9b', marrom: '#754d3b', bege: '#e6d6ae', 'rosé': '#dca8a0', rose: '#dca8a0', terracota: '#cc7559', branco: '#ffffff', cappuccino: '#b58d70', capuccino: '#b58d70', 'avelã': '#b7946a', avela: '#b7946a', verde: '#63846d', vermelho: '#bd423c', amarelo: '#e8c344' };
+  return `<i class="attribute-color-dot" style="--option-color:${colors[attributeKey(value)] || '#d6d5d0'}" aria-hidden="true"></i>`;
+}
+function attributeValueInput(value = '') {
+  return `<div class="attribute-value-row"><input class="attribute-value-input" type="text" maxlength="80" value="${esc(value)}" placeholder="Ex.: Bege"><button class="attribute-value-remove" type="button" onclick="removeAttributeValue(this)" aria-label="Excluir opção">×</button></div>`;
+}
+function attributeCard(option, selected = [], draft = false) {
+  const name = option.name || '';
+  return `<article class="attribute-card" data-attribute-name="${esc(name)}" ${draft ? 'data-draft="true"' : ''}>
+    <div class="attribute-card-head"><strong>${esc(name || 'Novo atributo')}</strong><button class="attribute-edit-trigger" type="button" onclick="toggleAttributeEditor(this)" aria-label="Editar ${esc(name || 'novo atributo')}" aria-expanded="${draft ? 'true' : 'false'}">${icon('edit')}</button></div>
+    <div class="attribute-choices">${option.values.map(value => `<label class="attribute-choice"><input class="attribute-choice-input" type="checkbox" value="${esc(value)}" ${selected.some(item => attributeKey(item) === attributeKey(value)) ? 'checked' : ''}><span>${colorDot(name, value)}${esc(value)}</span></label>`).join('') || '<small class="attribute-empty">Adicione as opções deste atributo no lápis.</small>'}</div>
+    <div class="attribute-edit-panel" ${draft ? '' : 'hidden'} onkeydown="if(event.key==='Enter' && event.target.tagName==='INPUT'){event.preventDefault();saveAttribute(this.querySelector('.attribute-edit-actions .primary'))}">
+      <label class="field">Nome do atributo<input class="attribute-name-input" type="text" maxlength="40" value="${esc(name)}" placeholder="Ex.: Cor, Medida, Tecido"></label>
+      <span class="attribute-edit-label">Opções disponíveis</span><div class="attribute-value-list">${option.values.map(attributeValueInput).join('') || attributeValueInput()}</div>
+      <button class="btn small attribute-add-value" type="button" onclick="addAttributeValue(this)">+ Adicionar opção</button>
+      <div class="attribute-edit-actions"><button class="btn small danger" type="button" onclick="deleteAttribute(this)">Excluir atributo</button><button class="btn small" type="button" onclick="cancelAttributeEdit(this)">Cancelar</button><button class="btn small primary" type="button" onclick="saveAttribute(this)">Salvar atributo</button></div>
+    </div>
+  </article>`;
+}
+function selectedAttributes() {
+  return new Map([...document.querySelectorAll('#variation-rows .attribute-card')].map(card => [attributeKey(card.dataset.attributeName),
+    [...card.querySelectorAll('.attribute-choice-input:checked')].map(input => input.value)]));
 }
 function variationEditor(product) {
+  const selected = new Map(productVariations(product).map(option => [attributeKey(option.name), option.values]));
   return `<section class="variation-editor full">
-    <div class="variation-editor-head"><div><strong>Variações do produto</strong><small>Adicione cor, tamanho, tecido ou outra opção. Separe as escolhas por vírgula.</small></div>
-    <button class="btn small" type="button" onclick="addVariationRow()">Adicionar opção</button></div>
-    <div id="variation-rows">${productVariations(product).map(variationRow).join('')}</div>
+    <div class="variation-editor-head"><strong>Variações do produto</strong><small>Selecione somente as opções que este produto oferece. Edite o catálogo de atributos pelo lápis.</small></div>
+    <div id="variation-rows">${attributeCatalog().map(option => attributeCard(option, selected.get(attributeKey(option.name)) || [])).join('')}</div>
+    <button class="btn attribute-new" type="button" onclick="addVariationRow()">+ Novo atributo</button>
+    <small class="attribute-help">Ao salvar o produto, somente as opções marcadas aparecerão na loja e nos pedidos.</small>
   </section>`;
 }
+function redrawAttributeCards(selected = selectedAttributes()) {
+  const rows = document.querySelector('#variation-rows');
+  if (rows) rows.innerHTML = attributeCatalog().map(option => attributeCard(option, selected.get(attributeKey(option.name)) || [])).join('');
+}
 function addVariationRow() {
-  const rows = document.querySelectorAll('#variation-rows .variation-row');
-  if (rows.length >= 5) return toast('Use no máximo cinco tipos de variação por produto.');
-  document.querySelector('#variation-rows').insertAdjacentHTML('beforeend', variationRow());
+  const rows = document.querySelector('#variation-rows');
+  if (!rows || rows.querySelector('[data-draft="true"]')) return;
+  if (attributeCatalog().length >= 30) return toast('O catálogo aceita até 30 atributos.');
+  rows.insertAdjacentHTML('beforeend', attributeCard({ name: '', values: [] }, [], true));
+  rows.lastElementChild.querySelector('.attribute-name-input').focus();
+}
+function toggleAttributeEditor(button) {
+  const card = button.closest('.attribute-card');
+  const panel = card.querySelector('.attribute-edit-panel');
+  panel.hidden = !panel.hidden;
+  button.setAttribute('aria-expanded', String(!panel.hidden));
+  if (!panel.hidden) panel.querySelector('.attribute-name-input').focus();
+}
+function cancelAttributeEdit(button) {
+  const card = button.closest('.attribute-card');
+  if (card.dataset.draft === 'true') card.remove();
+  else toggleAttributeEditor(card.querySelector('.attribute-edit-trigger'));
+}
+function addAttributeValue(button) {
+  const list = button.closest('.attribute-edit-panel').querySelector('.attribute-value-list');
+  if (list.children.length >= 30) return toast('Cada atributo aceita até 30 opções.');
+  list.insertAdjacentHTML('beforeend', attributeValueInput());
+  list.lastElementChild.querySelector('input').focus();
+}
+function removeAttributeValue(button) { button.closest('.attribute-value-row').remove(); }
+function saveAttribute(button) {
+  const card = button.closest('.attribute-card');
+  const name = card.querySelector('.attribute-name-input').value.trim();
+  const values = [...card.querySelectorAll('.attribute-value-input')].map(input => input.value.trim()).filter(Boolean);
+  if (!name || !values.length) return toast('Informe o nome do atributo e pelo menos uma opção.');
+  if (values.length > 30 || values.some(value => value.length > 80)) return toast('Use até 30 opções de 80 caracteres.');
+  if (new Set(values.map(attributeKey)).size !== values.length) return toast('Remova as opções repetidas.');
+  const oldName = card.dataset.attributeName;
+  const catalog = attributeCatalog();
+  const index = catalog.findIndex(option => attributeKey(option.name) === attributeKey(oldName));
+  if (catalog.some((option, position) => position !== index && attributeKey(option.name) === attributeKey(name)))
+    return toast('Já existe um atributo com esse nome.');
+  const selected = selectedAttributes();
+  const previous = selected.get(attributeKey(oldName)) || [];
+  selected.delete(attributeKey(oldName));
+  selected.set(attributeKey(name), previous);
+  if (index >= 0) catalog[index] = { name, values };
+  else catalog.push({ name, values });
+  db.attributeCatalog = catalog;
+  save();
+  redrawAttributeCards(selected);
+  toast('Atributo salvo. Selecione as opções disponíveis para este produto.');
+}
+function deleteAttribute(button) {
+  const card = button.closest('.attribute-card');
+  if (card.dataset.draft === 'true') return card.remove();
+  const name = card.dataset.attributeName;
+  if (!confirm(`Excluir "${name}" do catálogo de atributos?`)) return;
+  const selected = selectedAttributes();
+  selected.delete(attributeKey(name));
+  db.attributeCatalog = attributeCatalog().filter(option => attributeKey(option.name) !== attributeKey(name));
+  save();
+  redrawAttributeCards(selected);
+  toast('Atributo removido do catálogo. Produtos já salvos conservam suas opções até serem editados.');
 }
 function readVariationEditor(form) {
-  const rows = [...form.querySelectorAll('#variation-rows .variation-row')];
-  if (rows.length > 5) throw new Error('Use no máximo cinco tipos de variação.');
-  const variations = rows.map(row => {
-    const name = row.querySelector('.variation-name').value.trim();
-    const values = row.querySelector('.variation-values').value.split(',').map(value => value.trim()).filter(Boolean);
-    if (!name || !values.length) throw new Error('Informe o nome e as escolhas de cada variação.');
-    if (values.length > 30 || values.some(value => value.length > 80)) throw new Error('Cada variação aceita até 30 escolhas de 80 caracteres.');
-    if (new Set(values.map(value => value.toLocaleLowerCase('pt-BR'))).size !== values.length) throw new Error('Remova escolhas repetidas da mesma variação.');
-    return { name, values };
-  });
-  if (new Set(variations.map(item => item.name.toLocaleLowerCase('pt-BR'))).size !== variations.length)
-    throw new Error('Cada tipo de variação deve ter um nome diferente.');
+  if (form.querySelector('#variation-rows [data-draft="true"]')) throw new Error('Salve ou cancele o novo atributo antes de salvar o produto.');
+  if (form.querySelector('#variation-rows .attribute-edit-panel:not([hidden])')) throw new Error('Salve ou cancele a edição do atributo antes de salvar o produto.');
+  const variations = [...form.querySelectorAll('#variation-rows .attribute-card')].map(card => ({
+    name: card.dataset.attributeName,
+    values: [...card.querySelectorAll('.attribute-choice-input:checked')].map(input => input.value)
+  })).filter(option => option.values.length);
+  if (variations.length > 5) throw new Error('Selecione no máximo cinco atributos por produto.');
   return variations;
 }
 function validateProductOptions(product, choices = {}) {

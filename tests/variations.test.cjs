@@ -45,4 +45,29 @@ state.addToCart(1, 1, { Cor: 'Cinza', Tecido: 'Veludo' });
 assert.equal(state.db.cart.length, 1);
 assert.equal(state.db.cart[0].qty, 2);
 
+state.db.products.push({ variations: [{ name: 'cor', values: ['Azul', 'bege'] }, { name: 'Medida', values: ['2,00 m'] }] });
+assert.deepEqual(JSON.parse(JSON.stringify(state.attributeCatalog())), [
+  { name: 'Cor', values: ['Bege', 'Cinza', 'Azul'] },
+  { name: 'Tecido', values: ['Linho', 'Veludo'] },
+  { name: 'Medida', values: ['2,00 m'] }
+], 'existing products seed reusable attributes without duplicate choices');
+assert.match(state.variationEditor(product), /Novo atributo/);
+assert.match(state.variationEditor(product), /value="Bege" checked/);
+
+state.db.attributeCatalog = [{ name: 'Cor', values: ['Preto', 'Azul'] }];
+assert.deepEqual(JSON.parse(JSON.stringify(state.attributeCatalog())), state.db.attributeCatalog,
+  'a saved catalog remains authoritative after a choice is deleted');
+const card = (name, values) => ({
+  dataset: { attributeName: name },
+  querySelectorAll: () => values.map(value => ({ value }))
+});
+const form = {
+  querySelector: () => null,
+  querySelectorAll: () => [card('Cor', ['Azul']), card('Tecido', [])]
+};
+assert.deepEqual(JSON.parse(JSON.stringify(state.readVariationEditor(form))), [{ name: 'Cor', values: ['Azul'] }],
+  'only checked choices are saved with a product');
+assert.throws(() => state.readVariationEditor({ ...form, querySelector: () => ({}) }), /Salve ou cancele/);
+assert.throws(() => state.readVariationEditor({ ...form, querySelector: selector => selector.includes('attribute-edit-panel') ? {} : null }), /edição do atributo/);
+
 console.log('Product choices, cart lines, and shared stock verified.');
