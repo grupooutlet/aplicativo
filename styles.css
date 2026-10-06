@@ -35,4 +35,9 @@
 .shop-product .old{margin-bottom:2px}
 .detail-product .price{margin-top:4px}
 .products-actions{display:flex;gap:8px}
+.guest-prompt{display:flex;justify-content:center;align-items:center;gap:20px;padding:12px 20px;background:#fff9e5;border-bottom:1px solid #f0e4b8;color:#4c4633;font-size:13px;text-align:center}
+.guest-prompt>div{display:flex;gap:10px;white-space:nowrap}
+.guest-prompt a{font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.guest-prompt .guest-signup{color:#8d6f00}
+@media(max-width:650px){.guest-prompt{flex-direction:column;gap:6px;padding:11px 16px;font-size:12px}}
 @media(max-width:650px){.detail-main-photo{height:330px}.detail-thumbs button{width:62px;height:62px}}
