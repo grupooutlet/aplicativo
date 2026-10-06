@@ -285,4 +285,4 @@ async function signOut() {
 
 checkout = () => toast('Pedidos online ainda não estão disponíveis.');
 
-boot();
+// boot is started after the account and catalog enhancements are installed.
