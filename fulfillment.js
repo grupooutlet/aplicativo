@@ -566,4 +566,4 @@ shell = (...args) => {
     ? html.replace('<small>Principal</small>', `<small>Prévia: ${esc(masterPreviewPosition)}</small>`) : html;
 };
 
-boot();
+// Startup runs after the delivery board and customer management extensions.

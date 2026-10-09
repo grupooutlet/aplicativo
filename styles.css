@@ -127,6 +127,36 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
   .footer{flex-wrap:wrap}
 }
 /* Restricted delivery workspace */
+.delivery-tabs{display:flex;gap:9px;margin-bottom:20px}
+.delivery-filters{display:flex;align-items:flex-end;gap:12px;padding:16px;margin-bottom:22px;flex-wrap:wrap}
+.delivery-filters .field{margin:0;flex:1;min-width:180px}
+.delivery-filters .btn{margin-bottom:2px;min-height:39px}
+.delivery-days{display:grid;gap:26px}
+.delivery-day-heading{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:13px}
+.delivery-day-heading h2{font-size:17px;text-transform:capitalize;margin-bottom:4px}
+.delivery-lanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.delivery-lane{padding:13px;border:1px solid #e4e4df;border-radius:10px;background:#eeede8;display:grid;gap:12px;min-height:150px}
+.delivery-lane.transit{background:#eaf0f2}
+.delivery-lane.done{background:#edf1e9}
+.delivery-lane-title{display:flex;justify-content:space-between;align-items:center}
+.delivery-lane-title h3{font-size:13px;font-weight:650}
+.delivery-lane-title span{font-size:11px;border-radius:20px;padding:3px 8px;background:#fff}
+.delivery-order{background:#fff;border:1px solid #e1e3dd;border-radius:8px;padding:14px;box-shadow:0 3px 8px #242b2310}
+.delivery-order-head{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.delivery-order-head>strong{font-size:12px}
+.delivery-order h3{font-size:14px;margin:14px 0 8px}
+.delivery-order p{font-size:12px;line-height:1.6;margin:7px 0;overflow-wrap:anywhere}
+.delivery-order .total-line{font-size:12px}
+.delivery-card-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.delivery-card-actions .btn{padding:7px 9px;font-size:11px}
+.delivery-lane-empty{padding:20px 5px;color:#7d827a;font-size:12px;text-align:center}
+.delivery-schedule-summary{display:grid;gap:8px;padding:15px 0;border-bottom:1px solid var(--line);font-size:13px}
+.delivery-schedule-summary .btn{justify-self:start}
+.delivery-note{margin-bottom:30px}
+.delivery-note header p{font-size:11px;line-height:1.6;margin-top:6px}
+@media(max-width:1000px){.delivery-lanes{grid-template-columns:1fr}.delivery-lane{min-height:80px}.delivery-order{display:block}}
+@media(max-width:600px){.delivery-day-heading{align-items:flex-start;flex-direction:column}.delivery-filters .field{min-width:100%;}.delivery-tabs .btn{font-size:12px}}
+@media print{.delivery-note{break-after:page;page-break-after:always;margin:0;box-shadow:none}.delivery-note:last-child{break-after:auto;page-break-after:auto}.delivery-note .details{break-inside:avoid}.delivery-note tr{break-inside:avoid}}
 .driver-app{min-height:100vh;background:#f6f5f1;color:#18232d}
 .driver-header{display:flex;align-items:center;gap:16px;padding:16px max(24px,calc((100vw - 1180px)/2));background:#fff;border-bottom:1px solid #e5e4df}
 .driver-header img{width:140px;max-height:52px;object-fit:contain;object-position:left}

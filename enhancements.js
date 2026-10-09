@@ -86,6 +86,7 @@ function authPage(mode = 'login') {
       ${signup ? '<label class="field">Nome completo<input name="name" autocomplete="name" maxlength="120" required></label>' : ''}
       <label class="field">E-mail<input type="email" name="email" autocomplete="username" required></label>
       <label class="field">Senha<input type="password" name="password" autocomplete="${signup ? 'new-password' : 'current-password'}" minlength="8" required></label>
+      ${signup ? '<label class="field">Confirmar senha<input type="password" name="passwordConfirm" autocomplete="new-password" minlength="8" required></label>' : ''}
       <button class="btn primary auth-submit">${signup ? 'Criar conta' : 'Entrar'}</button>
     </form>
     <button class="text-link auth-switch" onclick="authPage('${signup ? 'login' : 'signup'}')">${signup ? 'Já tenho conta · Fazer login' : 'Não tenho conta · Cadastrar'}</button>
@@ -118,11 +119,13 @@ async function registerAccount(form) {
   const button = form.querySelector('button');
   const emailInput = form.elements.namedItem('email');
   const passwordInput = form.elements.namedItem('password');
+  const passwordConfirm = form.elements.namedItem('passwordConfirm');
   const nameInput = form.elements.namedItem('name');
   button.disabled = true;
   try {
     const email = emailInput.value.trim().toLowerCase();
     const password = passwordInput.value;
+    if (!passwordConfirm || password !== passwordConfirm.value) throw new Error('As senhas não coincidem. Confira os dois campos.');
     const name = nameInput.value.trim();
     if (name.length < 2) throw new Error('Informe seu nome completo.');
     const response = await fetch(backendUrl + '/auth/v1/signup', {
@@ -138,7 +141,7 @@ async function registerAccount(form) {
     sessionStore.removeItem('forte-after-login');
     toast('Conta criada. Boas-vindas ao Grupo Outlet!');
   } catch (error) { toast(error.message); }
-  finally { passwordInput.value = ''; button.disabled = false; }
+  finally { passwordInput.value = ''; if (passwordConfirm) passwordConfirm.value = ''; button.disabled = false; }
 }
 
 const renderBeforeAccounts = render;
@@ -431,7 +434,7 @@ updateOrderEstimate = () => {
   const form = $('#order-form');
   if (!form) return;
   const product = db.products.find(p => p.id === Number(form.elements.namedItem('product').value));
-  $('#order-estimate').textContent = money(salePrice(product) * Number(form.elements.namedItem('qty').value || 0) + Number(form.elements.namedItem('freight').value || 0));
+  $('#order-estimate').textContent = money(salePrice(product) * Number(form.elements.namedItem('qty').value || 0));
 };
 createAdminOrder = form => {
   if (!canSell()) return;

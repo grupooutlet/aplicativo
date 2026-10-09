@@ -255,6 +255,8 @@ function updateAdminVariationFields() {
 createAdminOrder = form => {
   if (!canSell()) return;
   const data = Object.fromEntries(new FormData(form));
+  if (data.delivery === 'Entrega' && !isDeliveryDate(data.deliveryDate, true))
+    return toast('Selecione uma data válida para a entrega.');
   const product = db.products.find(item => item.id === Number(data.product));
   const qty = Number(data.qty);
   if (!product || !Number.isInteger(qty) || qty < 1 || qty > available(product.id))
@@ -267,7 +269,7 @@ createAdminOrder = form => {
   const addressParts = data.delivery === 'Retirada' ? (db.settings.addressParts || parseAddress(db.settings.address)) : addressFromForm(data);
   const detail = optionText(options);
   const order = { ...data, addressParts, address: data.delivery === 'Retirada' ? db.settings.address : formatAddress(addressParts),
-    id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: Number(data.freight),
+    id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: 0, freightPending: data.delivery === 'Entrega',
     items: [{ id: product.id, name: product.name + (detail ? ' · ' + detail : ''), options, price: salePrice(product), cost: product.cost, qty }],
     status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: role === 'Vendedor' ? currentSeller : data.seller,
     paymentTiming: data.paymentTiming || (data.delivery === 'Entrega' ? 'Na entrega' : 'Na retirada') };
