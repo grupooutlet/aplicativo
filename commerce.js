@@ -43,11 +43,12 @@ function paymentsPage() {
     button('Nova forma de pagamento', 'onclick="paymentMethodModal()"', 'primary', 'plus')) +
     `<div class="payment-methods">${paymentMethods().map((method, index) => `<section class="card pad payment-method-card">
       <div class="payment-method-heading"><span class="task-symbol">${icon('wallet')}</span><div><h2>${esc(method.title)}</h2><p class="subtle">${esc(paymentKinds[method.kind])}</p></div><span class="badge ${method.active === false ? 'gray' : 'green'}">${method.active === false ? 'Desativado' : 'Ativo'}</span></div>
-      <div class="payment-rate-tags">${method.installments.map(option => `<span>${option.count}x · ${option.rate ? String(option.rate).replace('.', ',') + '%' : 'sem taxa'}</span>`).join('')}</div>
+      <div class="payment-rate-tags">${method.installments.map(option => `<span>${method.kind === 'credit' ? option.count + 'x' : 'À vista'} · ${option.rate ? String(option.rate).replace('.', ',') + '%' : 'sem taxa'}</span>`).join('')}</div>
       <div class="actions">${button('Personalizar', `onclick="paymentMethodModal(${index})"`, 'small', 'edit')}${button(method.active === false ? 'Ativar' : 'Desativar', `onclick="togglePaymentMethod(${index})"`, 'small')}</div>
     </section>`).join('') || '<section class="card pad empty">Cadastre uma forma de pagamento.</section>'}</div>`;
 }
-function paymentRateRow(count = 1, rate = 0) {
+function paymentRateRow(count = 1, rate = 0, credit = true) {
+  if (!credit) return `<div class="payment-rate-row single"><input name="counts" type="hidden" value="1"><label class="field">Taxa total (%)<input name="rates" type="number" value="${rate}" min="0" max="100" step="0.01" required></label></div>`;
   return `<div class="payment-rate-row"><label class="field">Parcelas<input name="counts" type="number" value="${count}" min="1" max="24" step="1" required></label>
     <label class="field">Taxa total (%)<input name="rates" type="number" value="${rate}" min="0" max="100" step="0.01" required></label>
     <button class="btn small danger" type="button" aria-label="Remover parcela" onclick="this.closest('.payment-rate-row').remove()">${icon('trash')}</button></div>`;
@@ -58,15 +59,17 @@ function paymentMethodModal(index = -1) {
   modal(index < 0 ? 'Nova forma de pagamento' : 'Personalizar pagamento', `<form onsubmit="event.preventDefault();savePaymentMethod(this,${index})">
     <div class="form-grid">${field('Título no checkout', 'title', method.title, 'text', 'required maxlength="60"')}
     <label class="field">Tipo<select name="kind" onchange="updatePaymentRateEditor(this)">${Object.entries(paymentKinds).map(([kind, title]) => `<option value="${kind}" ${method.kind === kind ? 'selected' : ''}>${title}</option>`).join('')}</select></label></div>
-    <h3 style="margin:24px 0 8px">Parcelas e taxas</h3><p class="subtle">Informe a taxa total de cada opção. Ela será aplicada sobre produtos e frete; zero significa sem taxa.</p>
-    <div id="payment-rate-editor">${method.installments.map(option => paymentRateRow(option.count, option.rate)).join('')}</div>
+    <h3 id="payment-editor-title" style="margin:24px 0 8px">${method.kind === 'credit' ? 'Parcelas e taxas' : 'Taxa de pagamento'}</h3><p class="subtle">A taxa será aplicada sobre produtos e frete; zero significa sem taxa.</p>
+    <div id="payment-rate-editor">${method.installments.map(option => paymentRateRow(option.count, option.rate, method.kind === 'credit')).join('')}</div>
     <button id="add-payment-rate" class="btn small" type="button" ${method.kind !== 'credit' ? 'hidden' : ''} onclick="addPaymentRate()">${icon('plus')}Adicionar parcelamento</button>
     <div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Salvar pagamento</button></div></form>`);
 }
 function updatePaymentRateEditor(input) {
   const credit = input.value === 'credit';
   $('#add-payment-rate').hidden = !credit;
-  if (!credit) $('#payment-rate-editor').innerHTML = paymentRateRow(1, 0);
+  const rate = Number($('#payment-rate-editor').querySelector('input[name="rates"]')?.value || 0);
+  $('#payment-editor-title').textContent = credit ? 'Parcelas e taxas' : 'Taxa de pagamento';
+  $('#payment-rate-editor').innerHTML = paymentRateRow(1, rate, credit);
 }
 function addPaymentRate() {
   const counts = [...document.querySelectorAll('#payment-rate-editor input[name="counts"]')].map(input => Number(input.value));
@@ -98,12 +101,17 @@ function togglePaymentMethod(index) {
   db.settings.paymentMethods = methods; save(); render();
 }
 function paymentSelect(name = 'paymentMethodId', selected = '') {
-  return `<label class="field">Forma de pagamento<select name="${name}" required onchange="updatePaymentChoices(this.form)"><option value="">Selecione</option>${activePayments().map(method => `<option value="${esc(method.id)}" ${method.id === selected ? 'selected' : ''}>${esc(method.title)}</option>`).join('')}</select></label><div class="payment-choice-details"><label class="field">Parcelamento<select name="installments" required onchange="updatePaymentTotal(this.form)"><option value="">Selecione a forma de pagamento</option></select></label><div class="payment-preview" aria-live="polite"></div></div>`;
+  return `<label class="field">Forma de pagamento<select name="${name}" required onchange="updatePaymentChoices(this.form)"><option value="">Selecione</option>${activePayments().map(method => `<option value="${esc(method.id)}" ${method.id === selected ? 'selected' : ''}>${esc(method.title)}</option>`).join('')}</select></label><div class="payment-choice-details" hidden><label class="field">Parcelamento<select name="installments" disabled onchange="updatePaymentTotal(this.form)"><option value="1">À vista</option></select></label></div>`;
+}
+function formShippingOption(form) {
+  const delivery = form.elements.namedItem('delivery')?.value;
+  const id = form.id === 'order-form' ? form.elements.namedItem('shippingOptionId')?.value : form.querySelector('input[name="shippingOptionId"]:checked')?.value;
+  return shippingOptionsFor(delivery).find(option => option.id === id);
 }
 function paymentFormBase(form) {
   if (form.id === 'order-form') {
     const product = db.products.find(item => item.id === Number(form.elements.namedItem('product')?.value));
-    return salePrice(product) * Number(form.elements.namedItem('qty')?.value || 0);
+    return salePrice(product) * Number(form.elements.namedItem('qty')?.value || 0) + Number(formShippingOption(form)?.price || 0);
   }
   const delivery = form.elements.namedItem('delivery')?.value;
   const selected = form.querySelector('input[name="shippingOptionId"]:checked')?.value;
@@ -113,7 +121,12 @@ function updatePaymentChoices(form) {
   const selected = form.elements.namedItem('paymentMethodId')?.value;
   const method = activePayments().find(item => item.id === selected);
   const select = form.elements.namedItem('installments');
-  if (select) select.innerHTML = method ? method.installments.map(option => `<option value="${option.count}">${option.count === 1 ? 'À vista' : option.count + ' parcelas'} · ${option.rate ? String(option.rate).replace('.', ',') + '% de taxa' : 'sem taxa'}</option>`).join('') : '<option value="">Selecione a forma de pagamento</option>';
+  const credit = method?.kind === 'credit';
+  if (select) {
+    select.closest('.payment-choice-details').hidden = !credit;
+    select.disabled = !credit; select.required = Boolean(credit);
+    select.innerHTML = credit ? method.installments.map(option => `<option value="${option.count}">${option.count === 1 ? 'À vista' : option.count + ' parcelas'}</option>`).join('') : '<option value="1">À vista</option>';
+  }
   updatePaymentTotal(form);
 }
 function updatePaymentTotal(form) {
@@ -122,15 +135,17 @@ function updatePaymentTotal(form) {
   try {
     const fields = Object.fromEntries(new FormData(form));
     const quote = paymentFromFields(fields, paymentFormBase(form));
-    if (preview) preview.innerHTML = quoteMarkup(quote);
+    if (preview) preview.innerHTML = `<div class="total-line"><span>Valor sem taxa</span><strong>${money(quote.paymentBase)}</strong></div>` + quoteMarkup(quote);
     if (total) total.textContent = money(quote.total);
   } catch {
-    if (preview) preview.innerHTML = '<p class="subtle">Selecione a forma de pagamento para conferir o total.</p>';
+    if (preview) preview.innerHTML = '';
     if (total) total.textContent = money(paymentFormBase(form));
   }
 }
 const checkoutBeforeCommerce = checkoutPage;
 checkoutPage = () => {
+  const unavailable = db.cart.map((item, index) => ({ item, index, product: db.products.find(product => product.id === item.id && product.active) })).filter(line => !line.product);
+  if (unavailable.length) return `<div class="store-content">${heading('Revise seu carrinho', 'Alguns produtos deixaram de estar disponíveis. Remova-os para continuar.')}<section class="card pad">${unavailable.map(line => `<div class="total-line"><span>Produto indisponível · código ${line.item.id}</span>${button('Remover', `type="button" onclick="removeCartLine(${line.index})"`, 'small')}</div>`).join('')}<a class="btn" href="/loja/carrinho">Voltar ao carrinho</a></section></div>`;
   let html = checkoutBeforeCommerce();
   if (!db.cart.length) return html;
   const names = (currentProfile?.name || '').trim().split(/\s+/);
@@ -138,8 +153,26 @@ checkoutPage = () => {
     field('Nome', 'firstName', names[0] || '', 'text', 'required autocomplete="given-name" minlength="2" maxlength="60"') +
     field('Sobrenome', 'lastName', names.slice(1).join(' '), 'text', 'required autocomplete="family-name" minlength="2" maxlength="60"'));
   html = html.replace(/<label class="field">Como pretende pagar\?<select name="payment">[\s\S]*?<\/select><\/label>/, paymentSelect());
+  html = html.replace(/(<input[^>]*name="email"[^>]*?) readonly/, '$1');
+  html = html.replace('<div class="total-line final">', '<div class="payment-preview" aria-live="polite"></div><div class="total-line final">');
+  html = html.replace(/(<h2>Seu pedido<\/h2>)[\s\S]*?(<div class="total-line"><span>Frete<\/span>)/,
+    '$1' + checkoutCartItems() + '$2');
   return html;
 };
+function checkoutCartItems() {
+  return db.cart.map((item, index) => {
+    const product = db.products.find(product => product.id === item.id);
+    return `<div class="checkout-cart-item"><div class="cart-line"><img src="${esc(product.image)}" alt=""><div><h3>${esc(product.name)}</h3><small>${item.qty} × ${money(salePrice(product))}</small></div></div>
+      ${productVariations(product).map(option => `<label class="field">${esc(option.name)}<select class="checkout-product-option" data-cart-index="${index}" data-option-name="${esc(option.name)}" required onchange="updateCheckoutProductOptions()"><option value="" disabled ${!option.values.includes(item.options?.[option.name]) ? 'selected' : ''}>Selecione ${esc(option.name.toLowerCase())}</option>${option.values.map(value => `<option value="${esc(value)}" ${item.options?.[option.name] === value ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select></label>`).join('')}</div>`;
+  }).join('');
+}
+function updateCheckoutProductOptions() {
+  for (let index = 0; index < db.cart.length; index++) {
+    const inputs = [...document.querySelectorAll(`.checkout-product-option[data-cart-index="${index}"]`)];
+    if (inputs.length) db.cart[index].options = Object.fromEntries(inputs.map(input => [input.dataset.optionName, input.value]));
+  }
+  localStore.setItem(cartStorageKey, JSON.stringify(db.cart));
+}
 function validPersonName(value) {
   const name = String(value || '').trim().replace(/\s+/g, ' ');
   return name.length >= 2 && name.length <= 60 && /^[\p{L}][\p{L}\s.'’\-]*$/u.test(name) &&
@@ -157,11 +190,63 @@ newOrder = () => {
   const form = $('#order-form');
   const field = form?.elements.namedItem('payment')?.closest('label');
   if (field) field.outerHTML = paymentSelect();
+  if (!form) return;
+  form.elements.namedItem('delivery').closest('label').insertAdjacentHTML('afterend',
+    '<label class="field full">Frete<select name="shippingOptionId" required onchange="updateOrderEstimate()"></select></label>');
+  const cep = form.elements.namedItem('cep');
+  if (cep) {
+    cep.maxLength = 9; cep.setAttribute('oninput', 'lookupAdminCep(this)');
+    $('#admin-address-fields').insertAdjacentHTML('afterend', '<p id="admin-cep-feedback" class="subtle full" role="status"></p>');
+  }
+  form.querySelector('#order-estimate').closest('.total-line').outerHTML = `<section class="order-summary"><h3>Resumo do pedido</h3><div class="total-line"><span>Produtos</span><strong id="order-products"></strong></div><div class="total-line"><span>Frete</span><strong id="order-freight"></strong></div><div class="payment-preview" aria-live="polite"></div><div class="total-line final"><span>Total</span><strong id="order-estimate"></strong></div></section>`;
+  updateAdminShippingOptions(form);
+  updateOrderEstimate();
 };
+function updateAdminShippingOptions(form) {
+  const select = form.elements.namedItem('shippingOptionId');
+  if (!select) return;
+  const selected = select.value;
+  const options = shippingOptionsFor(form.elements.namedItem('delivery').value);
+  select.innerHTML = options.length ? options.map((option, index) => `<option value="${esc(option.id)}" ${selected === option.id || !options.some(item => item.id === selected) && index === 0 ? 'selected' : ''}>${esc(option.name)} · ${money(option.price)}</option>`).join('') : '<option value="">Nenhuma opção disponível</option>';
+}
+const toggleAdminBeforeCommerce = toggleAdminDelivery;
+toggleAdminDelivery = value => {
+  toggleAdminBeforeCommerce(value);
+  const form = $('#order-form');
+  if (form) { updateAdminShippingOptions(form); updateOrderEstimate(); }
+};
+let adminCepSerial = 0;
+async function lookupAdminCep(input) {
+  const cep = input.value.replace(/\D/g, '').slice(0, 8);
+  const serial = ++adminCepSerial;
+  const feedback = $('#admin-cep-feedback');
+  if (cep.length !== 8) { if (feedback) feedback.textContent = ''; return; }
+  if (feedback) feedback.textContent = 'Buscando endereço…';
+  try {
+    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    if (!response.ok) throw new Error('Não foi possível consultar o CEP.');
+    const address = await response.json();
+    if (serial !== adminCepSerial || input.value.replace(/\D/g, '') !== cep) return;
+    if (address.erro) throw new Error('CEP não encontrado.');
+    for (const [name, value] of Object.entries({ street: address.logradouro, neighborhood: address.bairro, city: address.localidade, state: address.uf })) {
+      const field = input.form.elements.namedItem(name); if (field && value) field.value = value;
+    }
+    input.value = cep.slice(0, 5) + '-' + cep.slice(5);
+    if (feedback) feedback.textContent = 'Endereço preenchido. Confira o número e o complemento.';
+    input.form.elements.namedItem('number')?.focus();
+  } catch (error) { if (serial === adminCepSerial && feedback) feedback.textContent = error.message + ' Você pode preencher manualmente.'; }
+}
 const estimateBeforeCommerce = updateOrderEstimate;
 updateOrderEstimate = () => {
   estimateBeforeCommerce();
   const form = $('#order-form');
+  if (form?.elements.namedItem('shippingOptionId')) {
+    const product = db.products.find(item => item.id === Number(form.elements.namedItem('product')?.value));
+    const products = form.querySelector('#order-products');
+    const freight = form.querySelector('#order-freight');
+    if (products) products.textContent = money(salePrice(product) * Number(form.elements.namedItem('qty')?.value || 0));
+    if (freight) freight.textContent = formShippingOption(form) ? money(formShippingOption(form).price) : 'Selecione um frete';
+  }
   if (form?.elements.namedItem('paymentMethodId')) updatePaymentTotal(form);
 };
 checkout = async form => {
@@ -173,14 +258,14 @@ checkout = async form => {
   if (fields.delivery === 'Entrega' && String(fields.cep || '').replace(/\D/g, '').length !== 8) return toast('Confira o CEP.');
   const shipping = shippingOptionsFor(fields.delivery).find(option => option.id === fields.shippingOptionId);
   if (!shipping) return toast('Selecione um frete ou retirada disponível.');
-  if (authSession && fields.email.trim().toLowerCase() !== currentEmail()) return toast('Use o e-mail da sua conta.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(fields.email || '').trim())) return toast('Informe um e-mail válido para contato.');
   let quote;
   try {
     quote = paymentFromFields(fields, cartTotal() + Number(shipping.price));
     for (const item of db.cart) {
       const product = db.products.find(p => p.id === item.id && p.active);
       if (!product || cartQuantity(item.id) > available(item.id)) throw new Error('O estoque mudou. Revise o carrinho.');
-      validateProductOptions(product, item.options || {});
+      item.options = validateProductOptions(product, item.options || {});
     }
   } catch (error) { return toast(error.message); }
   const address = fields.delivery === 'Retirada' ? db.settings.address : `${fields.street}, ${fields.number}${fields.complement ? ' · ' + fields.complement : ''} · ${fields.neighborhood} · ${fields.city} · CEP ${fields.cep}`;
@@ -188,26 +273,37 @@ checkout = async form => {
     email: fields.email.trim().toLowerCase(), phone: fields.phone.trim(), cpf: fields.cpf.trim(), address,
     delivery: fields.delivery, paymentTiming: fields.paymentTiming, paymentMethodId: quote.paymentMethodId,
     installments: quote.installments, expectedTotal: quote.total, shippingOptionId: shipping.id, notes: fields.notes,
-    items: db.cart.map(item => ({ id: item.id, qty: item.qty, options: item.options || {} })) };
+    items: db.cart.reduce((lines, item) => {
+      const matching = lines.find(line => line.id === item.id && JSON.stringify(line.options) === JSON.stringify(item.options));
+      if (matching) matching.qty += item.qty; else lines.push({ id: item.id, qty: item.qty, options: item.options || {} });
+      return lines;
+    }, []) };
+  if (request.items.some(item => item.qty > 20)) return toast('O limite é de 20 unidades de cada variação por pedido. Ajuste o carrinho.');
   const submit = form.querySelector('button[type="submit"],button.btn.primary'); submit.disabled = true;
+  let confirmed = null;
   try {
     const result = authSession
       ? await backendRequest('/rest/v1/rpc/place_order', { method: 'POST', body: JSON.stringify({ p_request: request }) }, true)
       : await backendRequest('/functions/v1/checkout-account', { method: 'POST', body: JSON.stringify({ request }) });
     if (!result?.id || !result?.token || !result?.order) throw new Error('A confirmação não foi recebida. Consulte a loja antes de tentar novamente.');
+    confirmed = result;
     if (result.session?.access_token) rememberAuth(result.session);
     db.cart = []; localStore.setItem(cartStorageKey, '[]');
     sessionStore.setItem('forte-guest-order-' + result.id, result.token);
     const guestIds = safeJson(sessionStore.getItem('forte-guest-orders'), []);
     sessionStore.setItem('forte-guest-orders', JSON.stringify([...new Set([...guestIds, result.id])]));
-    sessionStore.setItem('forte-customer', request.email);
+    sessionStore.setItem('forte-customer', authSession ? currentEmail() : request.email);
     db.orders.unshift(result.order);
-    if (result.session) {
-      try { await boot(); } catch { /* The confirmed order remains available through its private order token. */ }
-      if (!db.orders.some(order => order.id === result.id)) db.orders.unshift(result.order);
-    } else try { await loadCatalog(); } catch { /* Keep the confirmed order visible. */ }
+    try { await boot(); } catch { /* Keep the confirmed order visible. */ }
+    if (!db.orders.some(order => order.id === result.id)) db.orders.unshift(result.order);
     go('/loja/pedido/' + result.id); toast('Pedido recebido!');
-  } catch (error) { toast('Não foi possível concluir: ' + error.message); }
+  } catch (error) {
+    if (confirmed) {
+      db.cart = [];
+      if (!db.orders.some(order => order.id === confirmed.id)) db.orders.unshift(confirmed.order);
+      go('/loja/pedido/' + confirmed.id); toast('Pedido recebido! Número ' + confirmed.id + '.');
+    } else toast('Não foi possível concluir: ' + error.message);
+  }
   finally { submit.disabled = false; }
 };
 const customerOrderBeforeCommerce = customerOrderPage;
@@ -457,6 +553,9 @@ renderReceipt = id => {
   if (order?.paymentMethodId) $('#app').innerHTML = $('#app').innerHTML.replace('<div class="total-line final">', quoteMarkup({ ...order, total: orderTotal(order) }) + '<div class="total-line final">');
 };
 const shellBeforeCommerce = shell;
+const dashboardBeforeCheckoutFix = dashboard;
+dashboard = () => dashboardBeforeCheckoutFix().replace(button('Ver loja', "onclick=\"go('/loja')\"", '', 'external'),
+  `<a class="btn" href="/loja" target="_blank" rel="noopener noreferrer">${icon('external')}Ver loja</a>`);
 shell = (...args) => {
   const name = currentProfile?.name || 'Grupo Outlet';
   const title = currentProfile?.role === 'master'

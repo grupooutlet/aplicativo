@@ -268,11 +268,14 @@ createAdminOrder = form => {
   } catch (error) { return toast(error.message); }
   const addressParts = data.delivery === 'Retirada' ? (db.settings.addressParts || parseAddress(db.settings.address)) : addressFromForm(data);
   const detail = optionText(options);
+  const shipping = formShippingOption(form);
+  if (!shipping) return toast('Selecione um frete ou retirada disponível.');
   let payment;
-  try { payment = paymentFromFields(data, salePrice(product) * qty); }
+  try { payment = paymentFromFields(data, salePrice(product) * qty + Number(shipping.price)); }
   catch (error) { return toast(error.message); }
   const order = { ...data, addressParts, address: data.delivery === 'Retirada' ? db.settings.address : formatAddress(addressParts),
-    id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: 0, freightPending: data.delivery === 'Entrega',
+    id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: Number(shipping.price), freightPending: false,
+    shippingOptionId: shipping.id, shippingOptionName: shipping.name,
     items: [{ id: product.id, name: product.name + (detail ? ' · ' + detail : ''), options, price: salePrice(product), cost: product.cost, qty }],
     status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: role === 'Vendedor' ? currentSeller : data.seller,
     paymentTiming: data.paymentTiming || (data.delivery === 'Entrega' ? 'Na entrega' : 'Na retirada'), ...payment };

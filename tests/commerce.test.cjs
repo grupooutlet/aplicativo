@@ -22,6 +22,9 @@ for (const name of ['storefront-editor.js', 'app.js', 'production.js', 'enhancem
   vm.runInContext(fs.readFileSync(path.join(root, name), 'utf8').replace(/boot\(\);\s*$/, ''), context, { filename: name });
 }
 const run = code => vm.runInContext(code, context);
+assert.deepEqual(Array.from(run('safeJson(null,[])')), []);
+assert.deepEqual(Array.from(run('safeJson("null",[])')), []);
+assert.deepEqual(Array.from(run('safeJson("invalid",[])')), []);
 run(`db.settings.paymentMethods=[{id:'credit',kind:'credit',title:'Crédito personalizado',active:true,installments:[{count:1,rate:0},{count:3,rate:5}]},
  {id:'disabled',kind:'pix',title:'Desativado',active:false,installments:[{count:1,rate:0}]}];
  isOwner=true;role='Proprietário';currentProfile={role:'master',name:'Grupo Outlet'};`);
@@ -50,6 +53,9 @@ const checkout = context.checkoutPage();
 assert.match(checkout, /name="firstName"/);
 assert.match(checkout, /name="lastName"/);
 assert.doesNotMatch(checkout, /name="customer"/);
+assert.doesNotMatch(checkout, /name="email"[^>]*readonly/);
+assert.match(checkout, /payment-choice-details" hidden/);
+assert.match(checkout, /payment-preview[\s\S]*id="checkout-total"/);
 assert.match(checkout, /name="paymentMethodId"/);
 assert.match(checkout, /name="installments"/);
 assert.doesNotMatch(checkout, />Desativado<\/option>/);
@@ -74,6 +80,7 @@ run("db.orders[0].status='pending';db.orders[0].paid=false;db.orders[0].paymentT
 steps = run('orderSteps(db.orders[0])');
 assert.match(steps, /onclick="paymentModal\(20\)"/);
 assert.doesNotMatch(steps, /onclick="dispatchOrder\(20\)"/);
+assert.ok(steps.indexOf('Confirmar pagamento') < steps.indexOf('Liberar para entrega'));
 run("role='Vendedor';currentProfile={role:'admin',position:'Vendedor'}");
 assert.equal(run("allowed('payments')"), false);
 assert.equal(run('canConfigurePayments()'), false);
@@ -90,3 +97,45 @@ assert.match(context.teamPage(), /Gerentes/);
 assert.match(context.teamPage(), /Vendedores/);
 assert.match(context.teamPage(), /Entregadores/);
 console.log('Payment totals and cents, checkout names, order progression, driver workspace, team groups and phone format verified.');
+
+(async () => {
+  run(`role='Proprietário';isOwner=true;currentProfile={role:'master',name:'Grupo Outlet'};masterPreviewPosition='Principal';
+    save=()=>true;closeModal=()=>{};go=path=>{location.hash='#'+path};toast=message=>{globalThis.lastToast=message};
+    db.products=[{id:1,name:'Sofá',active:true,stock:10,price:1000,cost:500,image:'photo',variations:[]}];db.orders=[];
+    db.settings.shippingOptions=[{id:'ship',name:'Frete normal',delivery:'Entrega',price:300,active:true},{id:'pickup',name:'Retirada',delivery:'Retirada',price:0,active:true}];`);
+  const physicalData = { customer:'Ana Silva', phone:'21999998888', cpf:'11122233344', product:'1', qty:'1', delivery:'Entrega',
+    deliveryDate:run('localToday()'), paymentMethodId:'credit', installments:'3', paymentTiming:'Antecipado', shippingOptionId:'ship' };
+  const physicalForm = { id:'order-form', data:physicalData, elements:{namedItem:name=>({value:physicalData[name]})}, querySelectorAll:()=>[] };
+  context.createAdminOrder(physicalForm);
+  const physicalOrder = run('db.orders[0]');
+  assert.equal(physicalOrder.freight,300);
+  assert.equal(physicalOrder.freightPending,false);
+  assert.equal(physicalOrder.paymentFee,65);
+  assert.equal(run('orderTotal(db.orders[0])'),1365);
+  const physicalSteps = run('orderSteps(db.orders[0])');
+  assert.match(physicalSteps, /class="order-step done"[\s\S]*Agendar entrega/);
+  assert.match(physicalSteps, /onclick="paymentModal/);
+  assert.doesNotMatch(physicalSteps, /onclick="dispatchOrder/);
+  assert.equal(context.paymentFormBase(physicalForm),1300);
+  run(`authSession={user:{id:'master',email:'original@example.com'}};db.cart=[{id:1,qty:1,options:{}},{id:1,qty:1,options:{}}];
+    globalThis.bootCount=0;boot=async()=>{bootCount++;db.orders=[]};`);
+  let request;
+  context.backendRequest = async (route, options, authenticated) => {
+    assert.equal(route,'/rest/v1/rpc/place_order'); assert.equal(authenticated,true);
+    request=JSON.parse(options.body).p_request;
+    return {id:99,token:'private-token',order:{id:99,status:'pending',items:[{id:1,qty:2,price:1000}],freight:0}};
+  };
+  const data={firstName:'Ana',lastName:'Silva',email:'different@example.com',cpf:'11122233344',phone:'21999998888',delivery:'Retirada',
+    paymentMethodId:'credit',installments:'1',paymentTiming:'Antecipado',shippingOptionId:'pickup'};
+  const submit={disabled:false};
+  await context.checkout({data,querySelector:()=>submit});
+  assert.equal(request.email,'different@example.com'); assert.equal(request.items.length,1); assert.equal(request.items[0].qty,2);
+  assert.equal(run('bootCount'),1); assert.equal(run('isOwner'),true);
+  assert.equal(run('db.orders[0].id'),99); assert.equal(run('db.cart.length'),0);
+  assert.equal(run('location.hash'),'#/loja/pedido/99'); assert.match(run('lastToast'),/Pedido recebido/);
+  assert.equal(run('sessionStore.getItem("forte-customer")'),'original@example.com');
+  run('authSession=null;sessionStore.removeItem("forte-guest-orders");storefront.init(db)');
+  assert.doesNotThrow(()=>context.storeHeader());
+  assert.doesNotThrow(()=>context.accountPage());
+  console.log('Fresh browser storage, editable contact email, confirmed checkout, preserved admin session, physical freight and advance-payment steps verified.');
+})().catch(error=>{console.error(error);process.exitCode=1});

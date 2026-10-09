@@ -42,7 +42,7 @@ const basePath=new URL(document.baseURI).pathname;
 const hashRouting=true;
 function routePath(){const hash=location.hash.slice(1);if(hash.startsWith('/'))return hash;if(location.protocol==='file:')return '/';const path=location.pathname;if(path===basePath+'index.html')return '/';return basePath!=='/'&&path.startsWith(basePath)?'/'+path.slice(basePath.length):path}
 function go(path){if(location.protocol==='file:'){if(location.hash==='#'+path)render();else location.hash=path;window.scrollTo(0,0);return}history.pushState({},'',basePath+'#'+path);render();window.scrollTo(0,0)}
-function normalizeLinks(){document.querySelectorAll('#app a[href^="/"]').forEach(a=>{const path=a.getAttribute('href');a.dataset.route=path;a.href=location.protocol==='file:'?'#'+path:basePath+'#'+path})}
+function normalizeLinks(){document.querySelectorAll('#app a[href^="/"]').forEach(a=>{let path=a.dataset.route||a.getAttribute('href');if(path.startsWith(basePath+'#'))path=path.slice((basePath+'#').length);a.dataset.route=path;a.href=location.protocol==='file:'?'#'+path:basePath+'#'+path})}
 document.addEventListener('click',e=>{const a=e.target.closest('a');const path=a?.dataset.route||a?.getAttribute('href');if(a&&path?.startsWith('/')&&a.target!=='_blank'&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey&&e.button===0){e.preventDefault();go(path)}});
 window.addEventListener('popstate',()=>render());
 window.addEventListener('hashchange',()=>render());

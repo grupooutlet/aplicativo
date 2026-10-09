@@ -26,7 +26,7 @@ const originalCancelOrderModal = cancelOrderModal;
 const originalRenderReceipt = renderReceipt;
 
 function safeJson(value, fallback) {
-  try { return JSON.parse(value); } catch { return fallback; }
+  try { return JSON.parse(value) ?? fallback; } catch { return fallback; }
 }
 function currentEmail() { return authSession?.user?.email?.toLowerCase() || ''; }
 function requestHeaders(authenticated = false) {
