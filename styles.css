@@ -174,3 +174,4 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
 @media(max-width:1050px){.order-detail-layout{grid-template-columns:1fr}.order-workflow-column{position:static;grid-row:1}.order-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.order-step:not(:last-child):before{display:none}.order-step{padding-bottom:0}}
 @media(max-width:640px){.payment-methods,.driver-order-grid{grid-template-columns:1fr}.driver-welcome{padding:22px;display:block}.driver-welcome .btn{margin-top:18px}.driver-welcome h1{font-size:25px}.order-steps{grid-template-columns:1fr}.payment-quote .total-line{gap:12px;align-items:start}.payment-quote strong{max-width:65%}.order-workflow-column{grid-row:auto}}
 #add-payment-rate[hidden]{display:none}
+.order-detail-layout td:first-child{white-space:normal;overflow-wrap:anywhere;line-height:1.6}

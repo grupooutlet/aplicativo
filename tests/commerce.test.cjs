@@ -81,6 +81,8 @@ run(`role='Entregador';currentProfile={role:'driver',name:'Eduardo',email:'edu@e
  authSession={user:{id:'driver'}};booted=true;bootError='';isOwner=false;driverDeliveries=[...db.orders];location.hash='#/app/settings';render();`);
 assert.match(nodes['#app'].innerHTML, /Meu perfil/);
 assert.match(nodes['#app'].innerHTML, /class="sidebar"/);
+assert.match(nodes['#app'].innerHTML, /Eduardo<small>Entregador/);
+assert.doesNotMatch(nodes['#app'].innerHTML, /Amanda/);
 assert.doesNotMatch(nodes['#app'].innerHTML, /href="\/app\/payments"|href="\/app\/reports"|href="\/app\/products"/);
 run(`accountProfiles=[{role:'admin',position:'Gerente',name:'Ana',email:'ana@example.com'},
  {role:'admin',position:'Vendedor',name:'Bruno',email:'bruno@example.com'},{role:'driver',position:'Entregador',name:'Eduardo',email:'edu@example.com'}];`);

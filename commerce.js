@@ -456,6 +456,15 @@ renderReceipt = id => {
   const order = visibleOrders().find(item => item.id === id);
   if (order?.paymentMethodId) $('#app').innerHTML = $('#app').innerHTML.replace('<div class="total-line final">', quoteMarkup({ ...order, total: orderTotal(order) }) + '<div class="total-line final">');
 };
+const shellBeforeCommerce = shell;
+shell = (...args) => {
+  const name = currentProfile?.name || 'Grupo Outlet';
+  const title = currentProfile?.role === 'master'
+    ? masterPreviewPosition === 'Principal' ? 'Principal' : 'Prévia: ' + masterPreviewPosition
+    : currentProfile?.position || role;
+  return shellBeforeCommerce(...args).replace(/<button class="account" onclick="roleModal\(\)">[\s\S]*?<\/button>/,
+    `<button class="account" onclick="roleModal()"><div class="avatar">${esc(initials(name))}</div><span>${esc(name)}<small>${esc(title)}</small></span>${icon('down')}</button>`);
+};
 const headerBeforeCommerce = storeHeader;
 storeHeader = () => headerBeforeCommerce().replace('Entre ou cadastre-se<small>Minha conta</small>',
   !authSession && safeJson(sessionStore.getItem('forte-guest-orders'), []).length ? 'Meus pedidos<small>Acompanhar compras</small>' : 'Entre ou cadastre-se<small>Minha conta</small>');
