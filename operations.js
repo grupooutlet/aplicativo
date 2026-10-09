@@ -297,4 +297,4 @@ render = function () {
   }
   return renderBeforeDeliveryBoard();
 };
-boot();
+// Commerce installs the payment and account extensions before startup.
