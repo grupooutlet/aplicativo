@@ -135,6 +135,9 @@ function readVariationEditor(form) {
 }
 function validateProductOptions(product, choices = {}) {
   const variations = productVariations(product);
+  if (!choices || typeof choices !== 'object' || Array.isArray(choices)) throw new Error('Selecione todas as variações do produto.');
+  choices = { ...Object.fromEntries(variations.filter(option => option.values.length === 1).map(option => [option.name, option.values[0]])), ...choices };
+  for (const option of variations) if (option.values.length === 1 && !choices[option.name]) choices[option.name] = option.values[0];
   if (!choices || typeof choices !== 'object' || Array.isArray(choices) || Object.keys(choices).length !== variations.length)
     throw new Error('Selecione todas as variações do produto.');
   const options = {};
@@ -155,8 +158,8 @@ function cartQuantity(id) {
 function detailOptions(product) {
   return productVariations(product).map((variation, index) => `<label class="field">
     ${esc(variation.name)}<select class="product-option" data-option-name="${esc(variation.name)}" required>
-    <option value="" selected disabled>Selecione ${esc(variation.name.toLocaleLowerCase('pt-BR'))}</option>
-    ${variation.values.map(value => `<option value="${esc(value)}">${esc(value)}</option>`).join('')}
+    ${variation.values.length > 1 ? `<option value="" selected disabled>Selecione ${esc(variation.name.toLocaleLowerCase('pt-BR'))}</option>` : ''}
+    ${variation.values.map(value => `<option value="${esc(value)}" ${variation.values.length === 1 ? 'selected' : ''}>${esc(value)}</option>`).join('')}
     </select></label>`).join('');
 }
 function collectProductOptions() {
@@ -197,8 +200,16 @@ addToCart = (id, qty = 1, choices = {}) => {
   const line = db.cart.find(item => item.id === id && JSON.stringify(item.options || {}) === key);
   if (line) line.qty += qty;
   else db.cart.push({ id, qty, options });
-  save(); render(); toast('Produto adicionado ao carrinho.');
+  save(); render(); cartConfirmationModal();
 };
+function cartConfirmationModal() {
+  modal('Seu carrinho', `<div class="cart-confirmation">${db.cart.map(item => {
+    const product = db.products.find(product => product.id === item.id);
+    if (!product) return '';
+    return `<div class="cart-confirmation-item"><img src="${esc(product.image)}" alt="${esc(product.name)}"><div><strong>${esc(product.name)}</strong><small>${esc(optionText(item.options))}</small><small>${item.qty} × ${money(salePrice(product))}</small></div><strong>${money(item.qty * salePrice(product))}</strong></div>`;
+  }).join('')}<div class="total-line final"><span>Produtos</span><strong>${money(cartTotal())}</strong></div>
+  <div class="form-actions">${button('Continuar comprando', 'type="button" onclick="closeModal()"')}<a class="btn primary" href="${basePath}#/loja/checkout" onclick="closeModal()">Finalizar compra ${icon('chevron')}</a></div></div>`);
+}
 changeCart = (index, delta) => {
   const line = db.cart[index];
   if (!line) return;
@@ -247,8 +258,8 @@ function updateAdminVariationFields() {
   const target = document.querySelector('#admin-variation-fields');
   target.innerHTML = productVariations(product).map((variation, index) => `<label class="field">
     ${esc(variation.name)}<select class="admin-product-option" data-option-name="${esc(variation.name)}" required>
-    <option value="" selected disabled>Selecione uma opção</option>
-    ${variation.values.map(value => `<option value="${esc(value)}">${esc(value)}</option>`).join('')}
+    ${variation.values.length > 1 ? '<option value="" selected disabled>Selecione uma opção</option>' : ''}
+    ${variation.values.map(value => `<option value="${esc(value)}" ${variation.values.length === 1 ? 'selected' : ''}>${esc(value)}</option>`).join('')}
     </select></label>`).join('');
   target.hidden = !productVariations(product).length;
 }

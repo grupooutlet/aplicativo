@@ -201,6 +201,11 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
 #add-payment-rate[hidden]{display:none}
 .order-detail-layout td:first-child{white-space:normal;overflow-wrap:anywhere;line-height:1.6}
 .payment-choice-details[hidden]{display:none}.payment-rate-row.single{grid-template-columns:1fr;max-width:300px}.order-summary{padding:18px;margin-top:24px;background:#fafaf8;border:1px solid var(--line);border-radius:9px}.checkout-cart-item{padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:14px}.checkout-cart-item .cart-line{border:0;padding-bottom:14px}.checkout-cart-item .field{margin-top:10px}.checkout-cart-item h3{overflow-wrap:anywhere}
+.cart-confirmation-item{display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+.cart-confirmation-item img{width:70px;height:70px;object-fit:cover;border-radius:8px}
+.cart-confirmation-item>div{flex:1;min-width:0}.cart-confirmation-item strong{font-size:14px;line-height:1.5}
+.cart-confirmation-item small{display:block;margin-top:5px;color:var(--muted);font-size:12px}
+@media(max-width:520px){.cart-confirmation-item{flex-wrap:wrap}.cart-confirmation-item>strong{margin-left:84px}.cart-confirmation .form-actions{flex-direction:column}.cart-confirmation .form-actions>*{width:100%;justify-content:center}}
 
 .storefront-builder{display:grid;grid-template-columns:minmax(305px,385px) minmax(0,1fr);gap:22px;align-items:start}.builder-column{display:grid;gap:17px;min-width:0}.builder-card,.builder-preview-panel{background:#fff;border:1px solid var(--line);border-radius:11px;overflow:hidden;min-width:0}.builder-card-head,.builder-preview-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:20px 22px;border-bottom:1px solid var(--line)}.builder-card-head h2{margin-top:7px;font-size:16px}.builder-count{background:#f4f4f2;border-radius:5px;padding:5px 8px;color:#666;font-size:12px}.builder-fields{display:grid;gap:17px;padding:22px}.builder-fields .field{min-width:0}.builder-fields .field input,.builder-fields .field select,.builder-fields .field textarea{font-size:14px}.builder-fields .field textarea{min-height:95px}.builder-fields .field small,.builder-hint{font-size:12px;line-height:1.6;color:#878d91}.builder-hint{padding:0 22px 19px}.builder-fields .builder-hint{padding:0;margin:-8px 0 0}.builder-switch{display:flex;align-items:center;gap:7px;font-size:12px;color:#60676c;white-space:nowrap}.builder-switch input{accent-color:#a68700;width:16px;height:16px}.builder-section-list{padding:8px}.builder-section-row{display:flex;gap:5px;align-items:center;padding:4px;border:1px solid transparent;border-radius:8px;margin-bottom:3px}.builder-section-row.active{border-color:#e9d886;background:#fffbec}.builder-section-row.is-hidden{opacity:.56}.builder-section-select{display:flex;align-items:center;gap:10px;min-width:0;flex:1;text-align:left;padding:7px}.builder-section-select>span:last-child{min-width:0}.builder-section-select strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600}.builder-section-select small{display:block;margin-top:4px;font-size:11px}.builder-section-icon{width:34px;height:34px;display:grid;place-items:center;background:#f1f2f2;border-radius:7px;flex-shrink:0;color:#687077}.builder-section-icon .icon{width:17px;height:17px}.builder-section-actions{display:flex;gap:2px}.builder-section-actions button{width:25px;height:30px;border-radius:5px;font-size:18px;color:#687077}.builder-section-actions button:hover{background:#f0eee3}.builder-section-actions button:disabled{opacity:.25;cursor:default}.builder-add{display:flex;align-items:center;justify-content:center;gap:7px;margin:11px 15px 16px;padding:11px;border:1px dashed #c8c7bf;border-radius:7px;width:calc(100% - 30px);font-size:13px;font-weight:600}.builder-add:hover{background:#fffbea;border-color:#e3bd16}.builder-add .icon{width:17px;height:17px}.builder-card-foot{display:flex;justify-content:space-between;gap:10px;padding:18px 22px;border-top:1px solid var(--line)}.builder-image-preview{background:#f6f6f4;border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px}.builder-image-preview img{height:65px;width:86px;object-fit:cover;border-radius:5px}.builder-benefit-fields{padding:17px;border:1px solid var(--line);border-radius:8px;display:grid;gap:12px}.builder-benefit-fields h3{font-size:14px}.builder-preview-panel{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto}.builder-preview-head{position:sticky;top:0;background:white;z-index:3}.builder-preview-head strong{font-size:14px}.builder-preview-head small{display:block;margin-top:5px}.builder-view-switch{display:flex;gap:3px;padding:4px;background:#f3f3f2;border-radius:7px}.builder-view-switch button{padding:7px 9px;border-radius:5px;font-size:12px}.builder-view-switch button.active{background:white;box-shadow:0 1px 3px #0002;font-weight:600}.builder-preview-panel #editor-preview{padding:18px;background:#f3f3f1;min-height:600px}.preview-store{background:white;border:1px solid #e5e5e5;border-radius:6px;overflow:hidden;box-shadow:0 5px 22px #0000000b;max-width:100%;margin:auto}.preview-store .store-promo{font-size:10px;padding:7px}.preview-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 20px;border-bottom:1px solid var(--line)}.preview-header img{width:135px;height:auto;object-fit:contain}.preview-header span{display:flex;align-items:center;gap:8px;background:#f6f6f5;color:#888;font-size:11px;padding:9px 12px;border-radius:6px;min-width:140px;flex:1}.preview-header .icon{width:17px;height:17px}.preview-store .store-content{padding:17px 18px 28px}.preview-store .store-hero{min-height:300px}.preview-store .hero-content{padding:27px;max-width:370px}.preview-store .hero-content h1{font-size:29px;margin:14px 0}.preview-store .hero-content p{font-size:12px;max-width:270px}.preview-store .home-section+.home-section{margin-top:28px}.preview-store .store-benefits{padding:17px 0;gap:8px}.preview-store .benefit{gap:5px}.preview-store .benefit .icon{width:14px;height:14px}.preview-store .benefit strong{font-size:9px}.preview-store .benefit small{font-size:8px}.preview-store .catalog{gap:9px}.preview-store .product-photo img{height:115px}.preview-store .shop-product h3{font-size:10px}.preview-store .shop-product .price{font-size:14px}.preview-store .catalog-head h2{font-size:22px}.preview-store .eyebrow{font-size:9px}.preview-store .btn{padding:7px 9px;min-height:30px;font-size:10px}.preview-store .storefront-image-copy h2{font-size:24px}.preview-store .storefront-video-frame{max-height:320px}.preview-store.preview-mobile{max-width:390px}.preview-store.preview-mobile .preview-header span{display:none}.preview-store.preview-mobile .store-content{padding:12px}.preview-store.preview-mobile .store-hero{min-height:345px}.preview-store.preview-mobile .hero-content{background:linear-gradient(180deg,#f5f3eeec,#f5f3eeb3 74%,transparent);min-height:345px;width:100%;padding:25px}.preview-store.preview-mobile .hero-content h1{font-size:30px}.preview-store.preview-mobile .store-benefits{grid-template-columns:1fr 1fr;gap:12px}.preview-store.preview-mobile .catalog{grid-template-columns:repeat(2,minmax(0,1fr))}.preview-store.preview-mobile .product-photo img{height:125px}.preview-store.preview-mobile .storefront-image{grid-template-columns:1fr}.preview-store.preview-mobile .storefront-image-photo img{height:200px}.preview-store.preview-mobile .storefront-image-copy{padding:20px}.preview-store.preview-mobile .storefront-image.image-right .storefront-image-photo{order:0}.builder-add-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.builder-add-grid button{display:flex;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);border-radius:8px;padding:14px}.builder-add-grid button:hover{border-color:#d6b011;background:#fffbea}.builder-add-grid button strong{font-size:13px}.builder-add-grid .icon{color:#ae8d1a}.storefront-home .home-section+.home-section{margin-top:48px}.storefront-home .store-benefits{margin-bottom:0}.storefront-banner.align-right{justify-content:flex-end}.storefront-banner.align-right .hero-content{text-align:right;background:linear-gradient(270deg,#eeebe6f5,#eeebe6dd 75%,transparent)}.storefront-banner.align-right .hero-content p{margin-left:auto}.storefront-image{display:grid;grid-template-columns:1fr 1fr;border-radius:12px;background:#f4f3f0;overflow:hidden;min-height:350px}.storefront-image.image-right .storefront-image-photo{order:2}.storefront-image-photo{min-height:300px;display:grid;place-items:center;color:#85898d;font-size:14px;background:#e8e8e4}.storefront-image-photo img{width:100%;height:100%;min-height:300px;max-height:520px;object-fit:cover}.storefront-image-copy{padding:clamp(25px,6vw,75px);display:flex;flex-direction:column;align-items:flex-start;justify-content:center}.storefront-image-copy h2{font-size:clamp(26px,3vw,42px);letter-spacing:-1px;margin:13px 0}.storefront-image-copy p,.storefront-text p,.storefront-video .catalog-head p{white-space:pre-wrap;line-height:1.7;color:#646b70;font-size:15px}.storefront-image-copy .btn{margin-top:22px}.storefront-video-frame{background:#1c2228;border-radius:12px;aspect-ratio:16/9;overflow:hidden;display:grid;place-items:center;color:#d2d6d9;font-size:14px}.storefront-video-frame iframe,.storefront-video-frame video{width:100%;height:100%;border:0;object-fit:contain}.storefront-text{padding:60px 30px;text-align:center;max-width:850px;margin:auto}.storefront-text h2{font-size:clamp(28px,3vw,42px);letter-spacing:-1px;margin:14px 0}.storefront-text p{margin-bottom:22px}.storefront-collection .catalog-head{margin-bottom:23px}
 @media(max-width:1100px){.storefront-builder{grid-template-columns:340px minmax(0,1fr)}.preview-store .catalog{grid-template-columns:repeat(2,1fr)}}
@@ -1297,6 +1302,9 @@ function readVariationEditor(form) {
 }
 function validateProductOptions(product, choices = {}) {
   const variations = productVariations(product);
+  if (!choices || typeof choices !== 'object' || Array.isArray(choices)) throw new Error('Selecione todas as variações do produto.');
+  choices = { ...Object.fromEntries(variations.filter(option => option.values.length === 1).map(option => [option.name, option.values[0]])), ...choices };
+  for (const option of variations) if (option.values.length === 1 && !choices[option.name]) choices[option.name] = option.values[0];
   if (!choices || typeof choices !== 'object' || Array.isArray(choices) || Object.keys(choices).length !== variations.length)
     throw new Error('Selecione todas as variações do produto.');
   const options = {};
@@ -1317,8 +1325,8 @@ function cartQuantity(id) {
 function detailOptions(product) {
   return productVariations(product).map((variation, index) => `<label class="field">
     ${esc(variation.name)}<select class="product-option" data-option-name="${esc(variation.name)}" required>
-    <option value="" selected disabled>Selecione ${esc(variation.name.toLocaleLowerCase('pt-BR'))}</option>
-    ${variation.values.map(value => `<option value="${esc(value)}">${esc(value)}</option>`).join('')}
+    ${variation.values.length > 1 ? `<option value="" selected disabled>Selecione ${esc(variation.name.toLocaleLowerCase('pt-BR'))}</option>` : ''}
+    ${variation.values.map(value => `<option value="${esc(value)}" ${variation.values.length === 1 ? 'selected' : ''}>${esc(value)}</option>`).join('')}
     </select></label>`).join('');
 }
 function collectProductOptions() {
@@ -1359,8 +1367,16 @@ addToCart = (id, qty = 1, choices = {}) => {
   const line = db.cart.find(item => item.id === id && JSON.stringify(item.options || {}) === key);
   if (line) line.qty += qty;
   else db.cart.push({ id, qty, options });
-  save(); render(); toast('Produto adicionado ao carrinho.');
+  save(); render(); cartConfirmationModal();
 };
+function cartConfirmationModal() {
+  modal('Seu carrinho', `<div class="cart-confirmation">${db.cart.map(item => {
+    const product = db.products.find(product => product.id === item.id);
+    if (!product) return '';
+    return `<div class="cart-confirmation-item"><img src="${esc(product.image)}" alt="${esc(product.name)}"><div><strong>${esc(product.name)}</strong><small>${esc(optionText(item.options))}</small><small>${item.qty} × ${money(salePrice(product))}</small></div><strong>${money(item.qty * salePrice(product))}</strong></div>`;
+  }).join('')}<div class="total-line final"><span>Produtos</span><strong>${money(cartTotal())}</strong></div>
+  <div class="form-actions">${button('Continuar comprando', 'type="button" onclick="closeModal()"')}<a class="btn primary" href="${basePath}#/loja/checkout" onclick="closeModal()">Finalizar compra ${icon('chevron')}</a></div></div>`);
+}
 changeCart = (index, delta) => {
   const line = db.cart[index];
   if (!line) return;
@@ -1409,8 +1425,8 @@ function updateAdminVariationFields() {
   const target = document.querySelector('#admin-variation-fields');
   target.innerHTML = productVariations(product).map((variation, index) => `<label class="field">
     ${esc(variation.name)}<select class="admin-product-option" data-option-name="${esc(variation.name)}" required>
-    <option value="" selected disabled>Selecione uma opção</option>
-    ${variation.values.map(value => `<option value="${esc(value)}">${esc(value)}</option>`).join('')}
+    ${variation.values.length > 1 ? '<option value="" selected disabled>Selecione uma opção</option>' : ''}
+    ${variation.values.map(value => `<option value="${esc(value)}" ${variation.values.length === 1 ? 'selected' : ''}>${esc(value)}</option>`).join('')}
     </select></label>`).join('');
   target.hidden = !productVariations(product).length;
 }
@@ -2204,10 +2220,13 @@ dispatchOrder = id => {
 editOrderModal = id => {
   const order = visibleOrders().find(item => item.id === id);
   if (!order || !canPay() || completed(order) || order.status === 'cancelled') return;
+  const names = splitCustomerName(order);
+  const address = orderAddressParts(order);
   modal('Editar dados do pedido', `<form onsubmit="event.preventDefault();saveOrderData(this,${id})"><div class="form-grid">
-    ${field('Nome do cliente', 'customer', order.customer, 'text', 'required')}
-    ${field('Telefone', 'phone', order.phone, 'tel', 'required')}
-    ${field('Endereço completo', 'address', order.address, 'text', 'required data-full')}
+    ${field('Nome', 'firstName', names.firstName, 'text', 'required autocomplete="given-name" minlength="2" maxlength="60"')}
+    ${field('Sobrenome', 'lastName', names.lastName, 'text', 'required autocomplete="family-name" minlength="2" maxlength="60"')}
+    ${field('Telefone / WhatsApp', 'phone', formatBrazilPhone(order.phone), 'tel', 'required placeholder="+55 (99) 99999-8899" onblur="this.value=formatBrazilPhone(this.value)" data-full')}
+    ${order.delivery === 'Entrega' ? addressFields('', address).replace('placeholder="00000-000"', 'placeholder="00000-000" maxlength="9" oninput="lookupAdminCep(this)"') + '<p id="admin-cep-feedback" class="subtle full" role="status"></p>' : `<p class="subtle full">Retirada na loja · ${esc(order.address)}</p>`}
     ${field(order.delivery === 'Entrega' ? 'Data da entrega' : 'Data da retirada (opcional)', 'deliveryDate', order.deliveryDate || '', 'date', order.delivery === 'Entrega' ? 'required' : '')}
     <label class="field full">Observações<textarea name="notes">${esc(order.notes || '')}</textarea></label></div>
     <p class="subtle" style="margin-top:20px">${order.freightPending ? 'Selecione o frete em Agendar entrega.' : `${esc(order.shippingOptionName || 'Frete')} · ${money(order.freight)}`}</p>
@@ -2217,10 +2236,15 @@ saveOrderData = (form, id) => {
   const order = visibleOrders().find(item => item.id === id);
   if (!order || !canPay() || completed(order) || order.status === 'cancelled') return;
   const fields = Object.fromEntries(new FormData(form));
+  if (!validPersonName(fields.firstName) || !validPersonName(fields.lastName)) return toast('Confira o nome e o sobrenome do cliente.');
+  if (!/^55\d{10,11}$/.test(brazilPhoneDigits(fields.phone))) return toast('Informe um telefone com DDD válido.');
   if (order.delivery === 'Entrega' && (!isDeliveryDate(fields.deliveryDate) ||
       (fields.deliveryDate !== order.deliveryDate && !isDeliveryDate(fields.deliveryDate, true))))
     return toast('Selecione uma data válida para a entrega.');
-  Object.assign(order, { customer: fields.customer, phone: fields.phone, address: fields.address,
+  const addressParts = order.delivery === 'Entrega' ? addressFromForm(fields) : orderAddressParts(order);
+  Object.assign(order, { firstName: fields.firstName.trim(), lastName: fields.lastName.trim(),
+    customer: (fields.firstName.trim() + ' ' + fields.lastName.trim()).replace(/\s+/g, ' '), phone: formatBrazilPhone(fields.phone),
+    addressParts, address: order.delivery === 'Entrega' ? formatAddress(addressParts) : order.address,
     notes: fields.notes, deliveryDate: fields.deliveryDate });
   save(); closeModal(); render(); toast('Dados do pedido atualizados.');
 };
@@ -2319,20 +2343,24 @@ render = function () {
 // Commerce installs the payment and account extensions before startup.
 </script>
   <script>// Shared payment quotes, checkout accounts, order steps, and staff workspaces.
-const paymentKinds = { pix: 'Pix', credit: 'Cartão de crédito', debit: 'Cartão de débito', cash: 'Dinheiro', other: 'Outro' };
+const paymentKinds = { pix: 'Pix', credit: 'Cartão de crédito', debit: 'Cartão de débito', cash: 'Dinheiro' };
 const canonicalPayment = kind => ({ pix: 'Pix', credit: 'Cartão de crédito', debit: 'Cartão de débito', cash: 'Dinheiro', other: 'Dinheiro' })[kind];
 const defaultPayments = () => Object.entries(paymentKinds).filter(([kind]) => kind !== 'other').map(([kind, title]) => ({
   id: 'pay-' + kind, kind, title, active: true, installments: [{ count: 1, rate: 0 }]
 }));
-const paymentMethods = () => Array.isArray(db.settings.paymentMethods) ? db.settings.paymentMethods : defaultPayments();
+const paymentMethods = () => defaultPayments().map(fallback => {
+  const stored = db.settings.paymentMethods?.find(method => method.kind === fallback.kind);
+  return stored ? { ...stored, installments: stored.kind === 'credit' ? stored.installments : [{ count: 1, rate: 0 }] } : fallback;
+});
 const activePayments = () => paymentMethods().filter(method => method.active !== false);
 const canConfigurePayments = () => isOwner && canManage() && ['master', 'admin'].includes(currentProfile?.role);
 const productSubtotal = order => order.items.reduce((total, item) => total + item.price * item.qty, 0);
 function paymentQuote(method, count, base) {
+  if (!method || !paymentKinds[method.kind] || (method.kind !== 'credit' && Number(count) !== 1)) throw new Error('Selecione uma forma de pagamento disponível.');
   const option = method?.installments.find(item => Number(item.count) === Number(count));
   if (!option || !Number.isInteger(Number(count)) || count < 1 || count > 24 ||
       !Number.isFinite(base) || base < 0) throw new Error('Selecione uma opção de pagamento e parcelas disponíveis.');
-  const rate = Number(option.rate);
+  const rate = method.kind === 'credit' ? Number(option.rate) : 0;
   if (!Number.isFinite(rate) || rate < 0 || rate > 100) throw new Error('Taxa de pagamento inválida.');
   const baseCents = Math.round(base * 100);
   const feeCents = Math.round(baseCents * rate / 100);
@@ -2359,8 +2387,7 @@ function quoteMarkup(quote) {
 navigation.splice(navigation.findIndex(item => item[0] === 'deliveries') + 1, 0, ['payments', 'Pagamentos', 'wallet']);
 function paymentsPage() {
   if (!canConfigurePayments()) return heading('Acesso restrito', 'Seu cargo não configura pagamentos.');
-  return heading('Pagamentos', 'Personalize as formas de pagamento e as taxas cobradas do cliente.',
-    button('Nova forma de pagamento', 'onclick="paymentMethodModal()"', 'primary', 'plus')) +
+  return heading('Pagamentos', 'Ative as formas de pagamento da loja. Taxas e parcelamento são exclusivos do cartão de crédito.') +
     `<div class="payment-methods">${paymentMethods().map((method, index) => `<section class="card pad payment-method-card">
       <div class="payment-method-heading"><span class="task-symbol">${icon('wallet')}</span><div><h2>${esc(method.title)}</h2><p class="subtle">${esc(paymentKinds[method.kind])}</p></div><span class="badge ${method.active === false ? 'gray' : 'green'}">${method.active === false ? 'Desativado' : 'Ativo'}</span></div>
       <div class="payment-rate-tags">${method.installments.map(option => `<span>${method.kind === 'credit' ? option.count + 'x' : 'À vista'} · ${option.rate ? String(option.rate).replace('.', ',') + '%' : 'sem taxa'}</span>`).join('')}</div>
@@ -2368,30 +2395,24 @@ function paymentsPage() {
     </section>`).join('') || '<section class="card pad empty">Cadastre uma forma de pagamento.</section>'}</div>`;
 }
 function paymentRateRow(count = 1, rate = 0, credit = true) {
-  if (!credit) return `<div class="payment-rate-row single"><input name="counts" type="hidden" value="1"><label class="field">Taxa total (%)<input name="rates" type="number" value="${rate}" min="0" max="100" step="0.01" required></label></div>`;
+  if (!credit) return '';
   return `<div class="payment-rate-row"><label class="field">Parcelas<input name="counts" type="number" value="${count}" min="1" max="24" step="1" required></label>
     <label class="field">Taxa total (%)<input name="rates" type="number" value="${rate}" min="0" max="100" step="0.01" required></label>
     <button class="btn small danger" type="button" aria-label="Remover parcela" onclick="this.closest('.payment-rate-row').remove()">${icon('trash')}</button></div>`;
 }
 function paymentMethodModal(index = -1) {
   if (!canConfigurePayments()) return;
-  const method = paymentMethods()[index] || { title: '', kind: 'pix', installments: [{ count: 1, rate: 0 }] };
-  modal(index < 0 ? 'Nova forma de pagamento' : 'Personalizar pagamento', `<form onsubmit="event.preventDefault();savePaymentMethod(this,${index})">
-    <div class="form-grid">${field('Título no checkout', 'title', method.title, 'text', 'required maxlength="60"')}
-    <label class="field">Tipo<select name="kind" onchange="updatePaymentRateEditor(this)">${Object.entries(paymentKinds).map(([kind, title]) => `<option value="${kind}" ${method.kind === kind ? 'selected' : ''}>${title}</option>`).join('')}</select></label></div>
-    <h3 id="payment-editor-title" style="margin:24px 0 8px">${method.kind === 'credit' ? 'Parcelas e taxas' : 'Taxa de pagamento'}</h3><p class="subtle">A taxa será aplicada sobre produtos e frete; zero significa sem taxa.</p>
-    <div id="payment-rate-editor">${method.installments.map(option => paymentRateRow(option.count, option.rate, method.kind === 'credit')).join('')}</div>
-    <button id="add-payment-rate" class="btn small" type="button" ${method.kind !== 'credit' ? 'hidden' : ''} onclick="addPaymentRate()">${icon('plus')}Adicionar parcelamento</button>
+  const method = paymentMethods()[index];
+  if (!method) return;
+  modal('Personalizar ' + paymentKinds[method.kind], `<form onsubmit="event.preventDefault();savePaymentMethod(this,${index})">
+    ${field('Título no checkout', 'title', method.title, 'text', 'required maxlength="60"')}
+    ${method.kind === 'credit' ? `<h3 style="margin:24px 0 8px">Parcelas e taxas</h3><p class="subtle">A taxa será aplicada sobre produtos e frete; zero significa sem taxa.</p>
+    <div id="payment-rate-editor">${method.installments.map(option => paymentRateRow(option.count, option.rate)).join('')}</div>
+    <button id="add-payment-rate" class="btn small" type="button" onclick="addPaymentRate()">${icon('plus')}Adicionar parcelamento</button>` : '<p class="subtle" style="margin-top:18px">Pagamento à vista, sem taxa adicional.</p>'}
     <div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Salvar pagamento</button></div></form>`);
 }
-function updatePaymentRateEditor(input) {
-  const credit = input.value === 'credit';
-  $('#add-payment-rate').hidden = !credit;
-  const rate = Number($('#payment-rate-editor').querySelector('input[name="rates"]')?.value || 0);
-  $('#payment-editor-title').textContent = credit ? 'Parcelas e taxas' : 'Taxa de pagamento';
-  $('#payment-rate-editor').innerHTML = paymentRateRow(1, rate, credit);
-}
 function addPaymentRate() {
+  if (!$('#payment-rate-editor')) return;
   const counts = [...document.querySelectorAll('#payment-rate-editor input[name="counts"]')].map(input => Number(input.value));
   const count = Array.from({ length: 24 }, (_, index) => index + 1).find(value => !counts.includes(value));
   if (!count) return toast('As 24 opções de parcelas já foram adicionadas.');
@@ -2399,18 +2420,20 @@ function addPaymentRate() {
 }
 function savePaymentMethod(form, index) {
   if (!canConfigurePayments()) return;
+  const method = paymentMethods()[index];
+  if (!method) return;
   const title = form.elements.namedItem('title').value.trim();
-  const kind = form.elements.namedItem('kind').value;
+  const kind = method.kind;
   const counts = [...form.querySelectorAll('input[name="counts"]')];
   const rates = [...form.querySelectorAll('input[name="rates"]')];
-  const installments = counts.map((input, position) => ({ count: Number(input.value), rate: Number(rates[position]?.value) }));
+  const installments = kind === 'credit' ? counts.map((input, position) => ({ count: Number(input.value), rate: Number(rates[position]?.value) })) : [{ count: 1, rate: 0 }];
   if (!title || title.length > 60 || !paymentKinds[kind] || !installments.length ||
-      installments.some((option, position) => !counts[position].value || !rates[position].value || !Number.isInteger(option.count) || option.count < 1 || option.count > 24 ||
-        !Number.isFinite(option.rate) || option.rate < 0 || option.rate > 100 || (kind !== 'credit' && option.count !== 1)) ||
+      (kind === 'credit' && installments.some((option, position) => !counts[position].value || !rates[position].value || !Number.isInteger(option.count) || option.count < 1 || option.count > 24 ||
+        !Number.isFinite(option.rate) || option.rate < 0 || option.rate > 100)) ||
       new Set(installments.map(option => option.count)).size !== installments.length)
     return toast('Confira o título, as parcelas e as taxas. Cada quantidade de parcelas deve aparecer uma vez.');
   const methods = [...paymentMethods()];
-  methods[index < 0 ? methods.length : index] = { id: methods[index]?.id || 'pay-' + crypto.randomUUID(), title, kind,
+  methods[index] = { id: method.id, title, kind,
     active: methods[index]?.active !== false, installments: installments.sort((a, b) => a.count - b.count) };
   db.settings.paymentMethods = methods; save(); closeModal(); render(); toast('Forma de pagamento salva.');
 }
@@ -2463,6 +2486,45 @@ function updatePaymentTotal(form) {
   }
 }
 const checkoutBeforeCommerce = checkoutPage;
+const checkoutContactKey = 'forte-checkout-contact-v1';
+function splitCustomerName(contact = {}) {
+  const names = String(contact.customer || contact.name || '').trim().split(/\s+/);
+  return { firstName: contact.firstName || names[0] || '', lastName: contact.lastName || names.slice(1).join(' ') };
+}
+function orderAddressParts(order = {}) {
+  if (order.addressParts) return parseAddress(order.addressParts);
+  const parts = String(order.address || '').split(' · ').map(part => part.trim());
+  if (parts.length < 3) return parseAddress(order.address);
+  const cepPart = parts.findIndex(part => /^CEP\s/i.test(part));
+  const tail = cepPart >= 0 ? parts.slice(0, cepPart) : parts;
+  const city = tail.pop() || '';
+  const neighborhood = tail.pop() || '';
+  const streetNumber = (tail.shift() || '').match(/^(.+),\s*([^,]+)$/);
+  if (!streetNumber) return parseAddress(order.address);
+  const cityParts = city.split(/\s*\/\s*/);
+  return { street: streetNumber[1].trim(), number: streetNumber[2].trim(), complement: tail.join(' · '),
+    neighborhood, city: cityParts[0], state: cityParts[1] || '', cep: cepPart >= 0 ? parts[cepPart].replace(/^CEP\s*/i, '') : '' };
+}
+function checkoutContact() {
+  const cached = safeJson(localStore.getItem(checkoutContactKey), null);
+  const userId = authSession?.user?.id;
+  const ownOrders = authSession ? db.orders.filter(order => order.status !== 'cancelled' &&
+    (!isOwner || order.user_id === userId)).sort((a, b) => Number(b.id) - Number(a.id)) : [];
+  const contact = cached && (!userId || cached.userId === userId) ? cached : ownOrders[0];
+  return contact ? { ...contact, ...splitCustomerName(contact), addressParts: orderAddressParts(contact) } : null;
+}
+function fillCheckoutContact(html, contact) {
+  if (!contact) return html;
+  const address = contact.addressParts || {};
+  const values = { firstName: contact.firstName, lastName: contact.lastName, email: contact.email, cpf: contact.cpf,
+    phone: formatBrazilPhone(contact.phone), cep: address.cep, street: address.street, number: address.number,
+    neighborhood: address.neighborhood, city: [address.city, address.state].filter(Boolean).join(' / '), complement: address.complement };
+  for (const [name, value] of Object.entries(values)) if (value) {
+    const pattern = new RegExp('(<input\\b[^>]*name="' + name + '"[^>]*\\bvalue=")[^"]*(")');
+    html = html.replace(pattern, (_, before, after) => before + esc(value) + after);
+  }
+  return html;
+}
 checkoutPage = () => {
   const unavailable = db.cart.map((item, index) => ({ item, index, product: db.products.find(product => product.id === item.id && product.active) })).filter(line => !line.product);
   if (unavailable.length) return `<div class="store-content">${heading('Revise seu carrinho', 'Alguns produtos deixaram de estar disponíveis. Remova-os para continuar.')}<section class="card pad">${unavailable.map(line => `<div class="total-line"><span>Produto indisponível · código ${line.item.id}</span>${button('Remover', `type="button" onclick="removeCartLine(${line.index})"`, 'small')}</div>`).join('')}<a class="btn" href="/loja/carrinho">Voltar ao carrinho</a></section></div>`;
@@ -2477,13 +2539,14 @@ checkoutPage = () => {
   html = html.replace('<div class="total-line final">', '<div class="payment-preview" aria-live="polite"></div><div class="total-line final">');
   html = html.replace(/(<h2>Seu pedido<\/h2>)[\s\S]*?(<div class="total-line"><span>Frete<\/span>)/,
     '$1' + checkoutCartItems() + '$2');
-  return html;
+  html = html.replace(/(<input[^>]*name="phone"[^>]*)(>)/, '$1 onblur="this.value=formatBrazilPhone(this.value)"$2');
+  return fillCheckoutContact(html, checkoutContact());
 };
 function checkoutCartItems() {
   return db.cart.map((item, index) => {
     const product = db.products.find(product => product.id === item.id);
     return `<div class="checkout-cart-item"><div class="cart-line"><img src="${esc(product.image)}" alt=""><div><h3>${esc(product.name)}</h3><small>${item.qty} × ${money(salePrice(product))}</small></div></div>
-      ${productVariations(product).map(option => `<label class="field">${esc(option.name)}<select class="checkout-product-option" data-cart-index="${index}" data-option-name="${esc(option.name)}" required onchange="updateCheckoutProductOptions()"><option value="" disabled ${!option.values.includes(item.options?.[option.name]) ? 'selected' : ''}>Selecione ${esc(option.name.toLowerCase())}</option>${option.values.map(value => `<option value="${esc(value)}" ${item.options?.[option.name] === value ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select></label>`).join('')}</div>`;
+      ${productVariations(product).map(option => `<label class="field">${esc(option.name)}<select class="checkout-product-option" data-cart-index="${index}" data-option-name="${esc(option.name)}" required onchange="updateCheckoutProductOptions()">${option.values.length > 1 ? `<option value="" disabled ${!option.values.includes(item.options?.[option.name]) ? 'selected' : ''}>Selecione ${esc(option.name.toLowerCase())}</option>` : ''}${option.values.map(value => `<option value="${esc(value)}" ${option.values.length === 1 || item.options?.[option.name] === value ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select></label>`).join('')}</div>`;
   }).join('');
 }
 function updateCheckoutProductOptions() {
@@ -2608,6 +2671,11 @@ checkout = async form => {
     if (!result?.id || !result?.token || !result?.order) throw new Error('A confirmação não foi recebida. Consulte a loja antes de tentar novamente.');
     confirmed = result;
     if (result.session?.access_token) rememberAuth(result.session);
+    const cityParts = String(fields.city || '').split(/\s*\/\s*/);
+    localStore.setItem(checkoutContactKey, JSON.stringify({ userId: authSession?.user?.id || null,
+      firstName: request.firstName, lastName: request.lastName, email: request.email, cpf: request.cpf, phone: request.phone,
+      addressParts: fields.delivery === 'Entrega' ? { cep: fields.cep, street: fields.street, number: fields.number,
+        neighborhood: fields.neighborhood, city: cityParts[0], state: cityParts[1] || '', complement: fields.complement } : checkoutContact()?.addressParts || {} }));
     db.cart = []; localStore.setItem(cartStorageKey, '[]');
     sessionStore.setItem('forte-guest-order-' + result.id, result.token);
     const guestIds = safeJson(sessionStore.getItem('forte-guest-orders'), []);

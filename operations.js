@@ -185,10 +185,13 @@ dispatchOrder = id => {
 editOrderModal = id => {
   const order = visibleOrders().find(item => item.id === id);
   if (!order || !canPay() || completed(order) || order.status === 'cancelled') return;
+  const names = splitCustomerName(order);
+  const address = orderAddressParts(order);
   modal('Editar dados do pedido', `<form onsubmit="event.preventDefault();saveOrderData(this,${id})"><div class="form-grid">
-    ${field('Nome do cliente', 'customer', order.customer, 'text', 'required')}
-    ${field('Telefone', 'phone', order.phone, 'tel', 'required')}
-    ${field('Endereço completo', 'address', order.address, 'text', 'required data-full')}
+    ${field('Nome', 'firstName', names.firstName, 'text', 'required autocomplete="given-name" minlength="2" maxlength="60"')}
+    ${field('Sobrenome', 'lastName', names.lastName, 'text', 'required autocomplete="family-name" minlength="2" maxlength="60"')}
+    ${field('Telefone / WhatsApp', 'phone', formatBrazilPhone(order.phone), 'tel', 'required placeholder="+55 (99) 99999-8899" onblur="this.value=formatBrazilPhone(this.value)" data-full')}
+    ${order.delivery === 'Entrega' ? addressFields('', address).replace('placeholder="00000-000"', 'placeholder="00000-000" maxlength="9" oninput="lookupAdminCep(this)"') + '<p id="admin-cep-feedback" class="subtle full" role="status"></p>' : `<p class="subtle full">Retirada na loja · ${esc(order.address)}</p>`}
     ${field(order.delivery === 'Entrega' ? 'Data da entrega' : 'Data da retirada (opcional)', 'deliveryDate', order.deliveryDate || '', 'date', order.delivery === 'Entrega' ? 'required' : '')}
     <label class="field full">Observações<textarea name="notes">${esc(order.notes || '')}</textarea></label></div>
     <p class="subtle" style="margin-top:20px">${order.freightPending ? 'Selecione o frete em Agendar entrega.' : `${esc(order.shippingOptionName || 'Frete')} · ${money(order.freight)}`}</p>
@@ -198,10 +201,15 @@ saveOrderData = (form, id) => {
   const order = visibleOrders().find(item => item.id === id);
   if (!order || !canPay() || completed(order) || order.status === 'cancelled') return;
   const fields = Object.fromEntries(new FormData(form));
+  if (!validPersonName(fields.firstName) || !validPersonName(fields.lastName)) return toast('Confira o nome e o sobrenome do cliente.');
+  if (!/^55\d{10,11}$/.test(brazilPhoneDigits(fields.phone))) return toast('Informe um telefone com DDD válido.');
   if (order.delivery === 'Entrega' && (!isDeliveryDate(fields.deliveryDate) ||
       (fields.deliveryDate !== order.deliveryDate && !isDeliveryDate(fields.deliveryDate, true))))
     return toast('Selecione uma data válida para a entrega.');
-  Object.assign(order, { customer: fields.customer, phone: fields.phone, address: fields.address,
+  const addressParts = order.delivery === 'Entrega' ? addressFromForm(fields) : orderAddressParts(order);
+  Object.assign(order, { firstName: fields.firstName.trim(), lastName: fields.lastName.trim(),
+    customer: (fields.firstName.trim() + ' ' + fields.lastName.trim()).replace(/\s+/g, ' '), phone: formatBrazilPhone(fields.phone),
+    addressParts, address: order.delivery === 'Entrega' ? formatAddress(addressParts) : order.address,
     notes: fields.notes, deliveryDate: fields.deliveryDate });
   save(); closeModal(); render(); toast('Dados do pedido atualizados.');
 };

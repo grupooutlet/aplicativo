@@ -10,6 +10,7 @@ const product = {
   variations: [{ name: 'Cor', values: ['Bege', 'Cinza'] }, { name: 'Tecido', values: ['Linho', 'Veludo'] }]
 };
 const notifications = [];
+let cartModal = '';
 const state = {
   db: { products: [product], cart: [], orders: [] },
   esc: value => String(value ?? ''), money: value => String(value),
@@ -18,6 +19,7 @@ const state = {
   heading: title => `<h1>${title}</h1>`, icon: () => '',
   available: () => 2, cartTotal: () => 0,
   save: () => true, render: () => {}, toast: value => notifications.push(value),
+  modal: (_title, html) => { cartModal = html; }, basePath: '/aplicativo/',
   shopProduct: () => '', productPage: () => '', addToCart: () => {},
   changeCart: () => {}, cartPage: () => '', newOrder: () => {}, createAdminOrder: () => {}
 };
@@ -32,6 +34,13 @@ state.addToCart(1, 1, { Cor: 'Bege', Tecido: 'Linho' });
 state.addToCart(1, 1, { Cor: 'Cinza', Tecido: 'Veludo' });
 assert.equal(state.db.cart.length, 2);
 assert.equal(state.cartQuantity(1), 2);
+assert.match(cartModal, /Continuar comprando/);
+assert.match(cartModal, /Finalizar compra/);
+assert.match(cartModal, /Bege/);
+const single = { variations: [{ name: 'Cor', values: ['Marrom'] }] };
+assert.equal(state.validateProductOptions(single, {}).Cor, 'Marrom');
+assert.doesNotMatch(state.detailOptions(single), /Selecione/);
+assert.match(state.detailOptions(single), /value="Marrom" selected/);
 assert.match(state.cartPage(), /Cor: Bege · Tecido: Linho/);
 assert.match(state.cartPage(), /Cor: Cinza · Tecido: Veludo/);
 

@@ -28,12 +28,12 @@ assert.deepEqual(Array.from(run('safeJson("invalid",[])')), []);
 run(`db.settings.paymentMethods=[{id:'credit',kind:'credit',title:'Crédito personalizado',active:true,installments:[{count:1,rate:0},{count:3,rate:5}]},
  {id:'disabled',kind:'pix',title:'Desativado',active:false,installments:[{count:1,rate:0}]}];
  isOwner=true;role='Proprietário';currentProfile={role:'master',name:'Grupo Outlet'};`);
-const quote = run("paymentQuote(paymentMethods()[0],3,1300)");
+const quote = run("paymentQuote(paymentMethods().find(method=>method.kind==='credit'),3,1300)");
 assert.equal(quote.paymentFee, 65);
 assert.equal(quote.total, 1365);
 assert.equal(quote.installmentAmount, 455);
 assert.throws(() => run("paymentFromFields({paymentMethodId:'disabled'},100)"));
-assert.throws(() => run("paymentQuote(paymentMethods()[0],12,100)"));
+assert.throws(() => run("paymentQuote(paymentMethods().find(method=>method.kind==='credit'),12,100)"));
 const rounding = run("paymentQuote({title:'Crédito',id:'c',kind:'credit',installments:[{count:3,rate:0}]},3,100)");
 assert.equal(rounding.installmentAmount, 33.33);
 assert.equal(rounding.lastInstallmentAmount, 33.34);
@@ -59,11 +59,35 @@ assert.match(checkout, /payment-preview[\s\S]*id="checkout-total"/);
 assert.match(checkout, /name="paymentMethodId"/);
 assert.match(checkout, /name="installments"/);
 assert.doesNotMatch(checkout, />Desativado<\/option>/);
+assert.equal(run('paymentMethods().length'), 4);
+assert.doesNotMatch(context.paymentsPage(), /Nova forma de pagamento/);
+context.paymentMethodModal(0);
+assert.doesNotMatch(nodes['#modal'].innerHTML, /name="rates"|name="counts"|name="kind"/);
+context.paymentMethodModal(1);
+assert.match(nodes['#modal'].innerHTML, /name="rates"/);
+assert.match(nodes['#modal'].innerHTML, /Adicionar parcelamento/);
+assert.throws(()=>context.paymentQuote({id:'other',kind:'other',installments:[{count:1,rate:0}]},1,100));
+assert.equal(context.paymentQuote({id:'pix',kind:'pix',title:'Pix',installments:[{count:1,rate:8}]},1,100).paymentFee,0);
+assert.throws(()=>context.paymentQuote({id:'pix',kind:'pix',installments:[{count:2,rate:0}]},2,100));
+const parsed = context.orderAddressParts({address:'Rua das Flores, 42 · Casa 2 · Centro · Nova Iguaçu / RJ · CEP 26260-045'});
+assert.deepEqual(JSON.parse(JSON.stringify(parsed)),{street:'Rua das Flores',number:'42',complement:'Casa 2',neighborhood:'Centro',city:'Nova Iguaçu',state:'RJ',cep:'26260-045'});
+run(`authSession={user:{id:'customer-a'}};isOwner=false;db.orders=[{id:21,customer:'Ana Silva',email:'ana@example.com',phone:'21968464050',cpf:'11122233344',address:'Rua das Flores, 42 · Casa 2 · Centro · Nova Iguaçu / RJ · CEP 26260-045'}];`);
+const rememberedCheckout = context.checkoutPage();
+assert.match(rememberedCheckout,/name="firstName"[^>]*value="Ana"/);
+assert.match(rememberedCheckout,/name="lastName"[^>]*value="Silva"/);
+assert.match(rememberedCheckout,/name="street"[^>]*value="Rua das Flores"/);
+assert.match(rememberedCheckout,/name="phone"[^>]*value="\+55 \(21\) 96846-4050"/);
+run(`localStore.setItem(checkoutContactKey,JSON.stringify({userId:'another-user',firstName:'Outra',lastName:'Pessoa',email:'other@example.com'}));`);
+assert.doesNotMatch(context.checkoutPage(),/value="other@example.com"/);
+run(`localStore.removeItem(checkoutContactKey);authSession=null;isOwner=true;db.orders=[];db.products[0].variations=[{name:'Cor',values:['Marrom']}];`);
+assert.match(context.checkoutCartItems(),/value="Marrom" selected/);
+assert.doesNotMatch(context.checkoutCartItems(),/Selecione cor/);
+run('db.products[0].variations=[]');
 assert.match(context.settingsPage(), /lookupStoreCep/);
 assert.match(context.settingsPage(), /formatBrazilPhone/);
 run(`db.orders=[{id:20,customer:'Ana Silva',phone:'21999999999',email:'ana@example.com',cpf:'11122233344',address:'Rua A, 1',
  delivery:'Entrega',deliveryDate:localToday(),freightPending:false,freight:30,status:'pending',paid:false,paymentTiming:'Na entrega',
- items:[{id:1,name:'Sofá · Bege',qty:1,price:1000,cost:500}],payment:'Crédito personalizado',...paymentQuote(paymentMethods()[0],3,1030)}];`);
+ items:[{id:1,name:'Sofá · Bege',qty:1,price:1000,cost:500}],payment:'Crédito personalizado',...paymentQuote(paymentMethods().find(method=>method.kind==='credit'),3,1030)}];`);
 let steps = run('orderSteps(db.orders[0])');
 assert.match(steps, /onclick="dispatchOrder\(20\)"/);
 assert.doesNotMatch(steps, /onclick="paymentModal\(20\)"/);
@@ -76,6 +100,17 @@ run("db.orders[0].paid=true;db.orders[0].paidAt='2026-10-09T15:00:00Z';db.orders
 steps = run('orderSteps(db.orders[0])');
 assert.match(steps, /onclick="finishOrder\(20\)"/);
 assert.match(context.orderDetail(20), /09\/10\/2026,? 12:00/);
+const editedData={firstName:'Ana',lastName:'Souza',phone:'21968464050',deliveryDate:run('localToday()'),
+  cep:'26260-045',street:'Rua das Flores',number:'42',neighborhood:'Centro',city:'Nova Iguaçu',state:'RJ',complement:'Casa 2',notes:'Portão azul'};
+run("db.orders[0].paid=false;db.orders[0].status='pending'");
+const savedBeforeEdit = context.save;
+context.save=()=>true;
+context.saveOrderData({data:editedData},20);
+assert.equal(run('db.orders[0].customer'),'Ana Souza');
+assert.equal(run('db.orders[0].phone'),'+55 (21) 96846-4050');
+assert.equal(run('db.orders[0].addressParts.complement'),'Casa 2');
+assert.equal(run('db.orders[0].address'),'Rua das Flores, 42 · Casa 2 · Centro · Nova Iguaçu / RJ · CEP 26260-045');
+context.save=savedBeforeEdit;
 run("db.orders[0].status='pending';db.orders[0].paid=false;db.orders[0].paymentTiming='Antecipado'");
 steps = run('orderSteps(db.orders[0])');
 assert.match(steps, /onclick="paymentModal\(20\)"/);
@@ -134,8 +169,12 @@ console.log('Payment totals and cents, checkout names, order progression, driver
   assert.equal(run('db.orders[0].id'),99); assert.equal(run('db.cart.length'),0);
   assert.equal(run('location.hash'),'#/loja/pedido/99'); assert.match(run('lastToast'),/Pedido recebido/);
   assert.equal(run('sessionStore.getItem("forte-customer")'),'original@example.com');
+  const cached = run('safeJson(localStore.getItem(checkoutContactKey),null)');
+  assert.equal(cached.userId,'master'); assert.equal(cached.firstName,'Ana'); assert.equal(cached.phone,'21999998888');
   run('authSession=null;sessionStore.removeItem("forte-guest-orders");storefront.init(db)');
   assert.doesNotThrow(()=>context.storeHeader());
   assert.doesNotThrow(()=>context.accountPage());
   console.log('Fresh browser storage, editable contact email, confirmed checkout, preserved admin session, physical freight and advance-payment steps verified.');
 })().catch(error=>{console.error(error);process.exitCode=1});
+
+

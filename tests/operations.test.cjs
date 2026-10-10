@@ -22,6 +22,9 @@ const context = vm.createContext({
 for (const name of ['storefront-editor.js', 'app.js', 'production.js', 'enhancements.js', 'variations.js', 'fulfillment.js', 'operations.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, name), 'utf8').replace(/boot\(\);\s*$/, ''), context, { filename: name });
 }
+const operationsNewOrder = context.newOrder;
+vm.runInContext(fs.readFileSync(path.join(root, 'commerce.js'), 'utf8').replace(/boot\(\);\s*$/, ''), context, { filename: 'commerce.js' });
+context.newOrder = operationsNewOrder;
 const run = code => vm.runInContext(code, context);
 run(`isOwner=true; role='Proprietário'; currentProfile={role:'master',name:'Grupo Outlet'};
   accountProfiles=[{user_id:'u1',role:'customer',name:'Cliente A',email:'a@example.com'},
@@ -51,6 +54,10 @@ assert.match(context.deliveriesPage(), /Imprimir pedidos do dia/);
 assert.equal(context.deliveryPrintUrl('2026-10-10'), '/app/deliveries/print/2026-10-10', 'Print links must normalize once and keep the active login');
 assert.doesNotMatch(context.deliveriesPage(), /target="_blank"/, 'Printing must keep the authenticated tab');
 context.editOrderModal(11);
+assert.match(nodes['#modal'].innerHTML, /name="firstName"/);
+assert.match(nodes['#modal'].innerHTML, /name="lastName"/);
+assert.match(nodes['#modal'].innerHTML, /name="cep"/);
+assert.doesNotMatch(nodes['#modal'].innerHTML, /name="address"/);
 assert.doesNotMatch(nodes['#modal'].innerHTML, /name="freight"/, 'Order edits preserve checkout freight selection');
 run("db.orders[0].deliveryDate='2026-10-11'");
 assert.equal(run('deliveryGroups(deliveryOrders()).length'), 1, 'Changing a schedule must move the order into its new day');

@@ -1,18 +1,22 @@
 // Shared payment quotes, checkout accounts, order steps, and staff workspaces.
-const paymentKinds = { pix: 'Pix', credit: 'Cartão de crédito', debit: 'Cartão de débito', cash: 'Dinheiro', other: 'Outro' };
+const paymentKinds = { pix: 'Pix', credit: 'Cartão de crédito', debit: 'Cartão de débito', cash: 'Dinheiro' };
 const canonicalPayment = kind => ({ pix: 'Pix', credit: 'Cartão de crédito', debit: 'Cartão de débito', cash: 'Dinheiro', other: 'Dinheiro' })[kind];
 const defaultPayments = () => Object.entries(paymentKinds).filter(([kind]) => kind !== 'other').map(([kind, title]) => ({
   id: 'pay-' + kind, kind, title, active: true, installments: [{ count: 1, rate: 0 }]
 }));
-const paymentMethods = () => Array.isArray(db.settings.paymentMethods) ? db.settings.paymentMethods : defaultPayments();
+const paymentMethods = () => defaultPayments().map(fallback => {
+  const stored = db.settings.paymentMethods?.find(method => method.kind === fallback.kind);
+  return stored ? { ...stored, installments: stored.kind === 'credit' ? stored.installments : [{ count: 1, rate: 0 }] } : fallback;
+});
 const activePayments = () => paymentMethods().filter(method => method.active !== false);
 const canConfigurePayments = () => isOwner && canManage() && ['master', 'admin'].includes(currentProfile?.role);
 const productSubtotal = order => order.items.reduce((total, item) => total + item.price * item.qty, 0);
 function paymentQuote(method, count, base) {
+  if (!method || !paymentKinds[method.kind] || (method.kind !== 'credit' && Number(count) !== 1)) throw new Error('Selecione uma forma de pagamento disponível.');
   const option = method?.installments.find(item => Number(item.count) === Number(count));
   if (!option || !Number.isInteger(Number(count)) || count < 1 || count > 24 ||
       !Number.isFinite(base) || base < 0) throw new Error('Selecione uma opção de pagamento e parcelas disponíveis.');
-  const rate = Number(option.rate);
+  const rate = method.kind === 'credit' ? Number(option.rate) : 0;
   if (!Number.isFinite(rate) || rate < 0 || rate > 100) throw new Error('Taxa de pagamento inválida.');
   const baseCents = Math.round(base * 100);
   const feeCents = Math.round(baseCents * rate / 100);
@@ -39,8 +43,7 @@ function quoteMarkup(quote) {
 navigation.splice(navigation.findIndex(item => item[0] === 'deliveries') + 1, 0, ['payments', 'Pagamentos', 'wallet']);
 function paymentsPage() {
   if (!canConfigurePayments()) return heading('Acesso restrito', 'Seu cargo não configura pagamentos.');
-  return heading('Pagamentos', 'Personalize as formas de pagamento e as taxas cobradas do cliente.',
-    button('Nova forma de pagamento', 'onclick="paymentMethodModal()"', 'primary', 'plus')) +
+  return heading('Pagamentos', 'Ative as formas de pagamento da loja. Taxas e parcelamento são exclusivos do cartão de crédito.') +
     `<div class="payment-methods">${paymentMethods().map((method, index) => `<section class="card pad payment-method-card">
       <div class="payment-method-heading"><span class="task-symbol">${icon('wallet')}</span><div><h2>${esc(method.title)}</h2><p class="subtle">${esc(paymentKinds[method.kind])}</p></div><span class="badge ${method.active === false ? 'gray' : 'green'}">${method.active === false ? 'Desativado' : 'Ativo'}</span></div>
       <div class="payment-rate-tags">${method.installments.map(option => `<span>${method.kind === 'credit' ? option.count + 'x' : 'À vista'} · ${option.rate ? String(option.rate).replace('.', ',') + '%' : 'sem taxa'}</span>`).join('')}</div>
@@ -48,30 +51,24 @@ function paymentsPage() {
     </section>`).join('') || '<section class="card pad empty">Cadastre uma forma de pagamento.</section>'}</div>`;
 }
 function paymentRateRow(count = 1, rate = 0, credit = true) {
-  if (!credit) return `<div class="payment-rate-row single"><input name="counts" type="hidden" value="1"><label class="field">Taxa total (%)<input name="rates" type="number" value="${rate}" min="0" max="100" step="0.01" required></label></div>`;
+  if (!credit) return '';
   return `<div class="payment-rate-row"><label class="field">Parcelas<input name="counts" type="number" value="${count}" min="1" max="24" step="1" required></label>
     <label class="field">Taxa total (%)<input name="rates" type="number" value="${rate}" min="0" max="100" step="0.01" required></label>
     <button class="btn small danger" type="button" aria-label="Remover parcela" onclick="this.closest('.payment-rate-row').remove()">${icon('trash')}</button></div>`;
 }
 function paymentMethodModal(index = -1) {
   if (!canConfigurePayments()) return;
-  const method = paymentMethods()[index] || { title: '', kind: 'pix', installments: [{ count: 1, rate: 0 }] };
-  modal(index < 0 ? 'Nova forma de pagamento' : 'Personalizar pagamento', `<form onsubmit="event.preventDefault();savePaymentMethod(this,${index})">
-    <div class="form-grid">${field('Título no checkout', 'title', method.title, 'text', 'required maxlength="60"')}
-    <label class="field">Tipo<select name="kind" onchange="updatePaymentRateEditor(this)">${Object.entries(paymentKinds).map(([kind, title]) => `<option value="${kind}" ${method.kind === kind ? 'selected' : ''}>${title}</option>`).join('')}</select></label></div>
-    <h3 id="payment-editor-title" style="margin:24px 0 8px">${method.kind === 'credit' ? 'Parcelas e taxas' : 'Taxa de pagamento'}</h3><p class="subtle">A taxa será aplicada sobre produtos e frete; zero significa sem taxa.</p>
-    <div id="payment-rate-editor">${method.installments.map(option => paymentRateRow(option.count, option.rate, method.kind === 'credit')).join('')}</div>
-    <button id="add-payment-rate" class="btn small" type="button" ${method.kind !== 'credit' ? 'hidden' : ''} onclick="addPaymentRate()">${icon('plus')}Adicionar parcelamento</button>
+  const method = paymentMethods()[index];
+  if (!method) return;
+  modal('Personalizar ' + paymentKinds[method.kind], `<form onsubmit="event.preventDefault();savePaymentMethod(this,${index})">
+    ${field('Título no checkout', 'title', method.title, 'text', 'required maxlength="60"')}
+    ${method.kind === 'credit' ? `<h3 style="margin:24px 0 8px">Parcelas e taxas</h3><p class="subtle">A taxa será aplicada sobre produtos e frete; zero significa sem taxa.</p>
+    <div id="payment-rate-editor">${method.installments.map(option => paymentRateRow(option.count, option.rate)).join('')}</div>
+    <button id="add-payment-rate" class="btn small" type="button" onclick="addPaymentRate()">${icon('plus')}Adicionar parcelamento</button>` : '<p class="subtle" style="margin-top:18px">Pagamento à vista, sem taxa adicional.</p>'}
     <div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Salvar pagamento</button></div></form>`);
 }
-function updatePaymentRateEditor(input) {
-  const credit = input.value === 'credit';
-  $('#add-payment-rate').hidden = !credit;
-  const rate = Number($('#payment-rate-editor').querySelector('input[name="rates"]')?.value || 0);
-  $('#payment-editor-title').textContent = credit ? 'Parcelas e taxas' : 'Taxa de pagamento';
-  $('#payment-rate-editor').innerHTML = paymentRateRow(1, rate, credit);
-}
 function addPaymentRate() {
+  if (!$('#payment-rate-editor')) return;
   const counts = [...document.querySelectorAll('#payment-rate-editor input[name="counts"]')].map(input => Number(input.value));
   const count = Array.from({ length: 24 }, (_, index) => index + 1).find(value => !counts.includes(value));
   if (!count) return toast('As 24 opções de parcelas já foram adicionadas.');
@@ -79,18 +76,20 @@ function addPaymentRate() {
 }
 function savePaymentMethod(form, index) {
   if (!canConfigurePayments()) return;
+  const method = paymentMethods()[index];
+  if (!method) return;
   const title = form.elements.namedItem('title').value.trim();
-  const kind = form.elements.namedItem('kind').value;
+  const kind = method.kind;
   const counts = [...form.querySelectorAll('input[name="counts"]')];
   const rates = [...form.querySelectorAll('input[name="rates"]')];
-  const installments = counts.map((input, position) => ({ count: Number(input.value), rate: Number(rates[position]?.value) }));
+  const installments = kind === 'credit' ? counts.map((input, position) => ({ count: Number(input.value), rate: Number(rates[position]?.value) })) : [{ count: 1, rate: 0 }];
   if (!title || title.length > 60 || !paymentKinds[kind] || !installments.length ||
-      installments.some((option, position) => !counts[position].value || !rates[position].value || !Number.isInteger(option.count) || option.count < 1 || option.count > 24 ||
-        !Number.isFinite(option.rate) || option.rate < 0 || option.rate > 100 || (kind !== 'credit' && option.count !== 1)) ||
+      (kind === 'credit' && installments.some((option, position) => !counts[position].value || !rates[position].value || !Number.isInteger(option.count) || option.count < 1 || option.count > 24 ||
+        !Number.isFinite(option.rate) || option.rate < 0 || option.rate > 100)) ||
       new Set(installments.map(option => option.count)).size !== installments.length)
     return toast('Confira o título, as parcelas e as taxas. Cada quantidade de parcelas deve aparecer uma vez.');
   const methods = [...paymentMethods()];
-  methods[index < 0 ? methods.length : index] = { id: methods[index]?.id || 'pay-' + crypto.randomUUID(), title, kind,
+  methods[index] = { id: method.id, title, kind,
     active: methods[index]?.active !== false, installments: installments.sort((a, b) => a.count - b.count) };
   db.settings.paymentMethods = methods; save(); closeModal(); render(); toast('Forma de pagamento salva.');
 }
@@ -143,6 +142,45 @@ function updatePaymentTotal(form) {
   }
 }
 const checkoutBeforeCommerce = checkoutPage;
+const checkoutContactKey = 'forte-checkout-contact-v1';
+function splitCustomerName(contact = {}) {
+  const names = String(contact.customer || contact.name || '').trim().split(/\s+/);
+  return { firstName: contact.firstName || names[0] || '', lastName: contact.lastName || names.slice(1).join(' ') };
+}
+function orderAddressParts(order = {}) {
+  if (order.addressParts) return parseAddress(order.addressParts);
+  const parts = String(order.address || '').split(' · ').map(part => part.trim());
+  if (parts.length < 3) return parseAddress(order.address);
+  const cepPart = parts.findIndex(part => /^CEP\s/i.test(part));
+  const tail = cepPart >= 0 ? parts.slice(0, cepPart) : parts;
+  const city = tail.pop() || '';
+  const neighborhood = tail.pop() || '';
+  const streetNumber = (tail.shift() || '').match(/^(.+),\s*([^,]+)$/);
+  if (!streetNumber) return parseAddress(order.address);
+  const cityParts = city.split(/\s*\/\s*/);
+  return { street: streetNumber[1].trim(), number: streetNumber[2].trim(), complement: tail.join(' · '),
+    neighborhood, city: cityParts[0], state: cityParts[1] || '', cep: cepPart >= 0 ? parts[cepPart].replace(/^CEP\s*/i, '') : '' };
+}
+function checkoutContact() {
+  const cached = safeJson(localStore.getItem(checkoutContactKey), null);
+  const userId = authSession?.user?.id;
+  const ownOrders = authSession ? db.orders.filter(order => order.status !== 'cancelled' &&
+    (!isOwner || order.user_id === userId)).sort((a, b) => Number(b.id) - Number(a.id)) : [];
+  const contact = cached && (!userId || cached.userId === userId) ? cached : ownOrders[0];
+  return contact ? { ...contact, ...splitCustomerName(contact), addressParts: orderAddressParts(contact) } : null;
+}
+function fillCheckoutContact(html, contact) {
+  if (!contact) return html;
+  const address = contact.addressParts || {};
+  const values = { firstName: contact.firstName, lastName: contact.lastName, email: contact.email, cpf: contact.cpf,
+    phone: formatBrazilPhone(contact.phone), cep: address.cep, street: address.street, number: address.number,
+    neighborhood: address.neighborhood, city: [address.city, address.state].filter(Boolean).join(' / '), complement: address.complement };
+  for (const [name, value] of Object.entries(values)) if (value) {
+    const pattern = new RegExp('(<input\\b[^>]*name="' + name + '"[^>]*\\bvalue=")[^"]*(")');
+    html = html.replace(pattern, (_, before, after) => before + esc(value) + after);
+  }
+  return html;
+}
 checkoutPage = () => {
   const unavailable = db.cart.map((item, index) => ({ item, index, product: db.products.find(product => product.id === item.id && product.active) })).filter(line => !line.product);
   if (unavailable.length) return `<div class="store-content">${heading('Revise seu carrinho', 'Alguns produtos deixaram de estar disponíveis. Remova-os para continuar.')}<section class="card pad">${unavailable.map(line => `<div class="total-line"><span>Produto indisponível · código ${line.item.id}</span>${button('Remover', `type="button" onclick="removeCartLine(${line.index})"`, 'small')}</div>`).join('')}<a class="btn" href="/loja/carrinho">Voltar ao carrinho</a></section></div>`;
@@ -157,13 +195,14 @@ checkoutPage = () => {
   html = html.replace('<div class="total-line final">', '<div class="payment-preview" aria-live="polite"></div><div class="total-line final">');
   html = html.replace(/(<h2>Seu pedido<\/h2>)[\s\S]*?(<div class="total-line"><span>Frete<\/span>)/,
     '$1' + checkoutCartItems() + '$2');
-  return html;
+  html = html.replace(/(<input[^>]*name="phone"[^>]*)(>)/, '$1 onblur="this.value=formatBrazilPhone(this.value)"$2');
+  return fillCheckoutContact(html, checkoutContact());
 };
 function checkoutCartItems() {
   return db.cart.map((item, index) => {
     const product = db.products.find(product => product.id === item.id);
     return `<div class="checkout-cart-item"><div class="cart-line"><img src="${esc(product.image)}" alt=""><div><h3>${esc(product.name)}</h3><small>${item.qty} × ${money(salePrice(product))}</small></div></div>
-      ${productVariations(product).map(option => `<label class="field">${esc(option.name)}<select class="checkout-product-option" data-cart-index="${index}" data-option-name="${esc(option.name)}" required onchange="updateCheckoutProductOptions()"><option value="" disabled ${!option.values.includes(item.options?.[option.name]) ? 'selected' : ''}>Selecione ${esc(option.name.toLowerCase())}</option>${option.values.map(value => `<option value="${esc(value)}" ${item.options?.[option.name] === value ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select></label>`).join('')}</div>`;
+      ${productVariations(product).map(option => `<label class="field">${esc(option.name)}<select class="checkout-product-option" data-cart-index="${index}" data-option-name="${esc(option.name)}" required onchange="updateCheckoutProductOptions()">${option.values.length > 1 ? `<option value="" disabled ${!option.values.includes(item.options?.[option.name]) ? 'selected' : ''}>Selecione ${esc(option.name.toLowerCase())}</option>` : ''}${option.values.map(value => `<option value="${esc(value)}" ${option.values.length === 1 || item.options?.[option.name] === value ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select></label>`).join('')}</div>`;
   }).join('');
 }
 function updateCheckoutProductOptions() {
@@ -288,6 +327,11 @@ checkout = async form => {
     if (!result?.id || !result?.token || !result?.order) throw new Error('A confirmação não foi recebida. Consulte a loja antes de tentar novamente.');
     confirmed = result;
     if (result.session?.access_token) rememberAuth(result.session);
+    const cityParts = String(fields.city || '').split(/\s*\/\s*/);
+    localStore.setItem(checkoutContactKey, JSON.stringify({ userId: authSession?.user?.id || null,
+      firstName: request.firstName, lastName: request.lastName, email: request.email, cpf: request.cpf, phone: request.phone,
+      addressParts: fields.delivery === 'Entrega' ? { cep: fields.cep, street: fields.street, number: fields.number,
+        neighborhood: fields.neighborhood, city: cityParts[0], state: cityParts[1] || '', complement: fields.complement } : checkoutContact()?.addressParts || {} }));
     db.cart = []; localStore.setItem(cartStorageKey, '[]');
     sessionStore.setItem('forte-guest-order-' + result.id, result.token);
     const guestIds = safeJson(sessionStore.getItem('forte-guest-orders'), []);

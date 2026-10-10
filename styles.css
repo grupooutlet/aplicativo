@@ -176,3 +176,8 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
 #add-payment-rate[hidden]{display:none}
 .order-detail-layout td:first-child{white-space:normal;overflow-wrap:anywhere;line-height:1.6}
 .payment-choice-details[hidden]{display:none}.payment-rate-row.single{grid-template-columns:1fr;max-width:300px}.order-summary{padding:18px;margin-top:24px;background:#fafaf8;border:1px solid var(--line);border-radius:9px}.checkout-cart-item{padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:14px}.checkout-cart-item .cart-line{border:0;padding-bottom:14px}.checkout-cart-item .field{margin-top:10px}.checkout-cart-item h3{overflow-wrap:anywhere}
+.cart-confirmation-item{display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+.cart-confirmation-item img{width:70px;height:70px;object-fit:cover;border-radius:8px}
+.cart-confirmation-item>div{flex:1;min-width:0}.cart-confirmation-item strong{font-size:14px;line-height:1.5}
+.cart-confirmation-item small{display:block;margin-top:5px;color:var(--muted);font-size:12px}
+@media(max-width:520px){.cart-confirmation-item{flex-wrap:wrap}.cart-confirmation-item>strong{margin-left:84px}.cart-confirmation .form-actions{flex-direction:column}.cart-confirmation .form-actions>*{width:100%;justify-content:center}}
