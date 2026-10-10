@@ -656,12 +656,6 @@ shell = (...args) => {
   const html = shellBeforeSellerAccess(...args);
   return role === 'Vendedor' ? html.replace(/<div class="navlabel">(?:CANAIS DE VENDA|ORGANIZAÇÃO)<\/div>/g, '') : html;
 };
-const orderTableBeforeSellerAccess = orderTable;
-orderTable = (orders, compact = false) => {
-  let html = orderTableBeforeSellerAccess(orders, compact);
-  if (!compact) for (const order of orders) html = html.replace(`<td>${esc(order.seller.split(' ')[0])}</td>`, `<td>${esc(order.seller)}</td>`);
-  return html;
-};
 async function saveSellerOrder(order, id = null) {
   const submit = $('#modal form button:not([type])');
   if (submit) submit.disabled = true;
