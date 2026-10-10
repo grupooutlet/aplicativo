@@ -208,7 +208,7 @@ function cartConfirmationModal() {
     if (!product) return '';
     return `<div class="cart-confirmation-item"><img src="${esc(product.image)}" alt="${esc(product.name)}"><div><strong>${esc(product.name)}</strong><small>${esc(optionText(item.options))}</small><small>${item.qty} × ${money(salePrice(product))}</small></div><strong>${money(item.qty * salePrice(product))}</strong></div>`;
   }).join('')}<div class="total-line final"><span>Produtos</span><strong>${money(cartTotal())}</strong></div>
-  <div class="form-actions">${button('Continuar comprando', 'type="button" onclick="closeModal()"')}<a class="btn primary" href="${basePath}#/loja/checkout" onclick="closeModal()">Finalizar compra ${icon('chevron')}</a></div></div>`);
+  <div class="form-actions">${button('Continuar comprando', 'type="button" onclick="closeModal()"')}${button('Finalizar compra', 'type="button" onclick="closeModal();go(\'/loja/checkout\')"', 'primary', 'chevron')}</div></div>`);
 }
 changeCart = (index, delta) => {
   const line = db.cart[index];
