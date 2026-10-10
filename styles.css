@@ -180,4 +180,4 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
 .cart-confirmation-item img{width:70px;height:70px;object-fit:cover;border-radius:8px}
 .cart-confirmation-item>div{flex:1;min-width:0}.cart-confirmation-item strong{font-size:14px;line-height:1.5}
 .cart-confirmation-item small{display:block;margin-top:5px;color:var(--muted);font-size:12px}
-@media(max-width:520px){.cart-confirmation-item{flex-wrap:wrap}.cart-confirmation-item>strong{margin-left:84px}.cart-confirmation .form-actions{flex-direction:column}.cart-confirmation .form-actions>*{width:100%;justify-content:center}}
+@media(max-width:520px){.cart-confirmation-item{flex-wrap:wrap}.cart-confirmation-item>strong{flex:0 0 calc(100% - 84px);margin-left:84px}.cart-confirmation .form-actions{flex-direction:column}.cart-confirmation .form-actions>*{width:100%;justify-content:center}}
