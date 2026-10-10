@@ -222,8 +222,8 @@ const productionShell = shell;
 shell = (...args) => {
   const title = currentProfile?.role === 'master' ? 'Principal' : currentProfile?.position || 'Admin';
   const name = currentProfile?.name || 'Grupo Outlet';
-  return productionShell(...args).replace('<div class="avatar">GO</div><span>Grupo Outlet<small>Master</small>',
-    `<div class="avatar">${esc(initials(name))}</div><span>${esc(name)}<small>${esc(title)}</small>`);
+  return productionShell(...args).replace(/(<button class="account"[^>]*>)[\s\S]*?<\/button>/,
+    `$1<div class="avatar">${esc(initials(name))}</div><span>${esc(name)}<small>${esc(title)}</small></span>${icon('down')}</button>`);
 };
 const productionDashboard = dashboard;
 dashboard = () => productionDashboard().replace('Bem-vindo de volta, Grupo Outlet', `Bem-vindo de volta, ${esc(currentProfile?.name || 'Grupo Outlet')}`);
@@ -232,10 +232,10 @@ settingsPage = () => productionSettingsPage().replace('O acesso à gestão está
 
 productsPage = () => {
   const products = db.products.filter(p => (p.name + ' ' + p.sku + ' ' + p.category).toLowerCase().includes(productQuery.toLowerCase()));
-  return heading('Produtos', 'Um catálogo único para sua loja física e online.', button('Adicionar produto', 'onclick="productModal()"', 'primary', 'plus')) +
+  return heading('Produtos', 'Um catálogo único para sua loja física e online.', canManage() ? button('Adicionar produto', 'onclick="productModal()"', 'primary', 'plus') : '') +
     `<section class="card"><div class="toolbar"><form class="search" onsubmit="event.preventDefault();productQuery=this.q.value;render()">${icon('search')}<input name="q" value="${esc(productQuery)}" placeholder="Buscar por nome, SKU ou coleção"><button aria-label="Buscar">${icon('chevron')}</button></form><span class="subtle">${products.length} produtos</span></div>
     <div class="tablewrap"><table><thead><tr><th>Produto</th><th>Status</th><th>Estoque</th><th>Coleção</th><th>Preço</th><th>Ações</th></tr></thead><tbody>
-    ${products.map(p => `<tr><td><div class="product-cell"><img src="${esc(p.image)}" alt=""><div>${esc(p.name)}<small>${esc(p.sku)}</small></div></div></td><td><span class="badge ${p.active ? 'green' : 'gray'}">${p.active ? 'Ativo' : 'Rascunho'}</span></td><td>${p.stock} un.</td><td>${esc(p.category)}</td><td>${priceMarkup(p)}</td><td><div class="actions">${button('Editar', `onclick="productModal(${p.id})"`, 'small')}${p.active ? `<a class="btn small" href="/loja/produto/${p.id}" target="_blank" rel="noopener noreferrer" aria-label="Visualizar ${esc(p.name)} na loja">${icon('eye')}Visualizar</a>` : '<button class="btn small" type="button" disabled title="Ative o produto para visualizá-lo na loja">Visualizar</button>'}${button('Excluir', `onclick="deleteProduct(${p.id})"`, 'small danger')}</div></td></tr>`).join('') || '<tr><td colspan="6" class="empty">Nenhum produto encontrado.</td></tr>'}
+    ${products.map(p => `<tr><td><div class="product-cell"><img src="${esc(p.image)}" alt=""><div>${esc(p.name)}<small>${esc(p.sku)}</small></div></div></td><td><span class="badge ${p.active ? 'green' : 'gray'}">${p.active ? 'Ativo' : 'Rascunho'}</span></td><td>${p.stock} un.</td><td>${esc(p.category)}</td><td>${priceMarkup(p)}</td><td><div class="actions">${canManage() ? button('Editar', `onclick="productModal(${p.id})"`, 'small') : ''}${p.active ? `<a class="btn small" href="/loja/produto/${p.id}" target="_blank" rel="noopener noreferrer" aria-label="Visualizar ${esc(p.name)} na loja">${icon('eye')}Visualizar</a>` : '<button class="btn small" type="button" disabled title="Ative o produto para visualizá-lo na loja">Visualizar</button>'}${canManage() ? button('Excluir', `onclick="deleteProduct(${p.id})"`, 'small danger') : ''}</div></td></tr>`).join('') || '<tr><td colspan="6" class="empty">Nenhum produto encontrado.</td></tr>'}
     </tbody></table></div></section>`;
 };
 function draftGallery() {

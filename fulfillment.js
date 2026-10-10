@@ -448,7 +448,7 @@ async function deleteOrder(id) {
     await backendRequest('/rest/v1/rpc/delete_order',
       { method: 'POST', body: JSON.stringify({ p_order_id: id }) }, true);
     await loadAdminState();
-    closeModal(); go('/app/orders'); toast(`Pedido #${id} excluído.`);
+    closeModal(); go('/app/orders'); toast(`Pedido #${id} excluído. Os produtos retornaram ao estoque.`);
   } catch (error) { toast(error.message); }
 }
 

@@ -59,8 +59,8 @@ function deliveryBoard() {
     ${button('Ver todos', "onclick=\"deliveryDayFilter='';deliverySearch='';render()\"", 'small')}</section>
     <div class="delivery-days">${deliveryGroups(orders).map(([day, rows]) => `<section class="delivery-day">
       <div class="delivery-day-heading"><div><h2>${esc(deliveryDateLabel(day))}</h2><span class="subtle">${rows.length} pedido(s)</span></div>
-      ${day ? `<a class="btn" href="${deliveryPrintUrl(day)}">${icon('print')}Imprimir pedidos do dia</a>` : ''}</div>
-      <div class="delivery-lanes">${[['prepare', 'A preparar', ['pending', 'ready']], ['transit', 'Em entrega', ['transit']], ['done', 'Concluídos', ['delivered']]].map(([key, title, statuses]) => {
+      ${day ? `<div class="actions">${rows.some(order => ['pending','ready'].includes(order.status)) ? button('Liberar pedidos do dia', `onclick="releaseDayModal('${day}')"`, 'primary', 'truck') : ''}<a class="btn" href="${deliveryPrintUrl(day)}">${icon('print')}Imprimir pedidos do dia</a></div>` : ''}</div>
+      <div class="delivery-lanes">${[['prepare', 'A preparar', ['pending', 'ready']], ['transit', 'Em rota de entrega', ['transit']], ['done', 'Concluídos', ['delivered']]].map(([key, title, statuses]) => {
         const lane = rows.filter(order => statuses.includes(order.status));
         return `<div class="delivery-lane ${key}"><div class="delivery-lane-title"><h3>${title}</h3><span>${lane.length}</span></div>${lane.map(deliveryCard).join('') || '<p class="delivery-lane-empty">Nenhum pedido</p>'}</div>`;
       }).join('')}</div></section>`).join('') || '<section class="card pad empty">Nenhuma entrega encontrada para este filtro.</section>'}</div>`;
@@ -207,21 +207,24 @@ saveOrderData = (form, id) => {
       (fields.deliveryDate !== order.deliveryDate && !isDeliveryDate(fields.deliveryDate, true))))
     return toast('Selecione uma data válida para a entrega.');
   const addressParts = order.delivery === 'Entrega' ? addressFromForm(fields) : orderAddressParts(order);
-  Object.assign(order, { firstName: fields.firstName.trim(), lastName: fields.lastName.trim(),
+  const changes = { firstName: fields.firstName.trim(), lastName: fields.lastName.trim(),
     customer: (fields.firstName.trim() + ' ' + fields.lastName.trim()).replace(/\s+/g, ' '), phone: formatBrazilPhone(fields.phone),
     addressParts, address: order.delivery === 'Entrega' ? formatAddress(addressParts) : order.address,
-    notes: fields.notes, deliveryDate: fields.deliveryDate });
+    notes: fields.notes, deliveryDate: fields.deliveryDate };
+  if (currentProfile?.role === 'admin' && currentProfile.position === 'Vendedor') return saveSellerOrder({ ...order, ...changes }, id);
+  Object.assign(order, changes);
   save(); closeModal(); render(); toast('Dados do pedido atualizados.');
 };
 function customerRows() {
   const staffEmails = new Set(accountProfiles.filter(profile => profile.role !== 'customer').map(profile => profile.email.toLowerCase()));
   const rows = accountProfiles.filter(profile => profile.role === 'customer').map(profile => ({
-    key: 'user-' + profile.user_id, userId: profile.user_id, name: profile.name, email: profile.email, contacts: []
+    key: 'user-' + profile.user_id, userId: profile.user_id, name: profile.name, email: profile.email, createdAt: profile.created_at, contacts: []
   }));
   for (const contact of customerContacts) {
     if (staffEmails.has(contact.email.toLowerCase())) continue;
     let row = rows.find(item => item.email.toLowerCase() === contact.email.toLowerCase());
-    if (!row) { row = { key: 'contact-' + contact.id, userId: null, name: contact.name, email: contact.email, contacts: [] }; rows.push(row); }
+    if (!row) { row = { key: 'contact-' + contact.id, userId: null, name: contact.name, email: contact.email, createdAt: contact.created_at, contacts: [] }; rows.push(row); }
+    if (contact.created_at && (!row.createdAt || contact.created_at < row.createdAt)) row.createdAt = contact.created_at;
     row.contacts.push(contact); if (!row.name) row.name = contact.name;
   }
   return rows;
@@ -232,13 +235,13 @@ const canPromoteCustomers = () => currentProfile?.role === 'master' && role === 
 customersPage = () => {
   const rows = customerRows();
   return heading('Clientes', 'Cadastros e histórico de compras da loja.') + `<section class="card"><div class="card-header"><h2>${rows.length} clientes</h2></div>
-    <div class="tablewrap"><table><thead><tr><th>Cliente</th><th>Contato</th><th>Pedidos</th><th>Equipe</th>${canDeleteCustomers() ? '<th></th>' : ''}</tr></thead><tbody>
+    <div class="tablewrap"><table><thead><tr><th>Cliente</th><th>Contato</th><th>Pedidos</th><th>${role === 'Vendedor' ? 'Cadastrado em' : 'Equipe'}</th>${canDeleteCustomers() ? '<th></th>' : ''}</tr></thead><tbody>
     ${rows.map(row => {
       const ids = new Set(row.contacts.map(contact => contact.id));
       const count = db.orders.filter(order => (row.userId && order.user_id === row.userId) || ids.has(order.customer_id)).length;
       return `<tr><td><div class="customer"><span class="avatar">${esc(initials(row.name || row.email))}</span>${esc(row.name || 'Cliente')}</div></td>
         <td>${esc(row.email)}${row.contacts[0]?.phone ? `<small style="display:block">${esc(row.contacts[0].phone)}</small>` : ''}</td><td>${count}</td>
-        <td>${button('Tornar da equipe', canPromoteCustomers() ? `onclick="teamCustomerModal('${row.key}')"` : 'disabled title="A conta principal gerencia as permissões da equipe"', 'small')}</td>
+        <td>${role === 'Vendedor' ? esc(row.createdAt ? momentLabel(row.createdAt) : 'Data não registrada') : button('Tornar da equipe', canPromoteCustomers() ? `onclick="teamCustomerModal('${row.key}')"` : 'disabled title="A conta principal gerencia as permissões da equipe"', 'small')}</td>
         ${canDeleteCustomers() ? `<td>${button('Excluir', `onclick="deleteCustomerModal('${row.key}')"`, 'small danger', 'trash')}</td>` : ''}</tr>`;
     }).join('') || '<tr><td colspan="5" class="empty">Nenhum cliente cadastrado.</td></tr>'}</tbody></table></div></section>`;
 };

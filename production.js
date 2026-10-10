@@ -77,7 +77,9 @@ async function loadCatalog() {
   storefront.init(db);
 }
 async function loadAdminState() {
-  const rows = await backendRequest('/rest/v1/app_state?select=data,version&id=eq.1', {}, true);
+  const seller = currentProfile?.role === 'admin' && currentProfile.position === 'Vendedor';
+  const rows = seller ? [await backendRequest('/rest/v1/rpc/sales_state', { method: 'POST', body: '{}' }, true)]
+    : await backendRequest('/rest/v1/app_state?select=data,version&id=eq.1', {}, true);
   if (!rows?.[0]?.data) throw new Error('Acesso administrativo não autorizado para esta conta.');
   stateVersion = rows[0].version;
   db = { ...rows[0].data, cart: db.cart || [] };
@@ -170,7 +172,7 @@ save = function () {
   try {
     localStore.setItem(cartStorageKey, JSON.stringify(db.cart || []));
   } catch { toast('Não foi possível salvar o carrinho neste navegador.'); }
-  if (!isOwner) return true;
+  if (!isOwner || (currentProfile?.role === 'admin' && currentProfile.position === 'Vendedor')) return true;
   const state = { ...db };
   delete state.cart;
   const next = JSON.stringify(state);

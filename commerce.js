@@ -392,7 +392,7 @@ function orderSteps(order, driver = false) {
   const paid = Boolean(order.paid);
   const cancelled = order.status === 'cancelled';
   const ownsDelivery = !driver || (currentProfile?.role === 'driver' && order.driver_id === authSession?.user?.id);
-  const mayRelease = !driver && ['Proprietário', 'Gerente', 'Estoque'].includes(role);
+  const mayRelease = driver ? isDeliveryDriverView() : ['Proprietário', 'Gerente', 'Vendedor', 'Estoque'].includes(role);
   const mayPay = driver ? ownsDelivery && order.status === 'transit' : canPay();
   const payAtDelivery = order.paymentTiming !== 'Antecipado';
   const schedule = { title: pickup ? 'Pedido recebido' : 'Agendar entrega', done: scheduled,
@@ -436,8 +436,9 @@ orderDetail = id => {
       <section class="card pad"><h2>Pagamento</h2><div class="total-line"><span>Forma</span><strong>${esc(order.payment)}</strong></div><div class="total-line"><span>Momento</span><strong>${esc(order.paymentTiming || 'A combinar')}</strong></div>
       ${order.receipt?.startsWith('data:image/') ? `<img class="receipt-preview" src="${esc(order.receipt)}" alt="Comprovante de pagamento">` : '<p class="subtle" style="margin-top:14px">O comprovante será registrado na etapa de pagamento.</p>'}</section>
       <section class="card pad"><h2>Informações do Cliente</h2><p style="margin:16px 0;line-height:1.8"><strong>${esc(order.customer)}</strong><br>${esc(order.phone)}<br>${esc(order.email || '')}<br>CPF: ${esc(order.cpf)}</p><p class="subtle">Pedidos realizados: <strong>${customerOrderCount(order)}</strong></p></section>
+      <section class="card pad"><h2>Responsável pela venda</h2><p style="margin-top:14px">${esc(order.seller || 'Loja online')}</p><p class="subtle" style="margin-top:8px">${esc(order.channel)}</p></section>
       <section class="card pad"><h2>Observações</h2><p style="margin-top:14px;line-height:1.7">${esc(order.notes || 'Nenhuma observação.')}</p></section>
-      <div class="actions">${canManage() && ['pending', 'ready'].includes(order.status) ? button('Cancelar pedido', `onclick="cancelOrderModal(${id})"`, 'danger') : ''}${mayDelete ? button('Excluir pedido', `onclick="deleteOrderModal(${id})"`, 'danger', 'trash') : ''}</div></div>
+      <div class="actions">${canManage() && order.status !== 'cancelled' ? button('Cancelar pedido', `onclick="cancelOrderModal(${id})"`, 'danger') : ''}${mayDelete ? button('Excluir pedido', `onclick="deleteOrderModal(${id})"`, 'danger', 'trash') : ''}</div></div>
       <div class="order-workflow-column">${orderSteps(order)}</div></div>`;
 };
 const dispatchBeforeCommerce = dispatchOrder;
@@ -495,7 +496,7 @@ deliveryCard = order => {
   let html = deliveryCardBeforeCommerce(order);
   if (isDeliveryDriverView()) {
     html = html.replace(/<button[^>]*onclick="driverCompleteModal\([^)]*\)"[^>]*>[\s\S]*?<\/button>/, '');
-    html = html.replace('</div></article>', `<a class="btn small" href="/app/deliveries/order/${order.id}">Acompanhar etapas</a></div></article>`);
+    html = html.replace('</div></article>', `${['pending','ready'].includes(order.status) ? button('Liberar para entrega', `onclick="dispatchOrder(${order.id})"`, 'small primary', 'truck') : ''}<a class="btn small" href="/app/deliveries/order/${order.id}">Acompanhar etapas</a></div></article>`);
   }
   if (order.paymentMethodId) html = html.replace('<div class="delivery-card-actions">', `<p class="subtle">${esc(order.payment)} · ${esc(installmentText({ ...order, total: orderTotal(order) }))}</p><div class="delivery-card-actions">`);
   return html;
@@ -644,4 +645,110 @@ render = function () {
   }
   return renderBeforeCommerce();
 };
+// Restricted projections and workflow RPCs keep costs private and stock transactional.
+const inventoryBeforeSellerAccess = inventoryPage;
+inventoryPage = () => role === 'Vendedor' ? inventoryBeforeSellerAccess()
+  .replace(/<button[^>]*onclick="stockModal\([^)]*\)"[^>]*>[\s\S]*?<\/button>/g, '') : inventoryBeforeSellerAccess();
+const stockModalBeforeSellerAccess = stockModal;
+stockModal = (...args) => { if (role !== 'Vendedor') stockModalBeforeSellerAccess(...args); };
+const shellBeforeSellerAccess = shell;
+shell = (...args) => {
+  const html = shellBeforeSellerAccess(...args);
+  return role === 'Vendedor' ? html.replace(/<div class="navlabel">(?:CANAIS DE VENDA|ORGANIZAÇÃO)<\/div>/g, '') : html;
+};
+const orderTableBeforeSellerAccess = orderTable;
+orderTable = (orders, compact = false) => {
+  let html = orderTableBeforeSellerAccess(orders, compact);
+  if (!compact) for (const order of orders) html = html.replace(`<td>${esc(order.seller.split(' ')[0])}</td>`, `<td>${esc(order.seller)}</td>`);
+  return html;
+};
+async function saveSellerOrder(order, id = null) {
+  const submit = $('#modal form button:not([type])');
+  if (submit) submit.disabled = true;
+  try {
+    const result = await backendRequest('/rest/v1/rpc/sales_order', { method: 'POST', body: JSON.stringify({ p_order: order, p_order_id: id }) }, true);
+    await loadAdminState(); closeModal(); go('/app/orders/' + result.id);
+    toast(id ? 'Dados do pedido atualizados.' : 'Pré-venda criada. Produtos reservados.');
+  } catch (error) { toast(error.message); }
+  finally { if (submit) submit.disabled = false; }
+}
+function workflowOrder(id) {
+  return (currentProfile?.role === 'driver' ? driverDeliveries : db.orders).find(order => order.id === id);
+}
+async function refreshOperationalState() {
+  if (currentProfile?.role === 'driver') await refreshDriverDeliveries();
+  else { await loadAdminState(); render(); }
+}
+async function performOrderAction(id, action, receipt = null) {
+  await settleAdminWrites();
+  const result = await backendRequest('/rest/v1/rpc/order_action', { method: 'POST', body: JSON.stringify({ p_order_id: id, p_action: action, p_receipt: receipt }) }, true);
+  await refreshOperationalState(); return result;
+}
+dispatchOrder = id => {
+  const order = workflowOrder(id);
+  if (!order || !['Proprietário','Gerente','Vendedor','Estoque','Entregador'].includes(role) || !['pending','ready'].includes(order.status)) return;
+  if (order.delivery === 'Entrega' && (!isDeliveryDate(order.deliveryDate) || order.freightPending))
+    return toast('Conclua o agendamento e o frete antes de liberar.');
+  if ((order.paymentTiming === 'Antecipado' || order.delivery === 'Retirada') && !order.paid)
+    return toast('Confirme o pagamento antes de liberar.');
+  modal(order.delivery === 'Retirada' ? 'Confirmar retirada' : 'Liberar para entrega', `<form onsubmit="event.preventDefault();commitDispatch(${id},this)">
+    <p>Pedido <strong>#${id}</strong> · ${esc(order.customer)}</p><p class="subtle" style="margin-top:16px">${order.delivery === 'Retirada' ? 'A retirada será concluída.' : 'O pedido ficará em rota de entrega.'} A saída será registrada no estoque.</p>
+    <div class="form-actions">${button('Voltar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Confirmar saída</button></div></form>`);
+};
+commitDispatch = async (id, form) => {
+  const submit = form?.querySelector('button:not([type])'); if (submit) submit.disabled = true;
+  try { await performOrderAction(id, 'release'); closeModal(); render(); toast('Saída confirmada. Estoque atualizado.'); }
+  catch (error) { toast(error.message); }
+  finally { if (submit) submit.disabled = false; }
+};
+confirmPayment = async (id, form) => {
+  const order = workflowOrder(id); if (!order || !canPay() || order.paid || order.status === 'cancelled') return;
+  const submit = form?.querySelector('button:not([type])'); if (submit) submit.disabled = true;
+  try { const receipt = await receiptPhotoData(form.elements.namedItem('receipt').files[0]);
+    await performOrderAction(id, 'payment', receipt); closeModal(); render(); toast('Pagamento confirmado.'); }
+  catch (error) { toast(error.message); }
+  finally { if (submit) submit.disabled = false; }
+};
+finishOrder = id => {
+  const order = workflowOrder(id);
+  if (!order || order.status !== 'transit' || !order.paid || !['Proprietário','Gerente','Vendedor','Estoque'].includes(role)) return;
+  modal('Confirmar entrega', `<form onsubmit="event.preventDefault();commitFinishOrder(${id},this)"><p>Confirma a entrega do pedido <strong>#${id}</strong> de ${esc(order.customer)}?</p>
+    <div class="form-actions">${button('Voltar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Concluir entrega</button></div></form>`);
+};
+commitFinishOrder = async (id, form) => {
+  const submit = form?.querySelector('button:not([type])'); if (submit) submit.disabled = true;
+  try { await performOrderAction(id, 'finish'); closeModal(); render(); toast('Entrega e pagamento registrados.'); }
+  catch (error) { toast(error.message); }
+  finally { if (submit) submit.disabled = false; }
+};
+cancelOrderModal = id => {
+  const order = workflowOrder(id); if (!canManage() || !order || order.status === 'cancelled') return;
+  modal('Cancelar pedido', `<p>Cancelar o pedido <strong>#${id}</strong>? Os produtos retornarão ao estoque disponível.${order.paid ? ' O reembolso deve ser processado separadamente.' : ''}</p>
+    <div class="form-actions">${button('Manter pedido', 'onclick="closeModal()"')}${button('Cancelar pedido', `onclick="cancelOrder(${id},this)"`, 'danger')}</div>`);
+};
+cancelOrder = async (id, submit) => {
+  if (!canManage()) return; if (submit) submit.disabled = true;
+  try { await performOrderAction(id, 'cancel'); closeModal(); render(); toast('Pedido cancelado. Os produtos retornaram ao estoque.'); }
+  catch (error) { toast(error.message); }
+  finally { if (submit) submit.disabled = false; }
+};
+function releaseDayModal(day) {
+  const orders = deliveryOrders().filter(order => order.deliveryDate === day && ['pending','ready'].includes(order.status));
+  if (!orders.length) return;
+  modal('Liberar pedidos do dia', `<p>Liberar <strong>${orders.length} pedido(s)</strong> de ${esc(deliveryDateLabel(day))} para a rota?</p>
+    <p class="subtle" style="margin-top:14px">Pedidos com pagamento antecipado pendente, frete indefinido ou estoque insuficiente continuarão aguardando.</p>
+    <form onsubmit="event.preventDefault();releaseDay('${day}',this)"><div class="form-actions">${button('Voltar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Confirmar liberação</button></div></form>`);
+}
+async function releaseDay(day, form) {
+  const submit = form.querySelector('button:not([type])'); submit.disabled = true;
+  try {
+    await settleAdminWrites();
+    const result = await backendRequest('/rest/v1/rpc/release_delivery_day', { method: 'POST', body: JSON.stringify({ p_date: day }) }, true);
+    await refreshOperationalState(); closeModal(); render();
+    if (result.skipped?.length) modal('Resultado da liberação', `<p><strong>${result.released}</strong> pedido(s) em rota de entrega.</p>
+      <div class="stack" style="margin-top:18px">${result.skipped.map(item => `<div class="notice">Pedido #${item.id}: ${esc(item.reason)}</div>`).join('')}</div><div class="form-actions">${button('Fechar', 'onclick="closeModal()"')}</div>`);
+    else toast(`${result.released} pedido(s) em rota de entrega. Estoque atualizado.`);
+  } catch (error) { toast(error.message); }
+  finally { submit.disabled = false; }
+}
 boot();
