@@ -67,7 +67,7 @@ begin
         from jsonb_array_elements(s.data->'orders') with ordinality as x(value,ord))),version=version+1,updated_at=now() where id=1;
     return jsonb_build_object('id',p_order_id);
   end if;
-  if p_order->>'delivery' not in ('Entrega','Retirada') or p_order->>'paymentTiming' not in ('Antecipado','Na entrega','Na retirada')
+  if coalesce(p_order->>'delivery','') not in ('Entrega','Retirada') or coalesce(p_order->>'paymentTiming','') not in ('Antecipado','Na entrega','Na retirada')
     or jsonb_typeof(p_order->'items') is distinct from 'array' or jsonb_array_length(p_order->'items') not between 1 and 20 then raise exception 'Confira o pedido.'; end if;
   if p_order->>'delivery'='Entrega' and (nullif(p_order->>'deliveryDate','') is null
     or (p_order->>'deliveryDate')::date<(now() at time zone 'America/Sao_Paulo')::date) then raise exception 'Selecione uma data válida.'; end if;
@@ -76,7 +76,7 @@ begin
   if shipping is null then raise exception 'Selecione um frete disponível.'; end if;
   for requested in select value from jsonb_array_elements(p_order->'items') loop
     qty:=(requested->>'qty')::integer;
-    if qty not between 1 and 20 then raise exception 'Quantidade inválida.'; end if;
+    if qty is null or qty not between 1 and 99 then raise exception 'Quantidade inválida.'; end if;
     select value into product from jsonb_array_elements(s.data->'products') where value->>'id'=requested->>'id' and value->>'active'='true';
     if product is null then raise exception 'Produto indisponível.'; end if;
     options:=coalesce(requested->'options','{}'); summary:='';

@@ -3,7 +3,7 @@ begin;
 do $$
 declare seller uuid:=gen_random_uuid(); driver uuid:=gen_random_uuid(); owner uuid;
   product jsonb; shipping jsonb; method jsonb; request jsonb; options jsonb; response jsonb;
-  first_id bigint; second_id bigint; advance_id bigint; initial_stock integer; stock_now integer;
+  first_id bigint; second_id bigint; advance_id bigint; bulk_id bigint; initial_stock integer; stock_now integer;
   projection jsonb; row_count integer; denied boolean; photo text:='data:image/jpeg;base64,/9j/'||repeat('A',120);
 begin
   select user_id into owner from public.profiles where role='master';
@@ -35,6 +35,18 @@ begin
   if row_count<>0 then raise exception 'Seller can change products.'; end if;
   projection:=public.sales_state();
   if exists(select 1 from jsonb_array_elements(projection->'data'->'products') where value?'cost') then raise exception 'Seller projection leaks cost.'; end if;
+  denied:=false;
+  begin perform public.sales_order(jsonb_set(request,'{items,0,qty}','null')); exception when others then denied:=true; end;
+  if not denied then raise exception 'Accepted an empty quantity.'; end if;
+  denied:=false;
+  begin perform public.sales_order(request-'paymentTiming'); exception when others then denied:=true; end;
+  if not denied then raise exception 'Accepted a missing payment timing.'; end if;
+  if initial_stock>=21 then
+    response:=public.sales_order(jsonb_set(request,'{items,0,qty}','21')); bulk_id:=(response->>'id')::bigint;
+    perform set_config('request.jwt.claims',jsonb_build_object('sub',owner,'role','authenticated')::text,true);
+    perform public.delete_order(bulk_id);
+    perform set_config('request.jwt.claims',jsonb_build_object('sub',seller,'role','authenticated')::text,true);
+  end if;
   response:=public.sales_order(request); first_id:=(response->>'id')::bigint;
   response:=public.sales_order(jsonb_set(request,'{items,0,qty}','1')); second_id:=(response->>'id')::bigint;
   response:=public.sales_order(request||jsonb_build_object('paymentTiming','Antecipado','items',jsonb_set(request->'items','{0,qty}','1'))); advance_id:=(response->>'id')::bigint;
