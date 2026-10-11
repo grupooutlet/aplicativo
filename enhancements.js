@@ -175,8 +175,11 @@ accountPage = () => {
     </div></section></div>`;
 };
 const oldStoreHeader = storeHeader;
-storeHeader = () => oldStoreHeader().replace('Olá, bem-vindo<small>Minha conta</small>',
-  authSession ? `${esc(currentProfile?.name?.split(' ')[0] || 'Minha conta')}<small>Minha conta</small>` : 'Entre ou cadastre-se<small>Minha conta</small>');
+storeHeader = () => {
+  const subtitle = authSession ? 'Meus pedidos' : 'Entre ou cadastre-se';
+  return oldStoreHeader().replace('Olá, bem-vindo<small>Minha conta</small>', `Minha conta<small>${subtitle}</small>`)
+    .replace('<a class="account"', `<a class="account" aria-label="Minha conta · ${subtitle}"`);
+};
 const oldSignOut = signOut;
 signOut = async () => { currentProfile = null; accountProfiles = []; await oldSignOut(); };
 
