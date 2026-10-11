@@ -1,17 +1,19 @@
 -- Integration checks run entirely in a transaction; no QA accounts/orders remain.
 begin;
 do $$
-declare seller uuid:=gen_random_uuid(); driver uuid:=gen_random_uuid(); owner uuid;
+declare seller uuid:=gen_random_uuid(); driver uuid:=gen_random_uuid(); other_driver uuid:=gen_random_uuid(); owner uuid;
   product jsonb; shipping jsonb; method jsonb; request jsonb; options jsonb; response jsonb;
-  first_id bigint; second_id bigint; advance_id bigint; bulk_id bigint; initial_stock integer; stock_now integer;
+  first_id bigint; second_id bigint; advance_id bigint; prepaid_id bigint; bulk_id bigint; initial_stock integer; stock_now integer;
   projection jsonb; row_count integer; denied boolean; photo text:='data:image/jpeg;base64,/9j/'||repeat('A',120);
 begin
   select user_id into owner from public.profiles where role='master';
   insert into auth.users(id,email,raw_user_meta_data) values
     (seller,'qa-seller-'||seller||'@example.invalid','{"name":"Vendedor QA"}'),
-    (driver,'qa-driver-'||driver||'@example.invalid','{"name":"Entregador QA"}');
+    (driver,'qa-driver-'||driver||'@example.invalid','{"name":"Entregador QA"}'),
+    (other_driver,'qa-driver-'||other_driver||'@example.invalid','{"name":"Segundo Entregador QA"}');
   update public.profiles set role='admin',position='Vendedor' where user_id=seller;
   update public.profiles set role='driver',position='Entregador' where user_id=driver;
+  update public.profiles set role='driver',position='Entregador' where user_id=other_driver;
   select p into product from public.app_state s cross join lateral jsonb_array_elements(s.data->'products') x(p)
     where s.id=1 and p->>'active'='true' and (p->>'stock')::integer>=5 limit 1;
   if product is null then raise exception 'QA requires a stocked active product.'; end if;
@@ -80,8 +82,27 @@ begin
   projection:=public.driver_deliveries();
   if not exists(select 1 from jsonb_array_elements(projection) where value->>'id'=first_id::text and value->>'status'='transit') then raise exception 'Driver cannot see released orders.'; end if;
   denied:=false;
-  begin perform public.order_action(first_id,'payment',photo); exception when others then denied:=true; end;
-  if not denied then raise exception 'Driver collected another unclaimed delivery.'; end if;
+  begin perform public.order_action(second_id,'payment','invalid'); exception when others then denied:=true; end;
+  if not denied then raise exception 'Driver payment accepted without proof.'; end if;
+  projection:=public.driver_deliveries();
+  if exists(select 1 from jsonb_array_elements(projection) where value->>'id'=second_id::text and nullif(value->>'driver_id','') is not null) then raise exception 'Failed payment assigned a driver.'; end if;
+  denied:=false;
+  begin perform public.order_action(second_id,'finish'); exception when others then denied:=true; end;
+  if not denied then raise exception 'Driver completed delivery without payment.'; end if;
+  perform public.confirm_delivery_payment(second_id,photo);
+  projection:=public.driver_deliveries();
+  if not exists(select 1 from jsonb_array_elements(projection) where value->>'id'=second_id::text and value->>'driver_id'=driver::text and value->>'paid'='true' and value->>'paidAt' is not null) then raise exception 'Direct driver payment did not assign and confirm.'; end if;
+  perform set_config('request.jwt.claims',jsonb_build_object('sub',other_driver,'role','authenticated')::text,true);
+  denied:=false;
+  begin perform public.order_action(second_id,'finish'); exception when others then denied:=true; end;
+  if not denied then raise exception 'Another driver completed an assigned delivery.'; end if;
+  if exists(select 1 from jsonb_array_elements(public.driver_deliveries()) where value->>'id'=second_id::text) then raise exception 'Another driver sees assigned deliveries.'; end if;
+  perform set_config('request.jwt.claims',jsonb_build_object('sub',driver,'role','authenticated')::text,true);
+  perform public.complete_delivery(second_id,false,null);
+  projection:=public.driver_deliveries();
+  if not exists(select 1 from jsonb_array_elements(projection) where value->>'id'=second_id::text and value->>'status'='delivered' and value->>'deliveredAt' is not null) then raise exception 'Driver delivery did not complete.'; end if;
+  -- Drivers can also confirm advance payments before release, in the proper stage.
+  perform public.order_action(advance_id,'payment',photo);
   execute 'reset role';
   select (value->>'stock')::integer into stock_now from public.app_state s cross join lateral jsonb_array_elements(s.data->'products') where value->>'id'=product->>'id';
   if stock_now<>initial_stock-3 then raise exception 'Batch stock deduction invalid.'; end if;
@@ -96,8 +117,14 @@ begin
   if not denied then raise exception 'Accepted payment without proof.'; end if;
   perform public.order_action(first_id,'payment',photo);
   perform public.order_action(first_id,'finish');
-  perform public.order_action(advance_id,'payment',photo);
   perform public.order_action(advance_id,'release');
+  response:=public.sales_order(request||jsonb_build_object('paymentTiming','Antecipado','items',jsonb_set(request->'items','{0,qty}','1'))); prepaid_id:=(response->>'id')::bigint;
+  perform public.order_action(prepaid_id,'payment',photo);
+  perform public.order_action(prepaid_id,'release');
+  perform set_config('request.jwt.claims',jsonb_build_object('sub',driver,'role','authenticated')::text,true);
+  perform public.complete_delivery(prepaid_id,false,null);
+  projection:=public.driver_deliveries();
+  if not exists(select 1 from jsonb_array_elements(projection) where value->>'id'=prepaid_id::text and value->>'status'='delivered' and value->>'driver_id'=driver::text) then raise exception 'Driver could not complete an unassigned prepaid delivery.'; end if;
   execute 'reset role';
   -- Master cancellation restores delivered stock once; deletion must not add it twice.
   perform set_config('request.jwt.claims',jsonb_build_object('sub',owner,'role','authenticated')::text,true);
@@ -109,11 +136,12 @@ begin
   perform public.delete_order(first_id);
   perform public.delete_order(second_id);
   perform public.delete_order(advance_id);
+  perform public.delete_order(prepaid_id);
   execute 'reset role';
   select (value->>'stock')::integer into stock_now from public.app_state s cross join lateral jsonb_array_elements(s.data->'products') where value->>'id'=product->>'id';
   if stock_now<>initial_stock then raise exception 'Cancelled/deleted orders did not restore original stock: % vs %',stock_now,initial_stock; end if;
-  if exists(select 1 from public.app_state s cross join lateral jsonb_array_elements(s.data->'movements') where value->>'order_id' in (first_id::text,second_id::text,advance_id::text)) then raise exception 'Deleted order movements remain.'; end if;
+  if exists(select 1 from public.app_state s cross join lateral jsonb_array_elements(s.data->'movements') where value->>'order_id' in (first_id::text,second_id::text,advance_id::text,prepaid_id::text)) then raise exception 'Deleted order movements remain.'; end if;
 end;
 $$;
-select 'Seller RLS, server pricing, driver batches, seller stages and stock restoration passed.' as result;
+select 'Seller RLS, driver payment without claiming, driver completion, advance payments, driver isolation and stock restoration passed.' as result;
 rollback;

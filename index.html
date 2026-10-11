@@ -2741,9 +2741,9 @@ function orderSteps(order, driver = false) {
   const released = ['transit', 'delivered'].includes(order.status);
   const paid = Boolean(order.paid);
   const cancelled = order.status === 'cancelled';
-  const ownsDelivery = !driver || (currentProfile?.role === 'driver' && order.driver_id === authSession?.user?.id);
-  const mayRelease = driver ? isDeliveryDriverView() : ['Proprietário', 'Gerente', 'Vendedor', 'Estoque'].includes(role);
-  const mayPay = driver ? ownsDelivery && order.status === 'transit' : canPay();
+  const ownsDelivery = !driver || canConfirmDriverOrder(order);
+  const mayRelease = driver ? ownsDelivery && isDeliveryDriverView() : ['Proprietário', 'Gerente', 'Vendedor', 'Estoque'].includes(role);
+  const mayPay = driver ? ownsDelivery : canPay();
   const payAtDelivery = order.paymentTiming !== 'Antecipado';
   const schedule = { title: pickup ? 'Pedido recebido' : 'Agendar entrega', done: scheduled,
     detail: pickup ? 'Retirada na loja' : order.deliveryDate ? deliveryDateLabel(order.deliveryDate) : 'Selecione o dia da entrega.',
@@ -2761,8 +2761,7 @@ function orderSteps(order, driver = false) {
   const steps = pickup ? [schedule, payment, release] : payAtDelivery ? [schedule, release, payment, finish] : [schedule, payment, release, finish];
   return `<section class="card pad order-workflow"><div class="workflow-heading"><span class="task-symbol">${icon('check')}</span><div><h2>Etapas do pedido</h2><p class="subtle">${cancelled ? 'Pedido cancelado' : 'Acompanhe cada passo até a conclusão.'}</p></div></div>
     <ol class="order-steps">${steps.map((step, index) => `<li class="order-step ${step.done ? 'done' : step.available && !cancelled ? 'current' : 'locked'}"><span class="order-step-number">${step.done ? '✓' : index + 1}</span><div><h3>${step.title}</h3><p>${esc(step.detail)}</p>
-      ${!step.done && !cancelled ? step.available ? button(step.label, `onclick="${step.action}"`, 'small primary') : '<span class="step-waiting">' + (driver && released && !ownsDelivery ? 'Assuma a entrega para continuar.' : 'Aguardando a etapa anterior ou a equipe responsável.') + '</span>' : ''}</div></li>`).join('')}</ol>
-    ${driver && currentProfile?.role === 'driver' && order.status === 'transit' && !order.driver_id ? button('Assumir entrega', `onclick="claimDriverDelivery(${order.id})"`, 'primary', 'truck') : ''}</section>`;
+      ${!step.done && !cancelled ? step.available ? button(step.label, `onclick="${step.action}"`, 'small primary') : '<span class="step-waiting">' + (driver && !ownsDelivery ? 'Pedido vinculado a outro entregador.' : 'Aguardando a etapa anterior ou a equipe responsável.') + '</span>' : ''}</div></li>`).join('')}</ol></section>`;
 }
 orderDetail = id => {
   const order = visibleOrders().find(item => item.id === id);
@@ -2817,36 +2816,54 @@ commitDispatch = async (id, form) => {
   await dispatchCommitBeforeCommerce(id, form);
 };
 function driverPaymentModal(id) {
-  const order = driverDeliveries.find(item => item.id === id);
-  if (!order || order.driver_id !== authSession?.user?.id || order.status !== 'transit' || order.paid) return;
+  const order = workflowOrder(id);
+  if (!canConfirmDriverOrder(order) || order.paid || order.status === 'cancelled') return;
+  if (!isDeliveryDate(order.deliveryDate) || order.freightPending ||
+      (order.paymentTiming !== 'Antecipado' && order.status !== 'transit')) return toast('Conclua o agendamento e a liberação antes de confirmar o pagamento na entrega.');
   modal('Confirmar pagamento', `<form onsubmit="event.preventDefault();confirmDriverPayment(${id},this)"><p>Pedido #${id} · ${esc(order.customer)}</p><p style="margin-top:12px">Valor recebido: <strong>${money(orderTotal(order))}</strong></p>
     <label class="field" style="margin-top:18px">Foto do comprovante<input name="receipt" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required></label>
     <label style="display:flex;gap:10px;margin-top:18px"><input name="collected" type="checkbox" required>Conferi e recebi o pagamento.</label>
     <div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Confirmar pagamento</button></div></form>`);
 }
 async function confirmDriverPayment(id, form) {
-  const order = driverDeliveries.find(item => item.id === id);
-  if (!order || order.driver_id !== authSession?.user?.id || !form.elements.namedItem('collected')?.checked) return;
+  const order = workflowOrder(id);
+  if (!canConfirmDriverOrder(order) || !form.elements.namedItem('collected')?.checked) return;
   const submit = form.querySelector('button:not([type])'); submit.disabled = true;
   try {
     const receipt = await receiptPhotoData(form.elements.namedItem('receipt').files[0]);
-    await backendRequest('/rest/v1/rpc/confirm_delivery_payment', { method: 'POST', body: JSON.stringify({ p_order_id: id, p_receipt: receipt }) }, true);
-    closeModal(); await refreshDriverDeliveries(); toast('Pagamento confirmado. Agora confirme a entrega.');
+    await performOrderAction(id, 'payment', receipt);
+    closeModal(); render(); toast('Pagamento confirmado.');
   } catch (error) { toast(error.message); }
   finally { submit.disabled = false; }
 }
-const driverCompleteBeforeCommerce = driverCompleteModal;
 driverCompleteModal = id => {
-  const order = driverDeliveries.find(item => item.id === id);
+  const order = workflowOrder(id);
+  if (!canConfirmDriverOrder(order) || order.status !== 'transit') return;
   if (!order?.paid) return toast('Confirme o pagamento com comprovante antes de concluir a entrega.');
-  driverCompleteBeforeCommerce(id);
+  modal('Confirmar entrega', `<form onsubmit="event.preventDefault();completeDriverDelivery(${id},this)">
+    <p>Confirma a entrega do pedido <strong>#${id}</strong> de ${esc(order.customer)}?</p>
+    <p class="subtle" style="margin-top:14px">O pagamento já foi confirmado. A data e o horário da entrega serão registrados agora.</p>
+    <div class="form-actions">${button('Voltar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Confirmar entrega</button></div></form>`);
+};
+completeDriverDelivery = async (id, form) => {
+  const order = workflowOrder(id); if (!canConfirmDriverOrder(order) || !order.paid || order.status !== 'transit') return;
+  const submit = form.querySelector('button:not([type])'); submit.disabled = true;
+  try { await performOrderAction(id, 'finish'); closeModal(); render(); toast('Entrega concluída. Pagamento e entrega confirmados.'); }
+  catch (error) { toast(error.message); }
+  finally { submit.disabled = false; }
 };
 const deliveryCardBeforeCommerce = deliveryCard;
 deliveryCard = order => {
   let html = deliveryCardBeforeCommerce(order);
   if (isDeliveryDriverView()) {
+    html = html.replace(/<button[^>]*onclick="claimDriverDelivery\([^)]*\)"[^>]*>[\s\S]*?<\/button>/, '');
     html = html.replace(/<button[^>]*onclick="driverCompleteModal\([^)]*\)"[^>]*>[\s\S]*?<\/button>/, '');
-    html = html.replace('</div></article>', `${['pending','ready'].includes(order.status) ? button('Liberar para entrega', `onclick="dispatchOrder(${order.id})"`, 'small primary', 'truck') : ''}<a class="btn small" href="/app/deliveries/order/${order.id}">Acompanhar etapas</a></div></article>`);
+    const scheduled = isDeliveryDate(order.deliveryDate) && !order.freightPending;
+    const mayConfirm = canConfirmDriverOrder(order);
+    html = html.replace('</div></article>', `${scheduled && ['pending','ready'].includes(order.status) && (order.paymentTiming !== 'Antecipado' || order.paid) ? button('Liberar para entrega', `onclick="dispatchOrder(${order.id})"`, 'small primary', 'truck') : ''}
+      ${mayConfirm && scheduled && !order.paid && (order.paymentTiming === 'Antecipado' || order.status === 'transit') ? button('Confirmar pagamento', `onclick="driverPaymentModal(${order.id})"`, 'small primary', 'wallet') : ''}
+      ${mayConfirm && order.status === 'transit' && order.paid ? button('Confirmar entrega', `onclick="driverCompleteModal(${order.id})"`, 'small primary', 'check') : ''}
+      <a class="btn small" href="/app/deliveries/order/${order.id}">Acompanhar etapas</a></div></article>`);
   }
   if (order.paymentMethodId) html = html.replace('<div class="delivery-card-actions">', `<p class="subtle">${esc(order.payment)} · ${esc(installmentText({ ...order, total: orderTotal(order) }))}</p><div class="delivery-card-actions">`);
   return html;
@@ -3018,6 +3035,10 @@ async function saveSellerOrder(order, id = null) {
 }
 function workflowOrder(id) {
   return (currentProfile?.role === 'driver' ? driverDeliveries : db.orders).find(order => order.id === id);
+}
+function canConfirmDriverOrder(order) {
+  if (!order || order.delivery !== 'Entrega' || !isDeliveryDriverView()) return false;
+  return currentProfile?.role === 'master' || !order.driver_id || order.driver_id === authSession?.user?.id;
 }
 async function refreshOperationalState() {
   if (currentProfile?.role === 'driver') await refreshDriverDeliveries();
