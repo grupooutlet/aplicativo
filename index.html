@@ -456,8 +456,9 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
     if(event.data.type==='storefront:ready')sendPreview(true);
     if(event.data.type==='storefront:route'){
       if(!/^\/loja(?:\/|$)/.test(event.data.route||''))return;
+      const previousScope=pageKey(previewRoute,previewCategory,previewView);
       previewRoute=event.data.route;previewCategory=event.data.category||'Todos';previewView=event.data.view||'';
-      const node=document.querySelector('#builder-controls');if(node)node.innerHTML=editorControls();
+      const node=document.querySelector('#builder-controls');if(node&&previousScope!==pageKey(previewRoute,previewCategory,previewView))node.innerHTML=editorControls();
       const title=document.querySelector('#builder-preview-title');if(title)title.textContent='Prévia · '+pageTitle();
       const select=document.querySelector('[aria-label="Página da prévia"]');if(select)select.value=previewRoute==='/loja/catalogo'&&previewCategory!=='Todos'?'collection:'+encodeURIComponent(previewCategory):previewRoute;
     }
