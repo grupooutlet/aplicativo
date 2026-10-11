@@ -13,7 +13,7 @@
 .store .storefront-banner.banner-without-image .hero-content{position:static;width:100%;max-width:none;height:auto;padding:35px}
 .builder-save-bar{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:15px;padding:16px 20px;margin-bottom:20px;background:white;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 15px #00000006}
 .builder-save-status{font-size:13px;color:var(--muted)}
-.builder-preview-panel{max-height:none;overflow:hidden}
+.builder-preview-panel{top:96px;max-height:none;overflow:hidden}
 .builder-preview-toolbar{display:flex;gap:8px;padding:12px;border-bottom:1px solid var(--line);background:white}
 .builder-preview-toolbar select{min-width:0;padding:8px;border:1px solid var(--line);border-radius:6px;font-size:12px;flex:1;width:1px;background:white}
 .builder-preview-toolbar select:last-child{max-width:135px}
