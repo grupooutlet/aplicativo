@@ -1,0 +1,55 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const vm=require('node:vm');
+const root=path.join(__dirname,'..');
+const nodes=Object.fromEntries(['#app','#modal','#toast','#builder-controls','#builder-save-bar','#builder-preview-title'].map(key=>[key,{innerHTML:'',open:false,classList:{add(){},remove(){}},showModal(){this.open=true},close(){this.open=false}}]));
+const context=vm.createContext({console,URL,URLSearchParams,Date,Map,Set,structuredClone,crypto:require('node:crypto').webcrypto,
+  location:{protocol:'https:',origin:'https://grupooutlet.github.io',pathname:'/aplicativo/',search:'',hash:'#/app/store-editor'},
+  document:{baseURI:'https://grupooutlet.github.io/aplicativo/',querySelector:selector=>nodes[selector]||null,querySelectorAll:()=>[],addEventListener(){}},
+  window:{addEventListener(){},scrollTo(){},render(){}},history:{pushState(){},replaceState(){}},
+  setTimeout:()=>1,clearTimeout(){},fetch:async()=>{throw new Error('Unexpected network request')},FormData:class{constructor(form){return Object.entries(form.data||{})}}});
+for(const name of ['storefront-editor.js','app.js','production.js','enhancements.js','variations.js','fulfillment.js','operations.js','commerce.js','storefront-runtime.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8').replace(/boot\(\);\s*$/,''),context,{filename:name});
+const run=code=>vm.runInContext(code,context);
+run(`storefront.init(db);isOwner=true;role='Proprietário';currentProfile={role:'master',name:'Grupo Outlet'};authSession={user:{id:'master',email:'grupooutlet.rj@gmail.com'}}`);
+const initial=run('JSON.stringify(db.storefront)');
+assert.match(run('storefront.editorPage()'),/store-preview-frame/);
+assert.match(run('storefront.editorPage()'),/allow-scripts allow-same-origin allow-forms/);
+assert.match(run('storefront.editorPage()'),/Salvar mudanças/);
+assert.equal(run('storefront.dirty()'),false);
+run("storefront.change('title','Rascunho de banner');storefront.changeAnnouncement('text','Aviso em rascunho')");
+assert.equal(run('JSON.stringify(db.storefront)'),initial,'Draft must not mutate the published model');
+assert.equal(run('storefront.dirty()'),true);
+assert.match(run('storefront.storeHome()'),/hero-image/);
+assert.doesNotMatch(run('storefront.storeHome()'),/hero-content|Rascunho de banner/,'Banner text defaults to disabled');
+run("storefront.change('showText',true)");
+assert.match(run('storefront.storeHome()'),/Rascunho de banner/);
+run("location.hash='#/loja'");
+assert.doesNotMatch(run('storefront.storeHome()'),/Rascunho de banner/,'Real store must remain on the published document');
+run("location.hash='#/app/store-editor';storefront.navigate('/loja/produto/1');storefront.changePage('note','Produto em rascunho')");
+assert.match(nodes['#builder-controls'].innerHTML,/Exibir descrição do produto/);
+assert.equal(run('JSON.stringify(db.storefront)'),initial);
+run("storefront.navigate('collection:'+encodeURIComponent('Sofás'));storefront.changePage('title','Nova coleção')");
+assert.match(nodes['#builder-controls'].innerHTML,/Produtos por linha/);
+assert.match(run("storefront.pageKey('/loja/catalogo','Sofás')"),/^collection:Sofás$/);
+assert.equal(run("storefront.pageKey('/loja/conta','Todos','signup')"),'signup');
+run("storefront.navigate('/loja/checkout')");
+assert.match(nodes['#builder-controls'].innerHTML,/Checkout/);
+const header=run('storeHeader()');
+assert.match(header,/Abrir menu da loja/);
+assert.match(header,/store-menu-dialog/);
+assert.match(header,/Coleções/);
+assert.match(header,/Minha conta e meus pedidos/);
+let writes=0;
+context.backendRequest=async(route,options)=>{assert.equal(route,'/rest/v1/rpc/save_storefront');writes++;const body=JSON.parse(options.body);assert.equal(JSON.stringify(body.p_expected),initial);run('db.storefront='+JSON.stringify(body.p_storefront));};
+context.loadAdminState=async()=>{};context.settleAdminWrites=async()=>{};
+(async()=>{
+  await run('storefront.publish()');assert.equal(writes,1);assert.equal(run('storefront.dirty()'),false);
+  assert.match(run('JSON.stringify(db.storefront)'),/Rascunho de banner|Produto em rascunho|Nova coleção/);
+  const published=run('JSON.stringify(db.storefront)');
+  run("storefront.navigate('/loja');storefront.change('title','Não publicar')");
+  await run('storefront.cancelChanges()');
+  assert.equal(run('JSON.stringify(db.storefront)'),published);assert.equal(run('storefront.dirty()'),false);
+  assert.doesNotMatch(run('storefront.editorPage()'),/Não publicar/);
+  console.log('Draft isolation, explicit publication, cancellation, contextual controls and mobile navigation verified.');
+})().catch(error=>{console.error(error);process.exitCode=1});

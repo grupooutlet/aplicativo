@@ -766,4 +766,4 @@ async function releaseDay(day, form) {
   } catch (error) { toast(error.message); }
   finally { submit.disabled = false; }
 }
-boot();
+// Startup runs after the shared store navigation and preview runtime.
