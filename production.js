@@ -3,6 +3,7 @@ const backendUrl = 'https://rwxqytomiorsrxpgtjin.supabase.co';
 const backendKey = 'sb_publishable_blKM9wQxpyILSjEn1RnTmw_sLcoanYo';
 const ownerEmail = 'grupooutlet.rj@gmail.com';
 const authStorageKey = 'forte-auth-v1';
+const sharedAuthMarker = 'forte-auth-shared-v1';
 const cartStorageKey = 'forte-cart-v1';
 let authSession = null;
 let isOwner = false;
@@ -52,19 +53,51 @@ function rememberAuth(session) {
     ...session,
     expires_at: session.expires_at || Math.floor(Date.now() / 1000) + (session.expires_in || 3600)
   };
-  sessionStore.setItem(authStorageKey, JSON.stringify(authSession));
+  localStore.setItem(sharedAuthMarker, '1');
+  localStore.setItem(authStorageKey, JSON.stringify(authSession));
+  sessionStore.removeItem(authStorageKey);
   sessionStore.setItem('forte-customer', currentEmail());
 }
+function restoreAuth() {
+  const shared = safeJson(localStore.getItem(authStorageKey), null);
+  const legacy = safeJson(sessionStore.getItem(authStorageKey), null);
+  sessionStore.removeItem(authStorageKey);
+  if (shared) return shared;
+  if (legacy && !localStore.getItem(sharedAuthMarker)) { rememberAuth(legacy); return authSession; }
+  return null;
+}
+function clearAuth() {
+  authSession = null;
+  localStore.setItem(sharedAuthMarker, '1');
+  localStore.removeItem(authStorageKey);
+  sessionStore.removeItem(authStorageKey);
+  sessionStore.removeItem('forte-customer');
+}
+let authRefreshPending = null;
 async function refreshAuth() {
+  if (authRefreshPending) return authRefreshPending;
+  authRefreshPending = typeof navigator !== 'undefined' && navigator.locks
+    ? navigator.locks.request('forte-auth-refresh', refreshSharedAuth) : refreshSharedAuth();
+  try { await authRefreshPending; } finally { authRefreshPending = null; }
+}
+async function refreshSharedAuth() {
+  const shared = safeJson(localStore.getItem(authStorageKey), null);
+  if (shared) authSession = shared;
+  else if (localStore.getItem(sharedAuthMarker)) { clearAuth(); throw new Error('Sua sessão terminou. Entre novamente.'); }
   if (!authSession?.refresh_token) return;
   if (authSession.expires_at > Math.floor(Date.now() / 1000) + 60) return;
+  const refreshToken = authSession.refresh_token;
   const response = await fetch(backendUrl + '/auth/v1/token?grant_type=refresh_token', {
-    method: 'POST', headers: requestHeaders(), body: JSON.stringify({ refresh_token: authSession.refresh_token })
+    method: 'POST', headers: requestHeaders(), body: JSON.stringify({ refresh_token: refreshToken })
   });
+  const latest = safeJson(localStore.getItem(authStorageKey), null);
+  if (localStore.getItem(sharedAuthMarker) && latest?.refresh_token !== refreshToken) {
+    authSession = latest;
+    if (!latest) throw new Error('Sua sessão terminou. Entre novamente.');
+    return;
+  }
   if (!response.ok) {
-    authSession = null;
-    sessionStore.removeItem(authStorageKey);
-    sessionStore.removeItem('forte-customer');
+    clearAuth();
     throw new Error('Sua sessão expirou. Entre novamente.');
   }
   rememberAuth(await response.json());
@@ -100,7 +133,7 @@ async function boot() {
   bootError = '';
   render();
   try {
-    authSession = safeJson(sessionStore.getItem(authStorageKey), null);
+    authSession = restoreAuth();
     if (authSession) {
       try { await refreshAuth(); } catch { authSession = null; }
     }
@@ -271,12 +304,22 @@ accountPage = () => {
 };
 async function signOut() {
   try { await backendRequest('/auth/v1/logout', { method: 'POST' }, true); } catch {}
-  authSession = null;
+  clearAuth();
   isOwner = false;
-  sessionStore.removeItem(authStorageKey);
-  sessionStore.removeItem('forte-customer');
   if ($('#modal').open) closeModal();
   await boot();
 }
+
+window.addEventListener('storage', event => {
+  if (typeof isStorePreview !== 'undefined' && isStorePreview) return;
+  if (event.key !== authStorageKey) return;
+  const next = safeJson(event.newValue, null);
+  const previous = safeJson(event.oldValue, null);
+  const changedUser = next?.user?.id !== previous?.user?.id;
+  authSession = next;
+  sessionStore.removeItem(authStorageKey);
+  if (!next) { isOwner = false; currentProfile = null; sessionStore.removeItem('forte-customer'); }
+  if (changedUser && booted) boot();
+});
 
 // boot is started after the account and catalog enhancements are installed.

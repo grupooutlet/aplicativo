@@ -29,7 +29,7 @@ async function boot() {
   bootError = '';
   render();
   try {
-    authSession = safeJson(sessionStore.getItem(authStorageKey), null);
+    authSession = restoreAuth();
     if (authSession) try { await refreshAuth(); } catch { authSession = null; }
     await loadCatalog();
     db.cart = db.cart.filter(item => db.products.some(product => product.id === item.id && product.active));
@@ -54,6 +54,7 @@ async function boot() {
       } else if (currentProfile?.role === 'driver') {
         role = 'Entregador';
         driverDeliveries = await backendRequest('/rest/v1/rpc/driver_deliveries', { method: 'POST', body: '{}' }, true);
+        await loadMyOrders();
       } else {
         await loadMyOrders();
       }
@@ -96,6 +97,7 @@ function authPage(mode = 'login') {
   document.title = `${signup ? 'Criar conta' : 'Entrar'} · Grupo Outlet`;
 }
 async function signInAccount(form) {
+  const fromStore = routePath().startsWith('/loja');
   const button = form.querySelector('button');
   const emailInput = form.elements.namedItem('email');
   const passwordInput = form.elements.namedItem('password');
@@ -108,7 +110,10 @@ async function signInAccount(form) {
     if (!response.ok) throw new Error('E-mail ou senha incorretos.');
     rememberAuth(await response.json());
     await boot();
-    if (currentProfile?.role === 'driver') go('/app/deliveries');
+    const destination = sessionStore.getItem('forte-after-login');
+    if (destination && /^\/loja(?:\/|$)/.test(destination)) go(destination);
+    else if (fromStore) go('/loja/conta');
+    else if (currentProfile?.role === 'driver') go('/app/deliveries');
     else if (isOwner) go('/app');
     else go(sessionStore.getItem('forte-after-login') || '/loja/conta');
     sessionStore.removeItem('forte-after-login');
@@ -167,7 +172,7 @@ render = function () {
 accountPage = () => {
   if (!authSession) return authPage();
   const orders = db.orders.filter(o => o.user_id === authSession.user.id);
-  const adminLink = isOwner ? '<a class="btn" href="/app">Abrir gestão</a>' : '';
+  const adminLink = isOwner || currentProfile?.role === 'driver' ? '<a class="btn" href="/app">Acessar painel</a>' : '';
   return `<div class="store-content account-content">${heading('Minha conta', esc(currentProfile?.name || currentEmail()),
     `${adminLink}${button('Sair', 'onclick="signOut()"', '', 'logout')}`)}
     <section class="card pad"><h2>Meus pedidos</h2><div class="stack" style="margin-top:18px">
@@ -176,9 +181,9 @@ accountPage = () => {
 };
 const oldStoreHeader = storeHeader;
 storeHeader = () => {
-  const subtitle = authSession ? 'Meus pedidos' : 'Entre ou cadastre-se';
-  return oldStoreHeader().replace('Olá, bem-vindo<small>Minha conta</small>', `Minha conta<small>${subtitle}</small>`)
-    .replace('<a class="account"', `<a class="account" aria-label="Minha conta · ${subtitle}"`);
+  const subtitle = authSession ? currentProfile?.name || authSession.user?.user_metadata?.name || 'Minha conta' : 'Entre ou cadastre-se';
+  return oldStoreHeader().replace('Olá, bem-vindo<small>Minha conta</small>', `Minha conta<small>${esc(subtitle)}</small>`)
+    .replace('<a class="account"', `<a class="account" aria-label="Minha conta · ${esc(subtitle)}"`);
 };
 const oldSignOut = signOut;
 signOut = async () => { currentProfile = null; accountProfiles = []; await oldSignOut(); };

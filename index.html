@@ -604,6 +604,7 @@ const backendUrl = 'https://rwxqytomiorsrxpgtjin.supabase.co';
 const backendKey = 'sb_publishable_blKM9wQxpyILSjEn1RnTmw_sLcoanYo';
 const ownerEmail = 'grupooutlet.rj@gmail.com';
 const authStorageKey = 'forte-auth-v1';
+const sharedAuthMarker = 'forte-auth-shared-v1';
 const cartStorageKey = 'forte-cart-v1';
 let authSession = null;
 let isOwner = false;
@@ -653,19 +654,51 @@ function rememberAuth(session) {
     ...session,
     expires_at: session.expires_at || Math.floor(Date.now() / 1000) + (session.expires_in || 3600)
   };
-  sessionStore.setItem(authStorageKey, JSON.stringify(authSession));
+  localStore.setItem(sharedAuthMarker, '1');
+  localStore.setItem(authStorageKey, JSON.stringify(authSession));
+  sessionStore.removeItem(authStorageKey);
   sessionStore.setItem('forte-customer', currentEmail());
 }
+function restoreAuth() {
+  const shared = safeJson(localStore.getItem(authStorageKey), null);
+  const legacy = safeJson(sessionStore.getItem(authStorageKey), null);
+  sessionStore.removeItem(authStorageKey);
+  if (shared) return shared;
+  if (legacy && !localStore.getItem(sharedAuthMarker)) { rememberAuth(legacy); return authSession; }
+  return null;
+}
+function clearAuth() {
+  authSession = null;
+  localStore.setItem(sharedAuthMarker, '1');
+  localStore.removeItem(authStorageKey);
+  sessionStore.removeItem(authStorageKey);
+  sessionStore.removeItem('forte-customer');
+}
+let authRefreshPending = null;
 async function refreshAuth() {
+  if (authRefreshPending) return authRefreshPending;
+  authRefreshPending = typeof navigator !== 'undefined' && navigator.locks
+    ? navigator.locks.request('forte-auth-refresh', refreshSharedAuth) : refreshSharedAuth();
+  try { await authRefreshPending; } finally { authRefreshPending = null; }
+}
+async function refreshSharedAuth() {
+  const shared = safeJson(localStore.getItem(authStorageKey), null);
+  if (shared) authSession = shared;
+  else if (localStore.getItem(sharedAuthMarker)) { clearAuth(); throw new Error('Sua sessão terminou. Entre novamente.'); }
   if (!authSession?.refresh_token) return;
   if (authSession.expires_at > Math.floor(Date.now() / 1000) + 60) return;
+  const refreshToken = authSession.refresh_token;
   const response = await fetch(backendUrl + '/auth/v1/token?grant_type=refresh_token', {
-    method: 'POST', headers: requestHeaders(), body: JSON.stringify({ refresh_token: authSession.refresh_token })
+    method: 'POST', headers: requestHeaders(), body: JSON.stringify({ refresh_token: refreshToken })
   });
+  const latest = safeJson(localStore.getItem(authStorageKey), null);
+  if (localStore.getItem(sharedAuthMarker) && latest?.refresh_token !== refreshToken) {
+    authSession = latest;
+    if (!latest) throw new Error('Sua sessão terminou. Entre novamente.');
+    return;
+  }
   if (!response.ok) {
-    authSession = null;
-    sessionStore.removeItem(authStorageKey);
-    sessionStore.removeItem('forte-customer');
+    clearAuth();
     throw new Error('Sua sessão expirou. Entre novamente.');
   }
   rememberAuth(await response.json());
@@ -701,7 +734,7 @@ async function boot() {
   bootError = '';
   render();
   try {
-    authSession = safeJson(sessionStore.getItem(authStorageKey), null);
+    authSession = restoreAuth();
     if (authSession) {
       try { await refreshAuth(); } catch { authSession = null; }
     }
@@ -872,13 +905,23 @@ accountPage = () => {
 };
 async function signOut() {
   try { await backendRequest('/auth/v1/logout', { method: 'POST' }, true); } catch {}
-  authSession = null;
+  clearAuth();
   isOwner = false;
-  sessionStore.removeItem(authStorageKey);
-  sessionStore.removeItem('forte-customer');
   if ($('#modal').open) closeModal();
   await boot();
 }
+
+window.addEventListener('storage', event => {
+  if (typeof isStorePreview !== 'undefined' && isStorePreview) return;
+  if (event.key !== authStorageKey) return;
+  const next = safeJson(event.newValue, null);
+  const previous = safeJson(event.oldValue, null);
+  const changedUser = next?.user?.id !== previous?.user?.id;
+  authSession = next;
+  sessionStore.removeItem(authStorageKey);
+  if (!next) { isOwner = false; currentProfile = null; sessionStore.removeItem('forte-customer'); }
+  if (changedUser && booted) boot();
+});
 
 // boot is started after the account and catalog enhancements are installed.
 </script>
@@ -913,7 +956,7 @@ async function boot() {
   bootError = '';
   render();
   try {
-    authSession = safeJson(sessionStore.getItem(authStorageKey), null);
+    authSession = restoreAuth();
     if (authSession) try { await refreshAuth(); } catch { authSession = null; }
     await loadCatalog();
     db.cart = db.cart.filter(item => db.products.some(product => product.id === item.id && product.active));
@@ -938,6 +981,7 @@ async function boot() {
       } else if (currentProfile?.role === 'driver') {
         role = 'Entregador';
         driverDeliveries = await backendRequest('/rest/v1/rpc/driver_deliveries', { method: 'POST', body: '{}' }, true);
+        await loadMyOrders();
       } else {
         await loadMyOrders();
       }
@@ -980,6 +1024,7 @@ function authPage(mode = 'login') {
   document.title = `${signup ? 'Criar conta' : 'Entrar'} · Grupo Outlet`;
 }
 async function signInAccount(form) {
+  const fromStore = routePath().startsWith('/loja');
   const button = form.querySelector('button');
   const emailInput = form.elements.namedItem('email');
   const passwordInput = form.elements.namedItem('password');
@@ -992,7 +1037,10 @@ async function signInAccount(form) {
     if (!response.ok) throw new Error('E-mail ou senha incorretos.');
     rememberAuth(await response.json());
     await boot();
-    if (currentProfile?.role === 'driver') go('/app/deliveries');
+    const destination = sessionStore.getItem('forte-after-login');
+    if (destination && /^\/loja(?:\/|$)/.test(destination)) go(destination);
+    else if (fromStore) go('/loja/conta');
+    else if (currentProfile?.role === 'driver') go('/app/deliveries');
     else if (isOwner) go('/app');
     else go(sessionStore.getItem('forte-after-login') || '/loja/conta');
     sessionStore.removeItem('forte-after-login');
@@ -1051,7 +1099,7 @@ render = function () {
 accountPage = () => {
   if (!authSession) return authPage();
   const orders = db.orders.filter(o => o.user_id === authSession.user.id);
-  const adminLink = isOwner ? '<a class="btn" href="/app">Abrir gestão</a>' : '';
+  const adminLink = isOwner || currentProfile?.role === 'driver' ? '<a class="btn" href="/app">Acessar painel</a>' : '';
   return `<div class="store-content account-content">${heading('Minha conta', esc(currentProfile?.name || currentEmail()),
     `${adminLink}${button('Sair', 'onclick="signOut()"', '', 'logout')}`)}
     <section class="card pad"><h2>Meus pedidos</h2><div class="stack" style="margin-top:18px">
@@ -1060,9 +1108,9 @@ accountPage = () => {
 };
 const oldStoreHeader = storeHeader;
 storeHeader = () => {
-  const subtitle = authSession ? 'Meus pedidos' : 'Entre ou cadastre-se';
-  return oldStoreHeader().replace('Olá, bem-vindo<small>Minha conta</small>', `Minha conta<small>${subtitle}</small>`)
-    .replace('<a class="account"', `<a class="account" aria-label="Minha conta · ${subtitle}"`);
+  const subtitle = authSession ? currentProfile?.name || authSession.user?.user_metadata?.name || 'Minha conta' : 'Entre ou cadastre-se';
+  return oldStoreHeader().replace('Olá, bem-vindo<small>Minha conta</small>', `Minha conta<small>${esc(subtitle)}</small>`)
+    .replace('<a class="account"', `<a class="account" aria-label="Minha conta · ${esc(subtitle)}"`);
 };
 const oldSignOut = signOut;
 signOut = async () => { currentProfile = null; accountProfiles = []; await oldSignOut(); };
@@ -2892,7 +2940,7 @@ async function setCustomerPassword(form) {
   const submit = form.querySelector('button:not([type])'); submit.disabled = true;
   try {
     const user = await backendRequest('/auth/v1/user', { method: 'PUT', body: JSON.stringify({ password: fields.password, data: { password_set: true } }) }, true);
-    authSession.user = user; sessionStore.setItem(authStorageKey, JSON.stringify(authSession));
+    rememberAuth({ ...authSession, user });
     closeModal(); render(); toast('Senha definida.');
   } catch (error) { toast(error.message); }
   finally { form.reset(); submit.disabled = false; }

@@ -378,7 +378,7 @@ async function setCustomerPassword(form) {
   const submit = form.querySelector('button:not([type])'); submit.disabled = true;
   try {
     const user = await backendRequest('/auth/v1/user', { method: 'PUT', body: JSON.stringify({ password: fields.password, data: { password_set: true } }) }, true);
-    authSession.user = user; sessionStore.setItem(authStorageKey, JSON.stringify(authSession));
+    rememberAuth({ ...authSession, user });
     closeModal(); render(); toast('Senha definida.');
   } catch (error) { toast(error.message); }
   finally { form.reset(); submit.disabled = false; }
