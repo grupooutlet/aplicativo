@@ -4,3 +4,8 @@ node_modules/
 *.tmp
 supabase/seed-state.json
 supabase/site/generated/
+imports/
+source-*.html
+source-*.xml
+source-*.txt
+source-*.json
