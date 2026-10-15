@@ -234,8 +234,6 @@ let productStatusFilter = 'all';
 function productMatchesStatus(product) {
   if (productStatusFilter === 'active') return product.active;
   if (productStatusFilter === 'draft') return !product.active;
-  if (productStatusFilter === 'duplicate') return !product.active && product.importInfo?.reasons?.includes('duplicate');
-  if (productStatusFilter === 'imported') return Boolean(product.importInfo?.batchId);
   return true;
 }
 function productReviewNote(product) {

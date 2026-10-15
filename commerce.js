@@ -298,9 +298,10 @@ checkout = async form => {
   const shipping = shippingOptionsFor(fields.delivery).find(option => option.id === fields.shippingOptionId);
   if (!shipping) return toast('Selecione um frete ou retirada disponível.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(fields.email || '').trim())) return toast('Informe um e-mail válido para contato.');
-  let quote;
+  let quote, selectedBumps = [];
   try {
-    quote = paymentFromFields(fields, cartTotal() + Number(shipping.price));
+    selectedBumps = typeof selectedCheckoutBumps === 'function' ? selectedCheckoutBumps() : [];
+    quote = paymentFromFields(fields, cartTotal() + (typeof orderBumpTotal === 'function' ? orderBumpTotal() : 0) + Number(shipping.price));
     for (const item of db.cart) {
       const product = db.products.find(p => p.id === item.id && p.active);
       if (!product || cartQuantity(item.id) > available(item.id)) throw new Error('O estoque mudou. Revise o carrinho.');
@@ -312,6 +313,7 @@ checkout = async form => {
     email: fields.email.trim().toLowerCase(), phone: fields.phone.trim(), cpf: fields.cpf.trim(), address,
     delivery: fields.delivery, paymentTiming: fields.paymentTiming, paymentMethodId: quote.paymentMethodId,
     installments: quote.installments, expectedTotal: quote.total, shippingOptionId: shipping.id, notes: fields.notes,
+    orderBumps: selectedBumps,
     items: db.cart.reduce((lines, item) => {
       const matching = lines.find(line => line.id === item.id && JSON.stringify(line.options) === JSON.stringify(item.options));
       if (matching) matching.qty += item.qty; else lines.push({ id: item.id, qty: item.qty, options: item.options || {} });
@@ -332,7 +334,7 @@ checkout = async form => {
       firstName: request.firstName, lastName: request.lastName, email: request.email, cpf: request.cpf, phone: request.phone,
       addressParts: fields.delivery === 'Entrega' ? { cep: fields.cep, street: fields.street, number: fields.number,
         neighborhood: fields.neighborhood, city: cityParts[0], state: cityParts[1] || '', complement: fields.complement } : checkoutContact()?.addressParts || {} }));
-    db.cart = []; localStore.setItem(cartStorageKey, '[]');
+    db.cart = []; if (typeof clearCheckoutBumps === 'function') clearCheckoutBumps(); localStore.setItem(cartStorageKey, '[]');
     sessionStore.setItem('forte-guest-order-' + result.id, result.token);
     const guestIds = safeJson(sessionStore.getItem('forte-guest-orders'), []);
     sessionStore.setItem('forte-guest-orders', JSON.stringify([...new Set([...guestIds, result.id])]));
@@ -343,7 +345,7 @@ checkout = async form => {
     go('/loja/pedido/' + result.id); toast('Pedido recebido!');
   } catch (error) {
     if (confirmed) {
-      db.cart = [];
+      db.cart = []; if (typeof clearCheckoutBumps === 'function') clearCheckoutBumps();
       if (!db.orders.some(order => order.id === confirmed.id)) db.orders.unshift(confirmed.order);
       go('/loja/pedido/' + confirmed.id); toast('Pedido recebido! Número ' + confirmed.id + '.');
     } else toast('Não foi possível concluir: ' + error.message);

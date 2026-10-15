@@ -4,7 +4,7 @@ const isStorePreview=storePreviewParams.get('storePreview')==='1'&&window.parent
 let storeAuthView='',storeMenuFocus=null;
 const storeHeaderBeforeNavigation=storeHeader;
 storeHeader=()=>{
-  const links=`<a href="/loja/catalogo" onclick="catalogCategory='Todos';catalogQuery=''">Todos os móveis</a>${db.collections.map((name,index)=>`<a href="/loja/catalogo" onclick="catalogCategory=db.collections[${index}];catalogQuery=''">${esc(name)}</a>`).join('')}`;
+  const links=storeCollectionLinks();
   return storeHeaderBeforeNavigation().replace('<header class="store-header">','<header class="store-header"><button class="store-menu-button" type="button" aria-label="Abrir menu da loja" aria-controls="store-menu-dialog" aria-expanded="false" onclick="openStoreMenu(this)">'+icon('menu')+'</button>')+
     `<dialog id="store-menu-dialog" class="store-mobile-menu"><div class="store-menu-head"><strong>Menu da loja</strong><button type="button" aria-label="Fechar menu da loja" onclick="closeStoreMenu()">×</button></div><nav aria-label="Coleções">${links}</nav><div class="store-menu-account">${authSession?'<a href="/loja/conta">Minha conta e meus pedidos</a>':'<a href="/loja/login">Fazer login</a><a href="/loja/cadastro">Criar conta</a>'}<a href="/loja/carrinho">Meu carrinho</a></div></dialog>`;
 };
@@ -81,7 +81,7 @@ if(isStorePreview){
     try{
       updateCheckoutProductOptions();
       const items=db.cart.map(line=>{const product=db.products.find(p=>p.id===line.id&&p.active);if(!product||cartQuantity(line.id)>available(line.id))throw new Error('Revise o estoque do carrinho.');const options=validateProductOptions(product,line.options||{});return {id:product.id,name:product.name+(optionText(options)?' · '+optionText(options):''),options,qty:line.qty,price:salePrice(product)}});
-      const quote=paymentFromFields(fields,cartTotal()+Number(shipping.price));
+      items.push(...orderBumpPreviewItems());const quote=paymentFromFields(fields,cartTotal()+orderBumpTotal()+Number(shipping.price));
       if(!authSession){authSession={user:{id:'preview-customer',email:fields.email}};currentProfile={user_id:'preview-customer',name:fields.firstName+' '+fields.lastName,email:fields.email,role:'customer'}}
       const id=Math.max(900000,...db.orders.map(o=>Number(o.id)))+1;
       const order={id,createdAt:new Date().toISOString(),date:localToday(),firstName:fields.firstName,lastName:fields.lastName,customer:fields.firstName+' '+fields.lastName,email:fields.email,phone:fields.phone,cpf:fields.cpf,delivery:fields.delivery,address:fields.delivery==='Retirada'?db.settings.address:`${fields.street}, ${fields.number} · ${fields.neighborhood} · ${fields.city} · CEP ${fields.cep}`,paymentTiming:fields.paymentTiming,items,freight:Number(shipping.price),freightPending:false,shippingOptionName:shipping.name,status:'pending',paid:false,user_id:authSession.user.id,...quote};

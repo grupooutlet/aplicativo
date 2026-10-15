@@ -11,7 +11,7 @@ const logo = `data:image/webp;base64,${logoBase64}`;
 const logoIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 272 272"><rect width="272" height="272" rx="54" fill="#f5f4ef"/><image href="${logo}" x="0" y="0" width="767" height="272"/></svg>`;
 fs.writeFileSync(path.join(root, 'assets/app-icon.svg'), logoIconSvg, 'utf8');
 const icon = logo;
-const css = [read('styles.css'), read('storefront.css')].join('\n').replace(/<\/style/gi, '<\\/style');
+const css = [read('styles.css'), read('storefront.css'), read('merchandising.css')].join('\n').replace(/<\/style/gi, '<\\/style');
 const script = name => read(name).replaceAll('assets/logo.webp', logo)
   .replace(/<\/script/gi, '<\\/script');
 
@@ -54,13 +54,14 @@ const html = `<!doctype html>
   <script>${script('fulfillment.js')}</script>
   <script>${script('operations.js')}</script>
   <script>${script('commerce.js')}</script>
+  <script>${script('merchandising.js')}</script>
   <script>${script('storefront-runtime.js')}</script>
 </body>
 </html>
 `;
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
-if (inlineScripts.length !== 10) throw new Error(`Esperados 10 scripts embutidos; encontrados ${inlineScripts.length}.`);
+if (inlineScripts.length !== 11) throw new Error(`Esperados 11 scripts embutidos; encontrados ${inlineScripts.length}.`);
 inlineScripts.forEach((match, index) => new vm.Script(match[1], { filename: `index.html:script-${index + 1}` }));
 fs.writeFileSync(path.join(root, 'index.html'), html, 'utf8');
 console.log(`index.html gerado (${Buffer.byteLength(html, 'utf8')} bytes).`);

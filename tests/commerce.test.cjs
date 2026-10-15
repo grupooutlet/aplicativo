@@ -18,7 +18,7 @@ const context = vm.createContext({ console, URL, Date, Map, Set, structuredClone
   setTimeout: () => 1, clearTimeout() {}, fetch: async () => { throw new Error('Unexpected request'); },
   FormData: class { constructor(form) { return Object.entries(form.data || {}); } }
 });
-for (const name of ['storefront-editor.js', 'app.js', 'production.js', 'enhancements.js', 'variations.js', 'fulfillment.js', 'operations.js', 'commerce.js']) {
+for (const name of ['storefront-editor.js', 'app.js', 'production.js', 'enhancements.js', 'variations.js', 'fulfillment.js', 'operations.js', 'commerce.js', 'merchandising.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, name), 'utf8').replace(/boot\(\);\s*$/, ''), context, { filename: name });
 }
 const run = code => vm.runInContext(code, context);

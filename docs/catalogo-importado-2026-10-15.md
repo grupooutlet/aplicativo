@@ -28,7 +28,7 @@ Origem: [Forte Outlet](https://www.forteoutlet.com.br/). Lote: `forte-catalog-20
 
 ## Revisão no painel
 
-Em **Produtos → Exibir**, use **Importados do site**, **Rascunhos** ou **Duplicatas para revisão**. Os rascunhos mostram o motivo da revisão. Abra **Editar** para corrigir, adicionar fotos e ativar quando estiver pronto. O único produto com 11 imagens na origem conservou as 11; sua edição aceita essa galeria sem descartar fotos. Novos produtos continuam limitados a dez imagens.
+Em **Produtos → Exibir**, use **Todos os produtos**, **Ativos** ou **Rascunhos**. Para localizar um cadastro específico da importação, consulte o SKU na lista completa abaixo e use a pesquisa. Os rascunhos mostram o motivo da revisão. Abra **Editar** para corrigir, adicionar fotos e ativar quando estiver pronto. O único produto com 11 imagens na origem conservou as 11; sua edição aceita essa galeria sem descartar fotos. Novos produtos continuam limitados a dez imagens.
 
 A origem não informa o custo de aquisição. Os novos cadastros recebem custo inicial zero e a marca interna de custo pendente de revisão. Revise os custos antes de usar esses produtos nos cálculos de lucro. O estoque copia as quantidades informadas pela origem; nos quatro itens sem controle de estoque, não foi inventada uma quantidade física.
 

@@ -19,7 +19,7 @@ function tab() {
     setTimeout: () => 1, clearTimeout() {}, fetch: async () => { throw new Error('Unexpected request'); },
     FormData: class { constructor(form) { return Object.entries(form.data || {}); } }
   });
-  for (const name of ['storefront-editor.js', 'app.js', 'production.js', 'enhancements.js', 'variations.js', 'fulfillment.js', 'operations.js', 'commerce.js', 'storefront-runtime.js']) {
+  for (const name of ['storefront-editor.js', 'app.js', 'production.js', 'enhancements.js', 'variations.js', 'fulfillment.js', 'operations.js', 'commerce.js', 'merchandising.js', 'storefront-runtime.js']) {
     vm.runInContext(fs.readFileSync(path.join(root, name), 'utf8').replace(/boot\(\);\s*$/, ''), context, { filename: name });
   }
   const run = source => vm.runInContext(source, context);

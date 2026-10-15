@@ -14,7 +14,8 @@ const staticFiles = new Map([
   ['/storefront.css', 'storefront.css'],
   ['/manifest.webmanifest', 'manifest.webmanifest'],
   ['/assets/logo.webp', 'assets/logo.webp'],
-  ['/assets/app-icon.svg', 'assets/app-icon.svg']
+  ['/assets/app-icon.svg', 'assets/app-icon.svg'],
+  ['/assets/product-placeholder.svg', 'assets/product-placeholder.svg']
 ]);
 const types = {
   '.html': 'text/html; charset=utf-8',
