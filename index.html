@@ -3474,13 +3474,36 @@ function collectionDetailPage(name) {
   let products=collectionProducts(name);const draft=collectionSortDraft?.name===name;
   if(draft)products.sort((a,b)=>{const x=collectionSortDraft.ids.indexOf(a.id),y=collectionSortDraft.ids.indexOf(b.id);return (x<0?1e9:x)-(y<0?1e9:y);});
   const index=db.collections.indexOf(name),active=collectionConfig(name).active!==false;
-  return `<a class="back-link" href="/app/collections">${icon('back')}Coleções</a>`+heading(esc(name),`${products.length} produtos · ${active?'Ativa na loja':'Desativada na loja'}`,`<div class="actions">${button('Editar coleção',`onclick="collectionModal(${index})"`,'','edit')}${button('Adicionar produtos',`onclick="collectionProductPicker(${index})"`,'primary','plus')}</div>`)+
+  return `<a class="back-link" href="/app/collections">${icon('back')}Coleções</a>`+heading(esc(name),`${products.length} produtos · ${active?'Ativa na loja':'Desativada na loja'}`,`<div class="actions">${canManage()?button('Excluir coleção',`onclick="deleteCollectionModal(${index})"`,'danger','trash'):''}${button('Editar coleção',`onclick="collectionModal(${index})"`,'','edit')}${button('Adicionar produtos',`onclick="collectionProductPicker(${index})"`,'primary','plus')}</div>`)+
   `${draft?`<div class="collection-sort-notice"><span>Nova ordem de exibição ainda não salva.</span><div class="actions">${button('Cancelar','onclick="collectionSortDraft=null;render()"','small')}${button('Salvar ordem',`onclick="saveCollectionOrder()"`,'small primary')}</div></div>`:''}<section class="card collection-workspace"><div class="toolbar"><span class="subtle">Arraste os produtos ou use as setas para definir a ordem na loja.</span><label class="collection-switch"><input type="checkbox" ${active?'checked':''} onchange="toggleCollection(${index},this.checked)">Coleção ativa</label></div><div class="collection-product-list">${products.map((p,i)=>`<article class="collection-product-item" draggable="true" ondragstart="dragCollectionProduct(${p.id},event)" ondragover="event.preventDefault()" ondrop="dropCollectionProduct(${index},${p.id},event)"><span class="drag-handle" aria-hidden="true">⠿</span><span class="collection-position">${i+1}</span><img src="${esc(p.image||'assets/product-placeholder.svg')}" alt="" loading="lazy"><div class="collection-product-name"><strong>${esc(p.name)}</strong><small>${esc(p.sku)} · ${p.active?'Ativo':'Rascunho'} · ${money(salePrice(p))}</small></div><div class="actions"><button class="btn small icon-button" ${i===0?'disabled':''} onclick="moveCollectionProduct(${index},${p.id},-1)" aria-label="Mover ${esc(p.name)} para cima">↑</button><button class="btn small icon-button" ${i===products.length-1?'disabled':''} onclick="moveCollectionProduct(${index},${p.id},1)" aria-label="Mover ${esc(p.name)} para baixo">↓</button>${button('Remover',`onclick="removeCollectionProduct(${index},${p.id})"`,'small danger')}</div></article>`).join('')||'<div class="empty">Adicione produtos para começar esta coleção.</div>'}</div></section>`;
 }
 function collectionModal(index=-1) {
   if(!canManage())return;
   const name=db.collections[index]||'';
-  modal(index<0?'Nova coleção':'Editar coleção',`<form onsubmit="event.preventDefault();saveCollection(this,${index})">${field('Nome da coleção','name',name,'text','required maxlength="100"')}<label class="check-row"><input type="checkbox" name="active" ${collectionConfig(name).active!==false?'checked':''}>Ativa na loja</label><div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary">Salvar coleção</button></div></form>`);
+  modal(index<0?'Nova coleção':'Editar coleção',`<form onsubmit="event.preventDefault();saveCollection(this,${index})">${field('Nome da coleção','name',name,'text','required maxlength="100"')}<label class="check-row"><input type="checkbox" name="active" ${collectionConfig(name).active!==false?'checked':''}>Ativa na loja</label><div class="form-actions">${index>=0?button('Excluir coleção',`type="button" onclick="deleteCollectionModal(${index})"`,'danger','trash'):''}${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary">Salvar coleção</button></div></form>`);
+}
+function deleteCollectionModal(index) {
+  if(!canManage())return;
+  const name=db.collections[index];if(!name)return;
+  const linkedSections=(db.storefront?.sections||[]).some(section=>section.type==='collection'&&section.category===name);
+  modal('Excluir coleção',`<form onsubmit="event.preventDefault();deleteCollection(this)"><input type="hidden" name="collectionName" value="${esc(name)}"><p>Excluir a coleção <strong>${esc(name)}</strong>?</p><p>Os produtos serão mantidos no catálogo e nas outras coleções. Apenas esta coleção será excluída.</p>${linkedSections?'<p>As seções da página inicial vinculadas a ela serão desativadas.</p>':''}<div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button type="submit" class="btn danger">Excluir coleção</button></div></form>`);
+}
+async function deleteCollection(form) {
+  if(!canManage())return;
+  const name=form.elements.namedItem('collectionName').value,submit=form.querySelector('button[type="submit"]');submit.disabled=true;
+  try {
+    await commitCatalogChanges(next=>{
+      if(!next.collections.includes(name))throw new Error('Esta coleção não existe mais. Atualize a página.');
+      next.collections=next.collections.filter(collection=>collection!==name);
+      for(const product of next.products)if(productInCollection(product,name))assignProductCollections(product,productCollections(product).filter(collection=>collection!==name));
+      if(next.collectionSettings)delete next.collectionSettings[name];
+      if(next.storefront?.pageSettings)delete next.storefront.pageSettings['collection:'+name];
+      for(const section of next.storefront?.sections||[])if(section.type==='collection'&&section.category===name){section.enabled=false;section.category='Todos';}
+    });
+    if(collectionSortDraft?.name===name)collectionSortDraft=null;
+    if(catalogCategory===name)catalogCategory='Todos';
+    closeModal();go('/app/collections');toast('Coleção excluída. Os produtos foram mantidos.');
+  }catch(error){toast(error.message);submit.disabled=false;}
 }
 saveCollection = async (form,index) => {
   const submit=form.querySelector('button:not([type])');submit.disabled=true;

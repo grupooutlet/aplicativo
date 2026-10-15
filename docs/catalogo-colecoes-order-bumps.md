@@ -14,6 +14,8 @@ Clique em uma coleção para abrir sua página. Nela é possível adicionar ou r
 
 Após reordenar, escolha **Salvar ordem** ou **Cancelar**. A ordem salva é usada na coleção da loja e nas seções da página inicial. Coleções desativadas saem dos menus e filtros. O status dos produtos permanece independente: desativar uma coleção não transforma seus produtos em rascunho.
 
+A conta principal e os gerentes também podem usar **Excluir coleção**, na página da coleção ou em **Editar coleção**. A exclusão pede confirmação e preserva os produtos, seus estoques, pedidos e vínculos com outras coleções. Produtos que pertenciam somente à coleção excluída ficam sem coleção. As seções da página inicial vinculadas à coleção excluída são desativadas.
+
 ## Order Bumps
 
 A seção fica abaixo de Produtos e é administrada pela conta principal e pelos gerentes.
