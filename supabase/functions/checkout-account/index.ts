@@ -1,17 +1,23 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
-const cors = {
-  "Access-Control-Allow-Origin": "https://grupooutlet.github.io",
+const allowedOrigins = new Set([
+  "https://forteoutlet.com.br",
+  "https://www.forteoutlet.com.br",
+  "https://grupooutlet.github.io",
+]);
+const corsHeaders = origin => ({
+  ...(allowedOrigins.has(origin) ? { "Access-Control-Allow-Origin": origin } : {}),
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Vary": "Origin",
-};
-const reply = (status, body) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+});
 Deno.serve(async req => {
+  const origin = req.headers.get("Origin");
+  const cors = corsHeaders(origin);
+  const reply = (status, body) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  if (origin && !allowedOrigins.has(origin)) return reply(403, { message: "Origem inválida." });
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return reply(405, { message: "Método inválido." });
-  if (req.headers.get("Origin") && req.headers.get("Origin") !== cors["Access-Control-Allow-Origin"])
-    return reply(403, { message: "Origem inválida." });
   const url = Deno.env.get("SUPABASE_URL");
   const apiKey = req.headers.get("apikey");
   if (!apiKey || apiKey.length > 1000) return reply(401, { message: "Acesso inválido." });

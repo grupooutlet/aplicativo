@@ -2,7 +2,9 @@
 
 Site estático com catálogo público, contas de clientes e painel privado, conectado ao projeto Supabase **Aplicativo** da conta **Grupo Outlet**. A conta principal é `grupooutlet.rj@gmail.com`. A loja pode ser hospedada em qualquer serviço que sirva arquivos estáticos; o arquivo publicado é `index.html`.
 
-Site publicado: https://grupooutlet.github.io/aplicativo/#/loja
+Domínio oficial configurado: https://forteoutlet.com.br/#/loja (ativação depende do apontamento DNS). O endereço anterior é https://grupooutlet.github.io/aplicativo/#/loja.
+
+As instruções de DNS e a verificação da migração estão em [docs/dominio-oficial.md](docs/dominio-oficial.md).
 
 O código-fonte e o `index.html` estão no GitHub em https://github.com/grupooutlet/aplicativo. O GitHub Pages publica a branch `main` pela raiz do repositório. A implantação alternativa no Supabase Edge Functions fica em https://rwxqytomiorsrxpgtjin.supabase.co/functions/v1/loja/#/loja.
 
@@ -46,4 +48,4 @@ npm start
 
 Abra `http://127.0.0.1:4173/#/loja`. O build incorpora CSS, JavaScript e a marca da loja em `index.html`; o manifesto e o ícone permanecem separados. O arquivo `assets/logo.base64.txt` permite reconstruir o HTML após clonar o repositório público sem publicar a imagem binária separadamente.
 
-O painel e a loja usam os endpoints de senha e cadastro do Supabase Auth. A URL principal do projeto continua apontando para o GitHub Pages.
+O painel e a loja usam os endpoints de senha e cadastro do Supabase Auth. A URL principal do Auth é `https://forteoutlet.com.br/`. O domínio oficial, sua variante `www` e o endereço anterior do GitHub permanecem permitidos. As funções de checkout e administração de clientes usam uma lista explícita dessas três origens HTTPS; as verificações de identidade e permissões continuam obrigatórias.
