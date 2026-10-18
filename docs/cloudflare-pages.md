@@ -1,16 +1,18 @@
 # Publicação na Cloudflare Pages
 
-Migração iniciada em 18/10/2026 usando as contas Grupo Outlet. O domínio continua registrado na HostGator, o código no GitHub e os dados no mesmo projeto Supabase.
+Migração realizada em 18/10/2026 usando as contas Grupo Outlet. O domínio continua registrado na HostGator, o código no GitHub e os dados no mesmo projeto Supabase.
 
 ## Publicação verificada
 
 - Projeto Cloudflare Pages: `forte-outlet`, plano Free.
-- Loja: https://forte-outlet.pages.dev/#/loja
-- Painel: https://forte-outlet.pages.dev/#/app
+- Loja oficial: https://forteoutlet.com.br/#/loja
+- Painel oficial: https://forteoutlet.com.br/#/app
+- Endereço alternativo: https://forte-outlet.pages.dev
 - Repositório: `grupooutlet/aplicativo`; branch de produção `main`; publicações automáticas ativadas.
 - Comando: `npm run pages:build`; pasta pública: `dist`; raiz do repositório.
 - A integração oficial Cloudflare Workers and Pages foi autorizada somente para `grupooutlet/aplicativo`.
 - Build inicial concluído: commit `edb9d8ec726df1d8cd6e5064151d30137e1e0a2f`; implantação `a2980493-e4c0-48ac-ad24-b717dc356ab7`.
+- Atualização das origens Supabase publicada automaticamente: commit `718c0bb240e1a3714aa87f34d8570c8cefbd415d`; implantação `23c6742f-f16a-4f63-bca4-1394448df8ae`.
 - Os cinco arquivos públicos são `index.html`, `manifest.webmanifest`, `assets/app-icon.svg`, `assets/logo.webp` e `assets/product-placeholder.svg`. A logo é gerada a partir do arquivo base64 versionado quando o binário não está presente no checkout.
 - HTML publicado: 796316 bytes, SHA-256 `928c02a7a5b8101ead3d330010957a4cefc1f5170bd785a491e90d548964e912`, idêntico ao aplicativo anterior.
 - HTTPS da publicação `pages.dev` validado com verificação normal de certificado e TLS 1.3. Loja, produto com variações, carrinho, abertura do checkout, login e painel foram conferidos. Nenhum pedido real foi criado; o carrinho usado na verificação foi esvaziado.
@@ -25,7 +27,18 @@ Migração iniciada em 18/10/2026 usando as contas Grupo Outlet. O domínio cont
 
 ## Domínio oficial
 
-Estado: zona preparada na Cloudflare; ativação dos nameservers e associação dos domínios ao Pages ainda pendentes.
+Estado: zona Cloudflare ativa; `forteoutlet.com.br` e `www.forteoutlet.com.br` associados ao Pages com status **Active / SSL enabled**. Nameservers salvos na HostGator e registrados no Registro.br em 18/10/2026 às 12:35:50 UTC (09:35:50 em São Paulo).
+
+- O cadastro do Registro.br já retorna os dois nameservers Cloudflare, sem delegação DNSSEC assinada ou DS antigo.
+- Os dois servidores Cloudflare respondem autoritativamente com os apontamentos novos e o TXT preservado.
+- A nova delegação foi confirmada nos servidores autoritativos `.br`.
+- Ambos os domínios responderam HTTP 200 por HTTPS na Cloudflare, com validação normal do certificado e TLS 1.3, usando o hostname correto e os IPs da Cloudflare.
+- A loja do domínio principal também abriu normalmente no navegador, com catálogo e imagens do Supabase. O login administrativo e o carregamento do painel no domínio oficial foram confirmados.
+- SSL/TLS configurado em **Full (strict)**, mínimo TLS **1.2**, com TLS **1.3** mantido ativo.
+- Universal SSL ativo, com certificados gerenciados pela Cloudflare. Os certificados observados para a raiz e o `www` vencem em 16/01/2027.
+- **Always Use HTTPS** ativado. O domínio principal retornou HTTP 301 para `https://forteoutlet.com.br/`.
+- O Google Public DNS já retornou endereços Cloudflare para A e AAAA dos dois domínios. Alguns caches locais ainda retornaram os endereços antigos do GitHub, especialmente para `www`; não foi ignorado nenhum alerta de certificado.
+- GitHub Pages desativado em Settings → Pages → Branch: **None**, após validar a nova hospedagem. O repositório e a integração de publicação automática Cloudflare foram preservados.
 
 Nameservers atribuídos à zona:
 
@@ -49,12 +62,12 @@ Registros preparados na Cloudflare:
 
 Os quatro registros A importados do GitHub Pages foram removidos da nova zona, após confirmação explícita. O TXT de propriedade foi copiado porque a descoberta automática não o importou. Os destinos existentes de FTP e e-mail foram preservados; a configuração de um serviço de e-mail não foi testada ou alterada.
 
-## Etapas restantes
+## Verificações e transição
 
-1. Salvar os dois nameservers na HostGator e confirmar a delegação no Registro.br e em DNS públicos.
-2. Concluir a ativação da zona na Cloudflare.
-3. Associar `forteoutlet.com.br` e `www.forteoutlet.com.br` ao projeto Pages. A interface exige a ativação da zona antes da associação da raiz.
-4. Verificar emissão dos certificados, HTTPS e redirecionamentos no domínio oficial.
-5. Conferir loja, painel e acesso ao Supabase no domínio oficial.
+- Loja, produto com variações, carrinho, abertura do checkout, login administrativo, painel e abertura de “Ver minha loja” em nova aba foram conferidos na publicação Cloudflare. Loja, login e painel também foram conferidos no domínio oficial.
+- Nenhum pedido real foi criado e nenhuma informação comercial foi alterada para testar a hospedagem.
+- As únicas alterações de aplicação foram o build isolado para publicação e a autorização da origem exata `pages.dev` nas duas funções Supabase. A interface e o HTML gerado permaneceram iguais.
+- Se uma rede ainda alcançar o GitHub e mostrar aviso de certificado ou página antiga, aguardar a expiração do cache DNS. Não recriar os registros A antigos nem desativar a validação de certificados.
+- Atualizações futuras devem ser enviadas à branch `main` de `grupooutlet/aplicativo`; a Cloudflare fará o build e a publicação automaticamente. Não reativar GitHub Pages para hospedar a loja.
 
 Fontes: [Git integration](https://developers.cloudflare.com/pages/configuration/git-integration/), [Custom domains](https://developers.cloudflare.com/pages/configuration/custom-domains/), [Universal SSL](https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/).
