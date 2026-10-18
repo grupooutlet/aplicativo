@@ -15,9 +15,14 @@ const files = [
 execFileSync(process.execPath, [path.join(root, 'build.cjs')], { cwd: root, stdio: 'inherit' });
 
 for (const name of files) {
+  const source = path.join(root, name);
   const target = path.join(output, name);
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.copyFileSync(path.join(root, name), target);
+  if (name === 'assets/logo.webp' && !fs.existsSync(source)) {
+    fs.writeFileSync(target, Buffer.from(fs.readFileSync(path.join(root, 'assets/logo.base64.txt'), 'utf8').trim(), 'base64'));
+  } else {
+    fs.copyFileSync(source, target);
+  }
 }
 
 const published = fs.readdirSync(output, { recursive: true })
