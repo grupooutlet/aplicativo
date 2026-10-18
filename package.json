@@ -5,6 +5,7 @@
   "description": "Site responsivo e sistema web da Forte Outlet",
   "scripts": {
     "build": "node build.cjs",
+    "pages:build": "node scripts/build-pages.cjs",
     "edge:build": "node build.cjs && node supabase/site/make-edge.cjs",
     "start": "node build.cjs && node server.cjs",
     "start:lan": "node build.cjs && node server.cjs --lan",
