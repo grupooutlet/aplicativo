@@ -4,6 +4,7 @@ const allowedOrigins = new Set([
   "https://forteoutlet.com.br",
   "https://www.forteoutlet.com.br",
   "https://grupooutlet.github.io",
+  "https://forte-outlet.pages.dev",
 ]);
 const corsHeaders = origin => ({
   ...(allowedOrigins.has(origin) ? { "Access-Control-Allow-Origin": origin } : {}),

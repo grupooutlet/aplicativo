@@ -1,4 +1,6 @@
-# Domínio oficial: forteoutlet.com.br
+# Domínio oficial: forteoutlet.com.br — histórico do GitHub Pages
+
+> A configuração abaixo é histórica. A migração atual utiliza Cloudflare Pages; siga [cloudflare-pages.md](cloudflare-pages.md). Os registros A e o CNAME do GitHub deste guia anterior não são os apontamentos da nova hospedagem.
 
 Preparação em 17/10/2026, usando apenas as contas Grupo Outlet no GitHub e no Supabase.
 

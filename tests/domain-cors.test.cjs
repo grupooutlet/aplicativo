@@ -16,7 +16,7 @@ const { stripTypeScriptTypes } = require('node:module');
     const request = (method, origin) => handler(new Request(`https://project.supabase.co/functions/v1/${name}`, {
       method, headers: origin ? { Origin: origin, 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'authorization,apikey,content-type' } : {},
     }));
-    for (const origin of ['https://forteoutlet.com.br', 'https://www.forteoutlet.com.br', 'https://grupooutlet.github.io']) {
+    for (const origin of ['https://forteoutlet.com.br', 'https://www.forteoutlet.com.br', 'https://grupooutlet.github.io', 'https://forte-outlet.pages.dev']) {
       const preflight = await request('OPTIONS', origin);
       assert.equal(preflight.status, 200);
       assert.equal(preflight.headers.get('Access-Control-Allow-Origin'), origin);
@@ -26,7 +26,7 @@ const { stripTypeScriptTypes } = require('node:module');
       assert.equal(unauthenticated.status, 401, 'new domains still require the existing authentication/API key');
       assert.equal(unauthenticated.headers.get('Access-Control-Allow-Origin'), origin);
     }
-    for (const origin of ['https://forteoutlet.com.br.evil.example', 'https://evil.example', 'http://forteoutlet.com.br']) {
+    for (const origin of ['https://forteoutlet.com.br.evil.example', 'https://forte-outlet.pages.dev.evil.example', 'https://another-store.pages.dev', 'https://evil.example', 'http://forteoutlet.com.br', 'http://forte-outlet.pages.dev']) {
       for (const method of ['OPTIONS', 'POST']) {
         const denied = await request(method, origin);
         assert.equal(denied.status, 403);
@@ -37,5 +37,5 @@ const { stripTypeScriptTypes } = require('node:module');
     assert.equal(serverRequest.status, 401);
     assert.equal(serverRequest.headers.get('Access-Control-Allow-Origin'), null, 'origins never leak between requests');
   }
-  console.log('Official domains and GitHub preflights accepted; unrelated origins rejected; authentication preserved.');
+  console.log('Official domains, GitHub and Cloudflare preflights accepted; unrelated origins rejected; authentication preserved.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
