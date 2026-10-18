@@ -2,11 +2,11 @@
 
 Site estático com catálogo público, contas de clientes e painel privado, conectado ao projeto Supabase **Aplicativo** da conta **Grupo Outlet**. A conta principal é `grupooutlet.rj@gmail.com`. A loja pode ser hospedada em qualquer serviço que sirva arquivos estáticos; o arquivo publicado é `index.html`.
 
-Domínio oficial configurado: https://forteoutlet.com.br/#/loja (ativação depende do apontamento DNS). O endereço anterior é https://grupooutlet.github.io/aplicativo/#/loja.
+Domínio oficial publicado com HTTPS na Cloudflare Pages: https://forteoutlet.com.br/#/loja.
 
 As instruções de DNS e a verificação da migração estão em [docs/dominio-oficial.md](docs/dominio-oficial.md).
 
-O código-fonte e o `index.html` estão no GitHub em https://github.com/grupooutlet/aplicativo. O GitHub Pages publica a branch `main` pela raiz do repositório. A implantação alternativa no Supabase Edge Functions fica em https://rwxqytomiorsrxpgtjin.supabase.co/functions/v1/loja/#/loja.
+O código-fonte e o `index.html` estão no GitHub em https://github.com/grupooutlet/aplicativo. A Cloudflare Pages publica automaticamente a branch `main`, com `npm run pages:build` e saída em `dist`. O GitHub Pages está desativado.
 
 ## Endereços
 
@@ -16,6 +16,13 @@ O código-fonte e o `index.html` estão no GitHub em https://github.com/grupoout
 - Painel: `#/app`
 
 As rotas usam `#` para funcionar em hospedagem estática sem redirecionamentos.
+
+## Menus e aparência da loja
+
+- Em **Menus → Editar menu → Criar grupo**, cadastre títulos como “Sala de estar”. Use **Adicionar subcoleções** para vincular várias coleções ao grupo. Links também podem ser reordenados e recuados em até três níveis. Os grupos abrem no cabeçalho e no menu lateral do celular.
+- Menus e **Loja online** têm rascunhos independentes. **Salvar mudanças** publica; **Cancelar mudanças** descarta o rascunho.
+- Em **Loja online**, **Página de vendas** edita um modelo compartilhado por todos os produtos; **Coleção** edita o modelo de todas as coleções e do catálogo. Cada produto mantém seus dados próprios. A prévia permite navegar entre produtos, coleções e demais páginas.
+- A grade reserva espaço uniforme para títulos, preços normais/promocionais e botões. A descrição do produto fica abaixo da área de compra.
 
 ## Segurança e dados
 

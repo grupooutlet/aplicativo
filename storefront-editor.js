@@ -75,23 +75,23 @@ const storefront=(()=>{
   function pageKey(path,category='Todos',view=''){
     if(view==='login'||view==='signup')return view;
     const parts=path.split('/'),page=parts[2];
-    if(page==='produto')return 'product:'+Number(parts[3]);
-    if(page==='catalogo')return category==='Todos'?'catalog':'collection:'+category;
+    if(page==='produto')return 'product';
+    if(page==='catalogo')return 'collection';
     return ({carrinho:'cart',checkout:'checkout',conta:'account',pedido:'order',pagina:'info:'+Number(parts[3]),login:'login',cadastro:'signup'})[page]||'home';
   }
   function pageTitle(){
     const key=pageKey(previewRoute,previewCategory,previewView);
-    if(key.startsWith('product:'))return db.products.find(p=>p.id===Number(key.split(':')[1]))?.name||'Página do produto';
-    if(key.startsWith('collection:'))return previewCategory;
+    if(key==='product')return 'Página de vendas';
+    if(key==='collection')return 'Coleção';
     return ({home:'Página inicial',catalog:'Catálogo',cart:'Carrinho',checkout:'Checkout',account:'Meus pedidos',order:'Pedido',login:'Login',signup:'Cadastro'})[key]||'Página da loja';
   }
   function pageControls(){
     const key=pageKey(previewRoute,previewCategory,previewView),cfg=home().pageSettings?.[key]||{};
     const text=(label,name)=>`<label class="field">${label}<input maxlength="200" value="${esc(cfg[name]||'')}" placeholder="Usar o texto atual da loja" oninput="storefront.changePage('${name}',this.value)"></label>`;
     const check=(label,name)=>`<label class="builder-switch"><input type="checkbox" ${cfg[name]!==false?'checked':''} onchange="storefront.changePage('${name}',this.checked)"><span>${label}</span></label>`;
-    let fields=key.startsWith('product:')?`${check('Exibir descrição do produto','showDescription')}${text('Mensagem abaixo do preço','note')}<label class="field">Fotos do produto<select onchange="storefront.changePage('galleryFit',this.value)"><option value="contain" ${cfg.galleryFit!=='cover'?'selected':''}>Mostrar a foto inteira</option><option value="cover" ${cfg.galleryFit==='cover'?'selected':''}>Preencher o espaço da foto</option></select></label>`:`${text('Título da página','title')}${text('Texto de apresentação','intro')}`;
-    if(key==='catalog'||key.startsWith('collection:'))fields+=`${check('Exibir busca e filtro de coleção','showFilters')}<label class="field">Produtos por linha no computador<select onchange="storefront.changePage('columns',Number(this.value))">${[2,3,4].map(n=>`<option value="${n}" ${Number(cfg.columns||3)===n?'selected':''}>${n} produtos</option>`).join('')}</select></label>`;
-    return `<section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">EDITAR PÁGINA</span><h2>${esc(pageTitle())}</h2></div></div><div class="builder-fields">${fields}<p class="builder-hint">Estas opções personalizam esta página. Navegue na prévia para editar outras partes da loja.</p></div></section>`;
+    let fields=key==='product'?`${check('Exibir descrição do produto','showDescription')}${text('Mensagem abaixo do preço','note')}<label class="field">Fotos do produto<select onchange="storefront.changePage('galleryFit',this.value)"><option value="contain" ${cfg.galleryFit!=='cover'?'selected':''}>Mostrar a foto inteira</option><option value="cover" ${cfg.galleryFit==='cover'?'selected':''}>Preencher o espaço da foto</option></select></label>`:`${text('Título da página','title')}${text('Texto de apresentação','intro')}`;
+    if(key==='collection')fields+=`${check('Exibir busca e filtro de coleção','showFilters')}<label class="field">Produtos por linha no computador<select onchange="storefront.changePage('columns',Number(this.value))">${[2,3,4].map(n=>`<option value="${n}" ${Number(cfg.columns||3)===n?'selected':''}>${n} produtos</option>`).join('')}</select></label>`;
+    return `<section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">EDITAR PÁGINA</span><h2>${esc(pageTitle())}</h2></div></div><div class="builder-fields">${fields}<p class="builder-hint">${key==='product'?'Este modelo é aplicado a todos os produtos. Cada produto mantém seu título, suas fotos e sua descrição.':key==='collection'?'Este modelo é aplicado a todas as coleções e ao catálogo. Os produtos de cada coleção são mantidos.':'Estas opções personalizam esta página. Navegue na prévia para editar outras partes da loja.'} A loja publicada só muda ao salvar.</p></div></section>`;
   }
   function editorControls(){
     if(pageKey(previewRoute,previewCategory,previewView)!=='home')return announcementControls()+pageControls();
@@ -99,7 +99,8 @@ const storefront=(()=>{
     return announcementControls()+`<section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">PÁGINA INICIAL</span><h2>Seções da home</h2></div><span class="builder-count">${home().sections.length}</span></div><div class="builder-section-list">${home().sections.map(sectionRow).join('')}</div><button class="builder-add" onclick="storefront.addModal()">${icon('plus')} Adicionar seção</button><p class="builder-hint">Use as setas para mudar a ordem. Seções ocultas não aparecem na loja.</p></section><section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">EDITAR SEÇÃO</span><h2>${esc(labels[s.type])}</h2></div><label class="builder-switch"><input type="checkbox" ${s.enabled?'checked':''} onchange="storefront.toggle('${s.id}',this.checked)"><span>${s.enabled?'Visível':'Oculta'}</span></label></div><div class="builder-fields">${controls(s)}</div><div class="builder-card-foot"><button class="btn small" onclick="storefront.duplicate('${s.id}')">${icon('plus')} Duplicar</button><button class="btn small danger" onclick="storefront.removeModal('${s.id}')">${icon('trash')} Excluir</button></div></section>`;
   }
   function saveBar(){return `<div class="builder-save-status" role="status">${uploading?'Enviando imagem…':saving?'Salvando mudanças…':dirty()?'Você tem mudanças não publicadas.':'Todas as mudanças estão salvas.'}</div><div class="actions"><button class="btn" onclick="storefront.cancelChanges()" ${!dirty()||saving||uploading?'disabled':''}>Cancelar mudanças</button><button class="btn primary" onclick="storefront.publish()" ${!dirty()||saving||uploading?'disabled':''}>Salvar mudanças</button></div>`}
-  function pageOptions(){return `<option value="/loja">Página inicial</option><option value="/loja/catalogo">Catálogo</option>${db.collections.map(c=>`<option value="collection:${esc(encodeURIComponent(c))}">Coleção · ${esc(c)}</option>`).join('')}${db.products.filter(p=>p.active).map(p=>`<option value="/loja/produto/${p.id}">Produto · ${esc(p.name)}</option>`).join('')}<option value="/loja/carrinho">Carrinho</option><option value="/loja/checkout">Checkout</option><option value="/loja/conta">Meus pedidos</option><option value="/loja/login">Login</option><option value="/loja/cadastro">Cadastro</option>`}
+  function previewOptionValue(){const key=pageKey(previewRoute,previewCategory,previewView);return key==='product'?'template:product':key==='collection'?'template:collection':previewRoute;}
+  function pageOptions(){return [['/loja','Página inicial'],['template:product','Página de vendas'],['template:collection','Coleção'],['/loja/carrinho','Carrinho'],['/loja/checkout','Checkout'],['/loja/conta','Meus pedidos'],['/loja/login','Login'],['/loja/cadastro','Cadastro']].map(([value,label])=>`<option value="${value}" ${previewOptionValue()===value?'selected':''}>${label}</option>`).join('')}
   function editorPage(){
     ensureDraft();
     const params=new URLSearchParams(location.search);params.set('storePreview','1');params.set('channel',channel);
@@ -128,7 +129,10 @@ const storefront=(()=>{
   }
   function changePage(key,value){
     if(!canManage()||saving||!['title','intro','note','showDescription','galleryFit','columns','showFilters'].includes(key))return;
-    const scope=pageKey(previewRoute,previewCategory,previewView);home().pageSettings||={};home().pageSettings[scope]||={};home().pageSettings[scope][key]=value;refresh();
+    const scope=pageKey(previewRoute,previewCategory,previewView),model=home();model.pageSettings||={};
+    // Shared templates replace legacy per-item overrides in the draft only.
+    if(['product','collection'].includes(scope))for(const name of Object.keys(model.pageSettings)){if(name.startsWith(scope+':')||(scope==='collection'&&name==='catalog'))delete model.pageSettings[name];}
+    model.pageSettings[scope]||={};model.pageSettings[scope][key]=value;refresh();
   }
   function changeAnnouncement(key,value){if(!canManage()||saving||!['enabled','text','highlight'].includes(key))return;home().announcement[key]=value;if(key==='enabled')render();else refresh()}
   function toggle(id,enabled){if(!canManage()||saving)return;const s=home().sections.find(s=>s.id===id);if(!s)return;s.enabled=enabled;render()}
@@ -164,6 +168,8 @@ const storefront=(()=>{
     frame.contentWindow?.postMessage({type:'storefront:model',channel,model:previewModel(),identity:previewIdentity==='current'&&authSession?{id:authSession.user.id,email:currentEmail(),name:currentProfile?.name||''}:null,...(route?{route:previewRoute,category:previewCategory}: {})},location.origin);
   }
   function navigate(value){
+    if(value==='template:product'){const product=db.products.find(p=>p.active);if(!product)return toast('Ative um produto para visualizar a página de vendas.');value='/loja/produto/'+product.id;}
+    if(value==='template:collection'){const category=visibleCollections()[0]||'Todos';value=category==='Todos'?'/loja/catalogo':'collection:'+encodeURIComponent(category);}
     if(value.startsWith('collection:')){previewCategory=decodeURIComponent(value.slice(11));previewRoute='/loja/catalogo'}else{previewRoute=value;previewCategory='Todos'}
     previewView=value==='/loja/login'?'login':value==='/loja/cadastro'?'signup':'';
     if(!/^\/loja(?:\/|$)/.test(previewRoute))return;
@@ -197,7 +203,7 @@ const storefront=(()=>{
       previewRoute=event.data.route;previewCategory=event.data.category||'Todos';previewView=event.data.view||'';
       const node=document.querySelector('#builder-controls');if(node&&previousScope!==pageKey(previewRoute,previewCategory,previewView))node.innerHTML=editorControls();
       const title=document.querySelector('#builder-preview-title');if(title)title.textContent='Prévia · '+pageTitle();
-      const select=document.querySelector('[aria-label="Página da prévia"]');if(select)select.value=previewRoute==='/loja/catalogo'&&previewCategory!=='Todos'?'collection:'+encodeURIComponent(previewCategory):previewRoute;
+      const select=document.querySelector('[aria-label="Página da prévia"]');if(select)select.value=previewOptionValue();
     }
   });
   window.addEventListener('beforeunload',event=>{if(dirty()){event.preventDefault();event.returnValue=''}});

@@ -18,20 +18,20 @@ function applyStorePageSettings(){
   const key=storefront.pageKey(routePath(),catalogCategory,storeAuthView);
   const cfg=db.storefront?.pageSettings?.[key];if(!cfg)return;
   const root=document.querySelector('.store-content')||document.querySelector('.auth-card');if(!root)return;
-  if(typeof cfg.title==='string'&&cfg.title.trim()&&!key.startsWith('product:')){const h=root.querySelector('h1');if(h)h.textContent=cfg.title}
+  if(typeof cfg.title==='string'&&cfg.title.trim()&&key!=='product'){const h=root.querySelector('h1');if(h)h.textContent=cfg.title}
   if(typeof cfg.intro==='string'&&cfg.intro.trim()){
     const heading=root.querySelector('.heading>div'),auth=root.classList.contains('auth-card');
     let node=heading?.querySelector('p')||(auth?root.querySelector('p'):null);
     if(!node){node=document.createElement('p');node.className='store-page-intro';(heading||root).insertBefore(node,(heading||root).querySelector('h1')?.nextSibling||null)}
     node.textContent=cfg.intro;
   }
-  if(key.startsWith('product:')){
-    const copy=root.querySelector('.detail-product>div:last-child');
-    if(cfg.showDescription===false)copy?.querySelector('p')?.setAttribute('hidden','');
+  if(key==='product'){
+    const copy=root.querySelector('.product-summary');
+    if(cfg.showDescription===false)root.querySelector('.product-description')?.setAttribute('hidden','');
     const image=root.querySelector('#main-product-photo');if(image)image.style.objectFit=cfg.galleryFit==='cover'?'cover':'contain';
-    if(typeof cfg.note==='string'&&cfg.note.trim()&&copy){const note=document.createElement('p');note.className='store-product-note';note.textContent=cfg.note;copy.querySelector('.price')?.insertAdjacentElement('afterend',note)}
+    if(typeof cfg.note==='string'&&cfg.note.trim()&&copy){const note=document.createElement('p');note.className='store-product-note';note.textContent=cfg.note;copy.querySelector('.store-product-note')?.remove();copy.querySelector('.product-price-block')?.insertAdjacentElement('afterend',note)}
   }
-  if(key==='catalog'||key.startsWith('collection:')){
+  if(key==='collection'){
     if(cfg.showFilters===false)root.querySelector('.toolbar')?.setAttribute('hidden','');
     if([2,3,4].includes(Number(cfg.columns))){const grid=root.querySelector('.catalog');if(grid){grid.classList.add('store-custom-grid');grid.style.setProperty('--store-columns',Number(cfg.columns))}}
   }

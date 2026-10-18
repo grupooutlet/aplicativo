@@ -27,6 +27,10 @@ vm.runInNewContext(source, state, { filename: 'variations.js' });
 
 assert.match(state.shopProduct(product), /Escolher opções/);
 assert.match(state.productPage(1), /Selecione cor/);
+const productMarkup=state.productPage(1);
+assert.ok(productMarkup.indexOf('Adicionar ao carrinho')<productMarkup.indexOf('Sobre o produto'),'purchase controls precede the description');
+assert.ok(productMarkup.indexOf('product-price-block')<productMarkup.indexOf('product-options'),'price precedes variation choices');
+assert.match(productMarkup,/aria-label="Cor"/,'variation fields have an explicit accessible name');
 assert.throws(() => state.validateProductOptions(product, { Cor: 'Bege' }), /Selecione todas/);
 assert.throws(() => state.validateProductOptions(product, { Cor: 'Azul', Tecido: 'Linho' }), /Cor/);
 

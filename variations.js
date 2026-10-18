@@ -157,7 +157,7 @@ function cartQuantity(id) {
 }
 function detailOptions(product) {
   return productVariations(product).map((variation, index) => `<label class="field">
-    ${esc(variation.name)}<select class="product-option" data-option-name="${esc(variation.name)}" required>
+    ${esc(variation.name)}<select class="product-option" aria-label="${esc(variation.name)}" data-option-name="${esc(variation.name)}" required>
     ${variation.values.length > 1 ? `<option value="" selected disabled>Selecione ${esc(variation.name.toLocaleLowerCase('pt-BR'))}</option>` : ''}
     ${variation.values.map(value => `<option value="${esc(value)}" ${variation.values.length === 1 ? 'selected' : ''}>${esc(value)}</option>`).join('')}
     </select></label>`).join('');
@@ -169,8 +169,8 @@ function collectProductOptions() {
 shopProduct = product => {
   const hasOptions = productVariations(product).length > 0;
   const inStock = available(product.id) > 0;
-  return `<article class="shop-product"><a href="/loja/produto/${product.id}"><div class="product-photo"><img src="${esc(product.image)}" alt="${esc(product.name)}" loading="lazy"></div><h3>${esc(product.name)}</h3></a>
-    ${priceMarkup(product)}<small>${hasOptions ? 'Escolha as opções do produto' : inStock ? 'Disponível · pagamento combinado com a loja' : 'Temporariamente indisponível'}</small>
+  return `<article class="shop-product"><a class="product-card-link" href="/loja/produto/${product.id}" title="${esc(product.name)}"><div class="product-photo"><img src="${esc(product.image)}" alt="${esc(product.name)}" loading="lazy"></div><h3>${esc(product.name)}</h3></a>
+    <div class="product-card-price">${priceMarkup(product)}</div><small class="product-card-meta">${hasOptions ? 'Escolha as opções do produto' : inStock ? 'Disponível · pagamento combinado com a loja' : 'Temporariamente indisponível'}</small>
     ${button(inStock ? hasOptions ? 'Escolher opções' : 'Adicionar ao carrinho' : 'Sem estoque',
       `onclick="${hasOptions ? `go('/loja/produto/${product.id}')` : `addToCart(${product.id})`}" ${inStock ? '' : 'disabled'}`, '', hasOptions ? 'chevron' : 'plus')}</article>`;
 };
@@ -178,15 +178,16 @@ productPage = id => {
   const product = db.products.find(item => item.id === id && item.active);
   if (!product) return '<div class="empty">Este produto não está disponível. <a href="/loja/catalogo">Voltar ao catálogo</a></div>';
   const images = productImages(product);
-  return `<div class="store-content"><a class="text-link" href="/loja/catalogo">Loja / ${esc(product.category)}</a>
-    <section class="detail-product"><div><img id="main-product-photo" class="detail-main-photo" src="${esc(images[0])}" alt="${esc(product.name)}">
+  return `<div class="store-content product-page"><a class="text-link product-breadcrumb" href="/loja/catalogo">Loja / ${esc(product.category)}</a>
+    <section class="detail-product"><div class="product-gallery"><img id="main-product-photo" class="detail-main-photo" src="${esc(images[0])}" alt="${esc(product.name)}">
     <div class="detail-thumbs">${images.map((url, index) => `<button onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}"><img src="${esc(url)}" alt=""></button>`).join('')}</div></div>
-    <div><h1>${esc(product.name)}</h1><span class="subtle">Código: ${esc(product.sku)}</span><p>${esc(product.description)}</p>
-    ${priceMarkup(product)}<p style="font-size:13px">Pagamento combinado com nossa equipe pelo WhatsApp.</p>
+    <div class="product-summary"><span class="product-category">${esc(product.category)}</span><h1>${esc(product.name)}</h1><span class="subtle product-code">Código: ${esc(product.sku)}</span>
+    <div class="product-price-block">${priceMarkup(product)}</div><p class="product-payment-hint">Pagamento combinado com nossa equipe pelo WhatsApp.</p>
     ${productVariations(product).length ? `<div class="product-options">${detailOptions(product)}</div>` : ''}
-    <div class="actions"><label class="field" style="max-width:85px">Qtd.<input id="detail-qty" type="number" value="1" min="1" max="${available(product.id)}"></label>
+    <div class="product-purchase"><label class="field">Quantidade<input id="detail-qty" type="number" value="1" min="1" max="${Math.max(1,available(product.id))}" ${available(product.id)>0?'':'disabled'}></label>
     ${button(available(product.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque',
-      `onclick="addToCart(${id},Number($('#detail-qty').value),collectProductOptions())" ${available(product.id) > 0 ? '' : 'disabled'}`, 'primary', 'bag')}</div></div></section></div>`;
+      `onclick="addToCart(${id},Number($('#detail-qty').value),collectProductOptions())" ${available(product.id) > 0 ? '' : 'disabled'}`, 'primary', 'bag')}</div></div></section>
+    <section class="product-description" aria-labelledby="product-description-title"><h2 id="product-description-title">Sobre o produto</h2><div>${esc(product.description||'Consulte nossa equipe para mais informações sobre este produto.')}</div></section></div>`;
 };
 addToCart = (id, qty = 1, choices = {}) => {
   const product = db.products.find(item => item.id === id && item.active);

@@ -27,6 +27,19 @@ assert.doesNotMatch(run('menuTreeMarkup([{id:"x",label:"Perigoso",type:"external
 assert.match(run('menuLinkMarkup({label:"Sofás",type:"collection",target:"Sofás",newTab:true})'),/colecao=Sof%C3%A1s.*target="_blank"/);
 assert.match(run('menuLinkMarkup({label:"Todos",type:"catalog",newTab:false})'),/colecao=Todos/,'the full catalog must clear a previous collection filter');
 assert.match(run('menuLinkMarkup({label:"<img>",type:"external",target:"https://example.com/?q=1&x=2",newTab:true})'),/&lt;img&gt;/);
+// Groups have no dummy link; inactive collections and empty groups remain hidden.
+context.groupForm={data:[['label','Sala de estar'],['type','group'],['target','ignored']],elements:{namedItem:()=>({checked:true})}};
+run("saveMenuItemDraft(groupForm,'main-menu','');groupId=editableMenus().menus[0].items.at(-1).id");
+assert.equal(run("editableMenus().menus[0].items.at(-1).target"),'');assert.equal(run("editableMenus().menus[0].items.at(-1).newTab"),false);
+context.collectionForm={data:[['collections','Sofás'],['collections','Outlet'],['collections','Sofás'],['collections','inexistente']]};
+run("addMenuSubcollections(collectionForm,'main-menu',groupId);addMenuSubcollections(collectionForm,'main-menu',groupId)");
+assert.deepEqual(plain(run("editableMenus().menus[0].items.at(-1).children.map(c=>c.target)")),['Sofás','Outlet']);
+const groupMarkup=run('menuTreeMarkup([editableMenus().menus[0].items.at(-1)])');
+assert.match(groupMarkup,/<summary>Sala de estar/);assert.match(groupMarkup,/colecao=Sof%C3%A1s/);assert.doesNotMatch(groupMarkup,/store-menu-overview/);
+assert.equal(run("menuTreeMarkup([{type:'group',label:'Vazio',children:[]}])"),'');
+assert.equal(run("menuTreeMarkup([{type:'group',label:'Ocultas',children:[{type:'collection',target:'Oculta',label:'Oculta',children:[]}]}])"),'');
+assert.deepEqual(plain(run('db.navigation')),original,'adding groups does not publish the draft');
+run("confirmRemoveMenuItem('main-menu',groupId)");
 run("location.hash='#/loja/catalogo?colecao=Sof%C3%A1s'");assert.equal(run('routePath()'),'/loja/catalogo');
 run("editableMenus().menus[0].items[2].label='Linha especial';db.navigation.menus[0].items[1].label='Título próprio'");
 context.settleAdminWrites=async()=>{};let requests=[];
