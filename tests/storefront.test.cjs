@@ -9,7 +9,7 @@ const context=vm.createContext({console,URL,URLSearchParams,Date,Map,Set,structu
   document:{baseURI:'https://grupooutlet.github.io/aplicativo/',querySelector:selector=>nodes[selector]||null,querySelectorAll:()=>[],addEventListener(){}},
   window:{addEventListener(){},scrollTo(){},render(){}},history:{pushState(){},replaceState(){}},
   setTimeout:()=>1,clearTimeout(){},fetch:async()=>{throw new Error('Unexpected network request')},FormData:class{constructor(form){return Object.entries(form.data||{})}}});
-for(const name of ['storefront-editor.js','app.js','production.js','enhancements.js','variations.js','fulfillment.js','operations.js','commerce.js','merchandising.js','storefront-runtime.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8').replace(/boot\(\);\s*$/,''),context,{filename:name});
+for(const name of ['storefront-editor.js','app.js','production.js','enhancements.js','variations.js','fulfillment.js','operations.js','commerce.js','merchandising.js','menus.js','storefront-runtime.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8').replace(/boot\(\);\s*$/,''),context,{filename:name});
 const run=code=>vm.runInContext(code,context);
 run(`storefront.init(db);isOwner=true;role='Proprietário';currentProfile={role:'master',name:'Grupo Outlet'};authSession={user:{id:'master',email:'grupooutlet.rj@gmail.com'}}`);
 const initial=run('JSON.stringify(db.storefront)');
@@ -51,5 +51,11 @@ context.loadAdminState=async()=>{};context.settleAdminWrites=async()=>{};
   await run('storefront.cancelChanges()');
   assert.equal(run('JSON.stringify(db.storefront)'),published);assert.equal(run('storefront.dirty()'),false);
   assert.doesNotMatch(run('storefront.editorPage()'),/Não publicar/);
+  let uploads=0;context.uploadProductPhoto=async file=>{uploads++;assert.equal(file.type,'image/png');return 'https://example.com/banner-stored.png';};
+  context.uploadInput={files:[{type:'image/png',size:100}],disabled:false};
+  run("storefront.select('home-hero')");const beforeUpload=run('JSON.stringify(db.storefront)');
+  await run("storefront.uploadImage(uploadInput,'image')");
+  assert.equal(uploads,1);assert.equal(context.uploadInput.disabled,false);assert.equal(run('JSON.stringify(db.storefront)'),beforeUpload,'Uploading an asset must not publish the storefront draft');
+  assert.match(run('storefront.editorPage()'),/banner-stored.png/);assert.equal(run('storefront.dirty()'),true);
   console.log('Draft isolation, explicit publication, cancellation, contextual controls and mobile navigation verified.');
 })().catch(error=>{console.error(error);process.exitCode=1});

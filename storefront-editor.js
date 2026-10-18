@@ -6,7 +6,7 @@ const storefront=(()=>{
     {icon:'shield',title:'Atendimento de verdade',body:'Nossa equipe cuida de você'},
     {icon:'store',title:'Sua loja de confiança',body:'Visite nossa loja física'}
   ];
-  let selected='home-hero',previewSize='desktop',draft=null,baseline=null,saving=false;
+  let selected='home-hero',previewSize='desktop',draft=null,baseline=null,saving=false,uploading=false;
   let previewRoute='/loja',previewCategory='Todos',previewView='home',previewIdentity='current';
   const channel=typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2);
   const editing=()=>routePath().startsWith('/app/store-editor');
@@ -98,7 +98,7 @@ const storefront=(()=>{
     const s=section()||home().sections[0];selected=s.id;
     return announcementControls()+`<section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">PÁGINA INICIAL</span><h2>Seções da home</h2></div><span class="builder-count">${home().sections.length}</span></div><div class="builder-section-list">${home().sections.map(sectionRow).join('')}</div><button class="builder-add" onclick="storefront.addModal()">${icon('plus')} Adicionar seção</button><p class="builder-hint">Use as setas para mudar a ordem. Seções ocultas não aparecem na loja.</p></section><section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">EDITAR SEÇÃO</span><h2>${esc(labels[s.type])}</h2></div><label class="builder-switch"><input type="checkbox" ${s.enabled?'checked':''} onchange="storefront.toggle('${s.id}',this.checked)"><span>${s.enabled?'Visível':'Oculta'}</span></label></div><div class="builder-fields">${controls(s)}</div><div class="builder-card-foot"><button class="btn small" onclick="storefront.duplicate('${s.id}')">${icon('plus')} Duplicar</button><button class="btn small danger" onclick="storefront.removeModal('${s.id}')">${icon('trash')} Excluir</button></div></section>`;
   }
-  function saveBar(){return `<div class="builder-save-status" role="status">${saving?'Salvando mudanças…':dirty()?'Você tem mudanças não publicadas.':'Todas as mudanças estão salvas.'}</div><div class="actions"><button class="btn" onclick="storefront.cancelChanges()" ${!dirty()||saving?'disabled':''}>Cancelar mudanças</button><button class="btn primary" onclick="storefront.publish()" ${!dirty()||saving?'disabled':''}>Salvar mudanças</button></div>`}
+  function saveBar(){return `<div class="builder-save-status" role="status">${uploading?'Enviando imagem…':saving?'Salvando mudanças…':dirty()?'Você tem mudanças não publicadas.':'Todas as mudanças estão salvas.'}</div><div class="actions"><button class="btn" onclick="storefront.cancelChanges()" ${!dirty()||saving||uploading?'disabled':''}>Cancelar mudanças</button><button class="btn primary" onclick="storefront.publish()" ${!dirty()||saving||uploading?'disabled':''}>Salvar mudanças</button></div>`}
   function pageOptions(){return `<option value="/loja">Página inicial</option><option value="/loja/catalogo">Catálogo</option>${db.collections.map(c=>`<option value="collection:${esc(encodeURIComponent(c))}">Coleção · ${esc(c)}</option>`).join('')}${db.products.filter(p=>p.active).map(p=>`<option value="/loja/produto/${p.id}">Produto · ${esc(p.name)}</option>`).join('')}<option value="/loja/carrinho">Carrinho</option><option value="/loja/checkout">Checkout</option><option value="/loja/conta">Meus pedidos</option><option value="/loja/login">Login</option><option value="/loja/cadastro">Cadastro</option>`}
   function editorPage(){
     ensureDraft();
@@ -145,9 +145,10 @@ const storefront=(()=>{
   function removeModal(id){const s=home().sections.find(s=>s.id===id);if(!s)return;modal('Excluir seção',`<p>Remover <strong>${esc(s.title||labels[s.type])}</strong> do rascunho?</p><div class="form-actions"><button class="btn" onclick="closeModal()">Manter seção</button><button class="btn danger" onclick="storefront.remove('${id}')">Remover do rascunho</button></div>`)}
   function remove(id){if(!canManage()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0)return;if(list.length===1)return toast('Oculte a última seção ou adicione outra antes de excluir.');list.splice(i,1);selected=list[Math.min(i,list.length-1)]?.id||'';closeModal();render()}
   async function uploadImage(input,key){
-    const s=section(),file=input.files?.[0];if(!canManage()||saving||!s||!file)return;
+    const s=section(),file=input.files?.[0];if(!canManage()||saving||uploading||!s||!file)return;
     if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>2*1024*1024)return toast('Envie JPG, PNG ou WebP de até 2 MB.');
-    try{s[key]=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('Não foi possível ler a imagem.'));reader.readAsDataURL(file)});render();toast('Imagem adicionada ao rascunho.')}catch(error){toast(error.message)}
+    uploading=true;input.disabled=true;refresh();
+    try{s[key]=await uploadProductPhoto(file);toast('Imagem adicionada ao rascunho. Salve as mudanças para publicá-la.')}catch(error){toast(error.message)}finally{uploading=false;input.disabled=false;render()}
   }
   function setPreview(size){previewSize=size==='mobile'?'mobile':'desktop';document.querySelectorAll('[data-device]').forEach(b=>b.classList.toggle('active',b.dataset.device===previewSize));sizeFrame()}
   function sizeFrame(){
@@ -156,7 +157,7 @@ const storefront=(()=>{
     frame.style.width=width+'px';frame.style.height='900px';frame.style.transform=`scale(${scale})`;stage.style.width=width*scale+'px';stage.style.height=900*scale+'px';
   }
   function previewModel(){
-    return {products:db.products.filter(p=>p.active).map(p=>{const item=structuredClone(p);delete item.cost;item.stock=available(p.id);return item}),collections:db.collections,collectionSettings:db.collectionSettings||{},orderBumps:(db.orderBumps||[]).filter(b=>b.active).map(({cost,...b})=>b),pages:db.pages,settings:{...db.settings,goal:undefined},storefront:structuredClone(ensureDraft()),orders:authSession?db.orders.filter(o=>o.user_id===authSession.user.id).map(o=>{const item=structuredClone(o);delete item.receipt;delete item.guest_token;delete item.guestToken;item.items=item.items.map(({cost,...line})=>line);return item}):[]};
+    return {products:db.products.filter(p=>p.active).map(p=>{const item=structuredClone(p);delete item.cost;item.stock=available(p.id);return item}),collections:db.collections,collectionSettings:db.collectionSettings||{},navigation:db.navigation,orderBumps:(db.orderBumps||[]).filter(b=>b.active).map(({cost,...b})=>b),pages:db.pages,settings:{...db.settings,goal:undefined},storefront:structuredClone(ensureDraft()),orders:authSession?db.orders.filter(o=>o.user_id===authSession.user.id).map(o=>{const item=structuredClone(o);delete item.receipt;delete item.guest_token;delete item.guestToken;item.items=item.items.map(({cost,...line})=>line);return item}):[]};
   }
   function sendPreview(route=false){
     const frame=document.querySelector('#store-preview-frame');if(!frame||!editing())return;
@@ -172,7 +173,7 @@ const storefront=(()=>{
   let observer;
   function mountPreview(){if(!editing())return;const stage=document.querySelector('#editor-preview');if(!stage)return;observer?.disconnect();observer=new ResizeObserver(sizeFrame);observer.observe(stage);sizeFrame()}
   async function publish(){
-    if(!canManage()||saving||!dirty())return;
+    if(!canManage()||saving||uploading||!dirty())return;
     saving=true;refresh();
     try{
       await settleAdminWrites();
@@ -182,7 +183,7 @@ const storefront=(()=>{
     finally{saving=false;render()}
   }
   async function cancelChanges(){
-    if(saving)return;
+    if(saving||uploading)return;
     try{await settleAdminWrites();await loadAdminState()}catch(error){toast('Não foi possível atualizar a loja: '+error.message)}
     baseline=structuredClone(db.storefront);draft=structuredClone(db.storefront);render();toast('Rascunho descartado.');sendPreview();
   }

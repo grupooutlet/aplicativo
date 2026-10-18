@@ -22,7 +22,7 @@ const localStore=safeStorage('localStorage'),sessionStore=safeStorage('sessionSt
 let db=defaults();
 let role='Proprietário',currentSeller='Loja online',orderFilter='all',productQuery='',orderQuery='',catalogCategory='Todos',catalogQuery='',period='month';
 let save=()=>true;
-const allowed=page=>({Proprietário:['dashboard','orders','deliveries','payments','products','order-bumps','collections','inventory','customers','reports','store-editor','pages','team','settings'],Gerente:['dashboard','orders','deliveries','payments','products','order-bumps','collections','inventory','customers','reports','store-editor','pages','team'],Vendedor:['dashboard','orders','deliveries','products','inventory','customers'],Estoque:['dashboard','orders','deliveries','inventory'],Entregador:['dashboard','deliveries','settings']}[role]||[]).includes(page);
+const allowed=page=>({Proprietário:['dashboard','orders','deliveries','payments','products','order-bumps','collections','inventory','customers','reports','store-editor','menus','pages','team','settings'],Gerente:['dashboard','orders','deliveries','payments','products','order-bumps','collections','inventory','customers','reports','store-editor','menus','pages','team'],Vendedor:['dashboard','orders','deliveries','products','inventory','customers'],Estoque:['dashboard','orders','deliveries','inventory'],Entregador:['dashboard','deliveries','settings']}[role]||[]).includes(page);
 const canManage=()=>['Proprietário','Gerente'].includes(role);
 const canSell=()=>['Proprietário','Gerente','Vendedor'].includes(role);
 const canPay=()=>['Proprietário','Gerente','Vendedor'].includes(role);

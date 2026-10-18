@@ -1,0 +1,24 @@
+// Isolated local QA. Every backend API request is intercepted; writes never reach production.
+const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
+const root=path.join(__dirname,'..'),photo='https://rwxqytomiorsrxpgtjin.supabase.co/storage/v1/object/public/product-photos/products/import-forte-20261015/6b272894de868e2f310ef4caab11b12f.jpg';
+const product=(id,name,price)=>({id,name,sku:'QA-'+id,description:'Produto de demonstração para verificar as telas.',price,cost:50,stock:10,min:1,category:'Sofás',categories:['Sofás'],active:true,image:photo,images:[photo],variations:[]});
+const model={products:[product(1,'Sofá retrátil Grécia',1597),product(2,'Sofá cama Madrid',1297),product(3,'Poltrona de apoio',497)],orders:[],team:[],movements:[],collections:['Sofás','Mesas e cadeiras','Poltronas'],collectionSettings:{},orderBumps:[],pages:[{id:1,title:'Sobre a loja',content:'Conteúdo da página.',active:true},{id:2,title:'Entrega e retirada',content:'Conteúdo da página.',active:true}],settings:{name:'Forte Outlet',phone:'5521999999999',address:'Endereço de demonstração',shippingOptions:[],paymentMethods:[]},storefront:{announcement:{enabled:true,text:'Forte Outlet',highlight:'Sua casa, do seu jeito.'},sections:[{id:'home-products',type:'collection',category:'Sofás',enabled:true,title:'Escolhas para sua casa',limit:8}]}};
+const link=(id,label,type,target='')=>({id,label,type,target,children:[],newTab:false});
+model.navigation={locations:{header:'main-menu',footerAbout:'footer-about',footerHelp:'footer-help'},menus:[{id:'main-menu',name:'Menu principal',active:true,items:[link('all-products','Todos os móveis','catalog'),...model.collections.map((c,i)=>link('collection-'+(i+1),c,'collection',c))]},{id:'footer-about',name:'Sobre a loja',active:true,items:model.pages.map(p=>link('page-'+p.id,p.title,'page',String(p.id)))},{id:'footer-help',name:'Conte com a gente',active:true,items:[link('account','Meus pedidos','account'),link('admin','Painel da loja','admin')]}]};
+const preload=`<script>
+let fixtureModel=${JSON.stringify(model)},fixtureVersion=1;
+localStorage.setItem('forte-auth-v1',JSON.stringify({user:{id:'qa-master',email:'grupooutlet.rj@gmail.com'},access_token:'qa-local-only',refresh_token:'qa-local-only',expires_at:Math.floor(Date.now()/1000)+86400}));localStorage.setItem('forte-auth-shared-v1','1');
+const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
+ const url=String(input);if(!url.includes('rwxqytomiorsrxpgtjin.supabase.co')||url.includes('/storage/'))return actualPreviewFetch(input,options);
+ const body=options.body?JSON.parse(options.body):{},reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
+ if(url.includes('/rest/v1/shop_public'))return reply([{data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p)}}]);
+ if(url.includes('/rest/v1/profiles'))return reply([{user_id:'qa-master',name:'Grupo Outlet',email:'grupooutlet.rj@gmail.com',role:'master',position:'Principal'}]);
+ if(url.includes('/rest/v1/customer_contacts'))return reply([]);
+ if(url.includes('/rest/v1/app_state'))return reply([{data:fixtureModel,version:fixtureVersion}]);
+ if(url.includes('/rpc/save_collection')){const before=body.p_previous,name=body.p_name;if(before){fixtureModel.collections=fixtureModel.collections.map(c=>c===before?name:c);for(const p of fixtureModel.products){p.categories=p.categories.map(c=>c===before?name:c);if(p.category===before)p.category=name;}}else fixtureModel.collections.push(name);fixtureModel.collectionSettings[name]={...(fixtureModel.collectionSettings[before]||{}),active:body.p_active,sort:body.p_sort,...(body.p_product_ids?{productIds:body.p_product_ids}:{})};if(before!==name)delete fixtureModel.collectionSettings[before];return reply({version:++fixtureVersion});}
+ if(url.includes('/rpc/save_navigation')){fixtureModel.navigation=body.p_navigation;return reply({version:++fixtureVersion});}
+ return reply({message:'Esta é uma prévia isolada; nenhuma alteração será enviada à loja.'},400);
+};</script>`;
+const html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace('<head>','<head>'+preload);
+const server=http.createServer((req,res)=>{if(req.method!=='GET')return res.writeHead(405).end();res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(html);});
+server.listen(0,'127.0.0.1',()=>console.log('Menu and collection QA: http://127.0.0.1:'+server.address().port+'/#/app/menus'));

@@ -55,13 +55,14 @@ const html = `<!doctype html>
   <script>${script('operations.js')}</script>
   <script>${script('commerce.js')}</script>
   <script>${script('merchandising.js')}</script>
+  <script>${script('menus.js')}</script>
   <script>${script('storefront-runtime.js')}</script>
 </body>
 </html>
 `;
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
-if (inlineScripts.length !== 11) throw new Error(`Esperados 11 scripts embutidos; encontrados ${inlineScripts.length}.`);
+if (inlineScripts.length !== 12) throw new Error(`Esperados 12 scripts embutidos; encontrados ${inlineScripts.length}.`);
 inlineScripts.forEach((match, index) => new vm.Script(match[1], { filename: `index.html:script-${index + 1}` }));
 fs.writeFileSync(path.join(root, 'index.html'), html, 'utf8');
 console.log(`index.html gerado (${Buffer.byteLength(html, 'utf8')} bytes).`);

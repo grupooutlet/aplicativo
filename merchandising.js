@@ -3,15 +3,53 @@ const productCollections = product => [...new Set((Array.isArray(product?.catego
 const collectionConfig = name => db.collectionSettings?.[name] || {};
 const visibleCollections = () => db.collections.filter(name => collectionConfig(name).active !== false);
 const productInCollection = (product, name) => productCollections(product).includes(name);
+const collectionSortOptions=[['manual','Livre · ordem manual'],['price_asc','Preço crescente'],['price_desc','Preço decrescente'],['title_asc','Ordem alfabética · A–Z'],['title_desc','Ordem alfabética · Z–A']];
+function sortedCollectionProducts(products, mode='manual', order=[]) {
+  const ranks=new Map(order.map((id,index)=>[Number(id),index]));
+  const title=(a,b)=>a.name.localeCompare(b.name,'pt-BR',{numeric:true,sensitivity:'base'})||a.id-b.id;
+  return products.slice().sort((a,b)=>mode==='price_asc'?salePrice(a)-salePrice(b)||title(a,b):mode==='price_desc'?salePrice(b)-salePrice(a)||title(a,b):mode==='title_asc'?title(a,b):mode==='title_desc'?title(b,a):(ranks.get(a.id)??1e9)-(ranks.get(b.id)??1e9));
+}
 function collectionProducts(name, activeOnly = false) {
   if (activeOnly && name !== 'Todos' && !visibleCollections().includes(name)) return [];
   const products = db.products.filter(p => (!activeOnly || p.active) && (name === 'Todos' || productInCollection(p, name)));
   const order = name === 'Todos' ? [] : collectionConfig(name).productIds || [];
-  return products.sort((a,b) => { const x=order.indexOf(a.id),y=order.indexOf(b.id);return (x<0?1e9:x)-(y<0?1e9:y); });
+  return sortedCollectionProducts(products,name==='Todos'?'manual':collectionConfig(name).sort||'manual',order);
 }
 function assignProductCollections(product, names) { product.categories=[...new Set(names)]; product.category=product.categories[0] || ''; }
 let catalogSelection = new Set(), collectionSearch = '', collectionSortDraft = null;
 let catalogWriteBusy = false;
+function applyCollectionEdit(model,previous,name,active,sort,ids=null) {
+  model.collectionSettings||={};
+  const config={...(model.collectionSettings[previous]||{}),active,sort};
+  if(ids!==null)config.productIds=ids.slice();
+  if(previous){
+    const index=model.collections.indexOf(previous);if(index<0)throw new Error('Esta coleção não existe mais. Atualize a página.');
+    model.collections[index]=name;
+    if(previous!==name){
+      delete model.collectionSettings[previous];
+      for(const product of model.products)if(product.category===previous||productInCollection(product,previous)){product.categories=productCollections(product).map(c=>c===previous?name:c);if(product.category===previous)product.category=name;}
+      for(const section of model.storefront?.sections||[])if(section.type==='collection'&&section.category===previous)section.category=name;
+      if(model.storefront?.pageSettings?.['collection:'+previous]){model.storefront.pageSettings['collection:'+name]=model.storefront.pageSettings['collection:'+previous];delete model.storefront.pageSettings['collection:'+previous];}
+      if(model.navigation)for(const menu of model.navigation.menus)remapMenuCollection(menu.items,previous,name);
+    }
+  }else model.collections.push(name);
+  model.collectionSettings[name]=config;
+}
+function catalogSaveError(error){return error instanceof TypeError||/Failed to fetch|NetworkError|fetch failed/i.test(error.message)?'Não foi possível conectar ao servidor. Suas alterações foram mantidas nesta tela. Tente salvar novamente.':error.message;}
+async function commitCollectionEdit(previous,name,active,sort,ids=null) {
+  if(!canManage())throw new Error('Você não tem permissão para editar coleções.');
+  if(catalogWriteBusy)throw new Error('Aguarde a alteração em andamento.');
+  if(!name||name.length>100||db.collections.some(c=>c!==previous&&c.toLocaleLowerCase('pt-BR')===name.toLocaleLowerCase('pt-BR')))throw new Error('Informe um nome único para a coleção.');
+  catalogWriteBusy=true;
+  try{
+    await settleAdminWrites();
+    const next=structuredClone(db);applyCollectionEdit(next,previous,name,active,sort,ids);
+    const result=await backendRequest('/rest/v1/rpc/save_collection',{method:'POST',body:JSON.stringify({p_previous:previous||null,p_name:name,p_active:active,p_sort:sort,p_product_ids:ids,p_expected_version:stateVersion})},true);
+    applyCollectionEdit(db,previous,name,active,sort,ids);stateVersion=result.version;
+    delete next.cart;savedState=JSON.stringify(next);
+    if(catalogCategory===previous)catalogCategory=name;
+  }finally{catalogWriteBusy=false;}
+}
 const catalogChangeKeys = ['products','collections','collectionSettings','orderBumps','attributeCatalog','nextProductId','storefront'];
 async function commitCatalogChanges(mutate) {
   if (!canManage() || catalogWriteBusy) throw new Error('Aguarde a alteração em andamento.');
@@ -114,15 +152,16 @@ collectionsPage = () => heading('Coleções','Organize os produtos e a ordem de 
 function collectionDetailPage(name) {
   if(!db.collections.includes(name))return heading('Coleção não encontrada','Volte para suas coleções.',`<a class="btn" href="/app/collections">Voltar</a>`);
   let products=collectionProducts(name);const draft=collectionSortDraft?.name===name;
-  if(draft)products.sort((a,b)=>{const x=collectionSortDraft.ids.indexOf(a.id),y=collectionSortDraft.ids.indexOf(b.id);return (x<0?1e9:x)-(y<0?1e9:y);});
+  const mode=draft?collectionSortDraft.mode||'manual':collectionConfig(name).sort||'manual',manual=mode==='manual';
+  if(draft)products=sortedCollectionProducts(products,mode,collectionSortDraft.ids);
   const index=db.collections.indexOf(name),active=collectionConfig(name).active!==false;
   return `<a class="back-link" href="/app/collections">${icon('back')}Coleções</a>`+heading(esc(name),`${products.length} produtos · ${active?'Ativa na loja':'Desativada na loja'}`,`<div class="actions">${canManage()?button('Excluir coleção',`onclick="deleteCollectionModal(${index})"`,'danger','trash'):''}${button('Editar coleção',`onclick="collectionModal(${index})"`,'','edit')}${button('Adicionar produtos',`onclick="collectionProductPicker(${index})"`,'primary','plus')}</div>`)+
-  `${draft?`<div class="collection-sort-notice"><span>Nova ordem de exibição ainda não salva.</span><div class="actions">${button('Cancelar','onclick="collectionSortDraft=null;render()"','small')}${button('Salvar ordem',`onclick="saveCollectionOrder()"`,'small primary')}</div></div>`:''}<section class="card collection-workspace"><div class="toolbar"><span class="subtle">Arraste os produtos ou use as setas para definir a ordem na loja.</span><label class="collection-switch"><input type="checkbox" ${active?'checked':''} onchange="toggleCollection(${index},this.checked)">Coleção ativa</label></div><div class="collection-product-list">${products.map((p,i)=>`<article class="collection-product-item" draggable="true" ondragstart="dragCollectionProduct(${p.id},event)" ondragover="event.preventDefault()" ondrop="dropCollectionProduct(${index},${p.id},event)"><span class="drag-handle" aria-hidden="true">⠿</span><span class="collection-position">${i+1}</span><img src="${esc(p.image||'assets/product-placeholder.svg')}" alt="" loading="lazy"><div class="collection-product-name"><strong>${esc(p.name)}</strong><small>${esc(p.sku)} · ${p.active?'Ativo':'Rascunho'} · ${money(salePrice(p))}</small></div><div class="actions"><button class="btn small icon-button" ${i===0?'disabled':''} onclick="moveCollectionProduct(${index},${p.id},-1)" aria-label="Mover ${esc(p.name)} para cima">↑</button><button class="btn small icon-button" ${i===products.length-1?'disabled':''} onclick="moveCollectionProduct(${index},${p.id},1)" aria-label="Mover ${esc(p.name)} para baixo">↓</button>${button('Remover',`onclick="removeCollectionProduct(${index},${p.id})"`,'small danger')}</div></article>`).join('')||'<div class="empty">Adicione produtos para começar esta coleção.</div>'}</div></section>`;
+  `${draft?`<div class="collection-sort-notice"><span>Nova ordem de exibição ainda não salva.</span><div class="actions">${button('Cancelar','onclick="collectionSortDraft=null;render()"','small')}${button('Salvar ordem',`onclick="saveCollectionOrder(this)"`,'small primary')}</div></div>`:''}<section class="card collection-workspace"><div class="toolbar collection-order-toolbar"><label class="collection-order-control">Organizar produtos<select class="control" aria-label="Ordenação da coleção" onchange="setCollectionSort(${index},this.value)">${collectionSortOptions.map(([value,label])=>`<option value="${value}" ${mode===value?'selected':''}>${label}</option>`).join('')}</select></label><label class="collection-switch"><input type="checkbox" ${active?'checked':''} onchange="toggleCollection(${index},this.checked)">Coleção ativa</label></div><p class="collection-order-help">${manual?'Arraste os produtos ou use as setas para decidir a ordem.':'A ordem é atualizada automaticamente na loja. Para mover os produtos, selecione Livre · ordem manual.'}</p><div class="collection-product-list">${products.map((p,i)=>`<article class="collection-product-item" draggable="${manual}" ${manual?`ondragstart="dragCollectionProduct(${p.id},event)" ondragover="event.preventDefault()" ondrop="dropCollectionProduct(${index},${p.id},event)"`:''}><span class="drag-handle" aria-hidden="true">${manual?'⠿':icon('layers')}</span><span class="collection-position">${i+1}</span><img src="${esc(p.image||'assets/product-placeholder.svg')}" alt="" loading="lazy"><div class="collection-product-name"><strong>${esc(p.name)}</strong><small>${esc(p.sku)} · ${p.active?'Ativo':'Rascunho'} · ${money(salePrice(p))}</small></div><div class="actions">${manual?`<button class="btn small icon-button" ${i===0?'disabled':''} onclick="moveCollectionProduct(${index},${p.id},-1)" aria-label="Mover ${esc(p.name)} para cima">↑</button><button class="btn small icon-button" ${i===products.length-1?'disabled':''} onclick="moveCollectionProduct(${index},${p.id},1)" aria-label="Mover ${esc(p.name)} para baixo">↓</button>`:''}${button('Remover',`onclick="removeCollectionProduct(${index},${p.id})"`,'small danger')}</div></article>`).join('')||'<div class="empty">Adicione produtos para começar esta coleção.</div>'}</div></section>`;
 }
 function collectionModal(index=-1) {
   if(!canManage())return;
   const name=db.collections[index]||'';
-  modal(index<0?'Nova coleção':'Editar coleção',`<form onsubmit="event.preventDefault();saveCollection(this,${index})">${field('Nome da coleção','name',name,'text','required maxlength="100"')}<label class="check-row"><input type="checkbox" name="active" ${collectionConfig(name).active!==false?'checked':''}>Ativa na loja</label><div class="form-actions">${index>=0?button('Excluir coleção',`type="button" onclick="deleteCollectionModal(${index})"`,'danger','trash'):''}${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary">Salvar coleção</button></div></form>`);
+  modal(index<0?'Nova coleção':'Editar coleção',`<form onsubmit="event.preventDefault();saveCollection(this,${index})"><input type="hidden" name="previousName" value="${esc(name)}">${field('Nome da coleção','name',name,'text','required maxlength="100"')}<label class="field">Organizar produtos<select name="sort">${collectionSortOptions.map(([value,label])=>`<option value="${value}" ${(collectionConfig(name).sort||'manual')===value?'selected':''}>${label}</option>`).join('')}</select></label><label class="check-row"><input type="checkbox" name="active" ${collectionConfig(name).active!==false?'checked':''}>Ativa na loja</label><div class="form-actions">${index>=0?button('Excluir coleção',`type="button" onclick="deleteCollectionModal(${index})"`,'danger','trash'):''}${button('Cancelar','type="button" onclick="closeModal()"')}<button type="submit" class="btn primary">Salvar coleção</button></div></form>`);
 }
 function deleteCollectionModal(index) {
   if(!canManage())return;
@@ -148,19 +187,13 @@ async function deleteCollection(form) {
   }catch(error){toast(error.message);submit.disabled=false;}
 }
 saveCollection = async (form,index) => {
-  const submit=form.querySelector('button:not([type])');submit.disabled=true;
+  const submit=form.querySelector('button[type="submit"]');submit.disabled=true;
   try {
-    const name=form.elements.namedItem('name').value.trim(),active=form.elements.namedItem('active').checked,previous=db.collections[index];
-    await commitCatalogChanges(next=>{
-      if(!name||next.collections.some((c,i)=>i!==index&&c.toLowerCase()===name.toLowerCase()))throw new Error('Informe um nome único para a coleção.');
-      next.collectionSettings||={};const config={...(next.collectionSettings[previous]||{}),active};
-      if(index>=0){next.collections[index]=name;if(previous!==name){delete next.collectionSettings[previous];for(const p of next.products)assignProductCollections(p,productCollections(p).map(c=>c===previous?name:c));for(const section of next.storefront?.sections||[])if(section.category===previous)section.category=name;if(next.storefront?.pageSettings?.['collection:'+previous]){next.storefront.pageSettings['collection:'+name]=next.storefront.pageSettings['collection:'+previous];delete next.storefront.pageSettings['collection:'+previous];}}}
-      else next.collections.push(name);
-      next.collectionSettings[name]=config;
-    });closeModal();collectionSortDraft=null;go('/app/collections/'+encodeURIComponent(name));toast('Coleção salva.');
-  }catch(error){toast(error.message);submit.disabled=false;}
+    const name=form.elements.namedItem('name').value.trim(),active=form.elements.namedItem('active').checked,previous=form.elements.namedItem('previousName').value,sort=form.elements.namedItem('sort').value;
+    await commitCollectionEdit(previous,name,active,sort);closeModal();collectionSortDraft=null;go('/app/collections/'+encodeURIComponent(name));toast('Coleção salva.');
+  }catch(error){toast(catalogSaveError(error));}finally{submit.disabled=false;}
 };
-async function toggleCollection(index,active) { try{await commitCatalogChanges(next=>{next.collectionSettings||={};const name=next.collections[index];next.collectionSettings[name]={...(next.collectionSettings[name]||{}),active};});render();toast(active?'Coleção ativada.':'Coleção desativada.');}catch(error){toast(error.message);render();} }
+async function toggleCollection(index,active) { try{const name=db.collections[index];await commitCollectionEdit(name,name,active,collectionConfig(name).sort||'manual');render();toast(active?'Coleção ativada.':'Coleção desativada.');}catch(error){toast(catalogSaveError(error));render();} }
 function productPicker(selected=[],name='products') { return `<div class="product-picker"><label class="search">${icon('search')}<input placeholder="Buscar produtos por nome ou SKU" aria-label="Buscar produtos para selecionar" oninput="filterProductPicker(this)"></label><div class="product-picker-list">${db.products.map(p=>`<label class="product-picker-row" data-search="${esc((p.name+' '+p.sku).toLocaleLowerCase('pt-BR'))}"><input type="checkbox" name="${name}" value="${p.id}" ${selected.includes(p.id)?'checked':''}><img src="${esc(p.image||'assets/product-placeholder.svg')}" alt="" loading="lazy"><span>${esc(p.name)}<small>${esc(p.sku)} · ${p.active?'Ativo':'Rascunho'}</small></span></label>`).join('')}</div></div>`; }
 function filterProductPicker(input) { for(const row of input.closest('.product-picker').querySelectorAll('.product-picker-row'))row.hidden=!row.dataset.search.includes(input.value.toLocaleLowerCase('pt-BR')); }
 function collectionProductPicker(index) { const name=db.collections[index];modal('Produtos da coleção',`<form onsubmit="event.preventDefault();saveCollectionProducts(this,${index})"><p>Marque os produtos que devem fazer parte de <strong>${esc(name)}</strong>.</p>${productPicker(collectionProducts(name).map(p=>p.id))}<div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary">Salvar produtos</button></div></form>`); }
@@ -169,11 +202,12 @@ async function saveCollectionProducts(form,index) {
   try{const ids=new FormData(form).getAll('products').map(Number);await commitCatalogChanges(next=>{const name=next.collections[index];for(const p of next.products)assignProductCollections(p,ids.includes(p.id)?[...productCollections(p),name]:productCollections(p).filter(c=>c!==name));});closeModal();render();toast('Produtos da coleção atualizados.');}catch(error){toast(error.message);submit.disabled=false;}
 }
 async function removeCollectionProduct(index,id) { try{await commitCatalogChanges(next=>{const p=next.products.find(p=>p.id===id);assignProductCollections(p,productCollections(p).filter(c=>c!==next.collections[index]));});render();toast('Produto removido desta coleção.');}catch(error){toast(error.message);} }
-function collectionDraftIds(index) { const name=db.collections[index];if(collectionSortDraft?.name!==name)collectionSortDraft={name,ids:collectionProducts(name).map(p=>p.id)};return collectionSortDraft.ids; }
-function moveCollectionProduct(index,id,delta) { const ids=collectionDraftIds(index),position=ids.indexOf(id),to=position+delta;if(position<0||to<0||to>=ids.length)return;ids.splice(position,1);ids.splice(to,0,id);render(); }
+function collectionDraftIds(index) { const name=db.collections[index];if(collectionSortDraft?.name!==name)collectionSortDraft={name,mode:collectionConfig(name).sort||'manual',ids:sortedCollectionProducts(collectionProducts(name),'manual',collectionConfig(name).productIds||[]).map(p=>p.id)};return collectionSortDraft.ids; }
+function setCollectionSort(index,mode){if(!canManage()||!collectionSortOptions.some(([value])=>value===mode))return;collectionDraftIds(index);collectionSortDraft.mode=mode;render();}
+function moveCollectionProduct(index,id,delta) { if(!canManage())return;const ids=collectionDraftIds(index);if((collectionSortDraft.mode||'manual')!=='manual')return;const position=ids.indexOf(id),to=position+delta;if(position<0||to<0||to>=ids.length)return;ids.splice(position,1);ids.splice(to,0,id);render(); }
 function dragCollectionProduct(id,event) { event.dataTransfer.setData('text/plain',String(id));event.dataTransfer.effectAllowed='move'; }
-function dropCollectionProduct(index,target,event) {event.preventDefault();const id=Number(event.dataTransfer.getData('text/plain')),ids=collectionDraftIds(index),position=ids.indexOf(id),to=ids.indexOf(target);if(position<0||to<0)return;ids.splice(position,1);ids.splice(to,0,id);render();}
-async function saveCollectionOrder() { if(!collectionSortDraft)return;try{const draft=structuredClone(collectionSortDraft);await commitCatalogChanges(next=>{next.collectionSettings||={};next.collectionSettings[draft.name]={...(next.collectionSettings[draft.name]||{}),productIds:draft.ids};});collectionSortDraft=null;render();toast('Ordem da coleção salva na loja.');}catch(error){toast(error.message);} }
+function dropCollectionProduct(index,target,event) {event.preventDefault();if(!canManage())return;const id=Number(event.dataTransfer.getData('text/plain')),ids=collectionDraftIds(index);if((collectionSortDraft.mode||'manual')!=='manual')return;const position=ids.indexOf(id),to=ids.indexOf(target);if(position<0||to<0)return;ids.splice(position,1);ids.splice(to,0,id);render();}
+async function saveCollectionOrder(submit) { if(!collectionSortDraft)return;if(submit)submit.disabled=true;try{const draft=structuredClone(collectionSortDraft);await commitCollectionEdit(draft.name,draft.name,collectionConfig(draft.name).active!==false,draft.mode||'manual',draft.ids);collectionSortDraft=null;render();toast('Ordem da coleção salva na loja.');}catch(error){toast(catalogSaveError(error));}finally{if(submit)submit.disabled=false;} }
 
 const selectedBumpOffers = new Map();
 function clearCheckoutBumps() { selectedBumpOffers.clear(); }
