@@ -13,7 +13,7 @@ Migração realizada em 18/10/2026 usando as contas Grupo Outlet. O domínio con
 - A integração oficial Cloudflare Workers and Pages foi autorizada somente para `grupooutlet/aplicativo`.
 - Build inicial concluído: commit `edb9d8ec726df1d8cd6e5064151d30137e1e0a2f`; implantação `a2980493-e4c0-48ac-ad24-b717dc356ab7`.
 - Atualização das origens Supabase publicada automaticamente: commit `718c0bb240e1a3714aa87f34d8570c8cefbd415d`; implantação `23c6742f-f16a-4f63-bca4-1394448df8ae`.
-- Os cinco arquivos públicos são `index.html`, `manifest.webmanifest`, `assets/app-icon.svg`, `assets/logo.webp` e `assets/product-placeholder.svg`. A logo é gerada a partir do arquivo base64 versionado quando o binário não está presente no checkout.
+- O build publica nove arquivos: `index.html`, `manifest.webmanifest`, `apple-touch-icon.png`, `assets/app-icon.svg`, `assets/app-icon-192.png`, `assets/app-icon-512.png`, `assets/app-icon-maskable-512.png`, `assets/logo.webp` e `assets/product-placeholder.svg`. Os quatro PNGs de instalação são versionados; a logo WebP é gerada a partir do arquivo base64 versionado quando o binário não está presente no checkout.
 - HTML publicado: 796316 bytes, SHA-256 `928c02a7a5b8101ead3d330010957a4cefc1f5170bd785a491e90d548964e912`, idêntico ao aplicativo anterior.
 - HTTPS da publicação `pages.dev` validado com verificação normal de certificado e TLS 1.3. Loja, produto com variações, carrinho, abertura do checkout, login e painel foram conferidos. Nenhum pedido real foi criado; o carrinho usado na verificação foi esvaziado.
 

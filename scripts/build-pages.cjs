@@ -8,6 +8,10 @@ const files = [
   'index.html',
   'manifest.webmanifest',
   'assets/app-icon.svg',
+  'assets/app-icon-192.png',
+  'assets/app-icon-512.png',
+  'assets/app-icon-maskable-512.png',
+  'apple-touch-icon.png',
   'assets/logo.webp',
   'assets/product-placeholder.svg'
 ];

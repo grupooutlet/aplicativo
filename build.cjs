@@ -8,7 +8,7 @@ const logoBase64 = fs.existsSync(path.join(root, 'assets/logo.webp'))
   ? fs.readFileSync(path.join(root, 'assets/logo.webp')).toString('base64')
   : read('assets/logo.base64.txt').trim();
 const logo = `data:image/webp;base64,${logoBase64}`;
-const logoIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 272 272"><rect width="272" height="272" rx="54" fill="#f5f4ef"/><image href="${logo}" x="0" y="0" width="767" height="272"/></svg>`;
+const logoIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#1C2228"/><image href="${logo}" x="30.72" y="30.72" width="450.56" height="450.56" preserveAspectRatio="xMidYMid meet"/></svg>`;
 fs.writeFileSync(path.join(root, 'assets/app-icon.svg'), logoIconSvg, 'utf8');
 const icon = logo;
 const css = [read('styles.css'), read('storefront.css'), read('merchandising.css')].join('\n').replace(/<\/style/gi, '<\\/style');
@@ -23,6 +23,7 @@ const html = `<!doctype html>
   <meta name="theme-color" content="#1C2228">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Forte Outlet">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="description" content="Forte Outlet: loja online e gestão em um só lugar.">
   <title>Forte Outlet · Loja online</title>
@@ -40,6 +41,7 @@ const html = `<!doctype html>
       document.head.append(manifest);
     }
   </script>
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261019-logo">
   <style>${css}</style>
 </head>
 <body>

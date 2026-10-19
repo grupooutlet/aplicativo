@@ -55,4 +55,10 @@ npm start
 
 Abra `http://127.0.0.1:4173/#/loja`. O build incorpora CSS, JavaScript e a marca da loja em `index.html`; o manifesto e o ícone permanecem separados. O arquivo `assets/logo.base64.txt` permite reconstruir o HTML após clonar o repositório público sem publicar a imagem binária separadamente.
 
+### Ícone instalado no iOS e Android
+
+`apple-touch-icon.png` (180 × 180) atende ao iOS. O manifesto usa PNGs de 192 × 192 e 512 × 512 e uma versão `maskable` própria para Android. Todos exibem a logo completa do cabeçalho sobre fundo opaco `#1C2228`; a versão Android preserva a marca dentro da área circular segura. O ícone SVG anterior também mantém a logo inteira.
+
+Os PNGs são versionados e o build da Cloudflare apenas os copia. Para regenerá-los após uma mudança da marca, instale `Pillow==12.0.0`, execute `python scripts/generate-app-icons.py` e versione os quatro PNGs resultantes. A publicação não depende de Python.
+
 O painel e a loja usam os endpoints de senha e cadastro do Supabase Auth. A URL principal do Auth é `https://forteoutlet.com.br/`. O domínio oficial, sua variante `www` e o endereço anterior do GitHub permanecem permitidos. As funções de checkout e administração de clientes usam uma lista explícita dessas três origens HTTPS; as verificações de identidade e permissões continuam obrigatórias.

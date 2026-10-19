@@ -15,6 +15,10 @@ const staticFiles = new Map([
   ['/manifest.webmanifest', 'manifest.webmanifest'],
   ['/assets/logo.webp', 'assets/logo.webp'],
   ['/assets/app-icon.svg', 'assets/app-icon.svg'],
+  ['/assets/app-icon-192.png', 'assets/app-icon-192.png'],
+  ['/assets/app-icon-512.png', 'assets/app-icon-512.png'],
+  ['/assets/app-icon-maskable-512.png', 'assets/app-icon-maskable-512.png'],
+  ['/apple-touch-icon.png', 'apple-touch-icon.png'],
   ['/assets/product-placeholder.svg', 'assets/product-placeholder.svg']
 ]);
 const types = {
@@ -23,7 +27,8 @@ const types = {
   '.css': 'text/css; charset=utf-8',
   '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.webp': 'image/webp',
-  '.svg': 'image/svg+xml'
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png'
 };
 
 http.createServer((req, res) => {
