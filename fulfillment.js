@@ -112,8 +112,8 @@ checkoutPage = () => {
   html = html.replace('name="city" type="text"', 'name="city" type="text"');
   html = html.replace('</div><h2 style="margin:28px 0 18px">Pagamento</h2>',
     '</div><p id="cep-feedback" class="subtle" role="status" style="margin-top:10px"></p><h2 style="margin:28px 0 18px">Pagamento</h2>');
-  html = html.replace(/(<label class="field full">Como prefere receber\?<select name="delivery"[\s\S]*?<\/select><\/label>)/,
-    `$1<div id="shipping-options" class="full">${shippingChoices('Entrega')}</div>`);
+  html = html.replace('<h2 style="margin:28px 0 18px">Pagamento</h2>',
+    `<div id="shipping-options" class="full" style="margin-top:18px">${shippingChoices('Entrega')}</div><h2 style="margin:28px 0 18px">Pagamento</h2>`);
   html = html.replace('<span class="subtle">A confirmar no atendimento</span>',
     `<strong id="checkout-freight">${shippingOptionsFor('Entrega').length ? money(shippingOptionsFor('Entrega')[0].price) : 'Selecione uma opção'}</strong>`);
   html = html.replace(/<div class="total-line final"><span>Subtotal<\/span><span>[^<]*<\/span><\/div>/,

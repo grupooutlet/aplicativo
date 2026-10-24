@@ -144,7 +144,7 @@ function scheduleDeliveryModal(id) {
   if (!canScheduleDelivery()) return;
   const order = db.orders.find(item => item.id === id && item.delivery === 'Entrega');
   if (!order || ['delivered', 'cancelled'].includes(order.status)) return;
-  const choices = shippingOptionsFor('Entrega');
+  const choices = shippingOptionsFor('Entrega', orderAddressParts(order));
   modal('Agendar entrega', `<form onsubmit="event.preventDefault();scheduleDelivery(${id},this)"><p>Pedido #${id} · ${esc(order.customer)}</p>
     ${field('Data da entrega', 'deliveryDate', order.deliveryDate || '', 'date', `required min="${localToday()}"`)}
     ${order.freightPending ? `<label class="field">Frete<select name="shippingOptionId" required><option value="">Selecione uma opção</option>${choices.map(option => `<option value="${esc(option.id)}">${esc(option.name)} · ${money(option.price)}</option>`).join('')}</select></label>

@@ -11,6 +11,10 @@ if(process.env.QA_INVENTORY==='1'){
  model.orders=[{id:1,status:'pending',items:[{id:3,qty:2}]}];
  model.movements=Array.from({length:45},(_,i)=>({id:1000+i,product:model.products[i].name,qty:10,reason:'Ajuste de demonstração',date:'24/10/2026, 10:00:00',by:i%2?'Grupo Outlet':'Eduardo Thales'}));
 }
+if(process.env.QA_SHIPPING==='1'){
+ model.settings.shippingMode='regional';model.settings.shippingOptions=[{id:'pickup',name:'Retirada na loja',price:0,delivery:'Retirada',active:true},...require('./prepare-regional-shipping.cjs').map((o,i)=>({...o,id:'qa-region-'+i}))];
+ model.settings.paymentMethods=[{id:'pix',kind:'pix',title:'Pix',active:true,installments:[{count:1,rate:0}]},{id:'credit',kind:'credit',title:'Cartão de crédito',active:true,installments:[{count:1,rate:0},{count:3,rate:5}]}];
+}
 const preload=`<script>
 let fixtureModel=${JSON.stringify(model)},fixtureVersion=1;
 localStorage.setItem('forte-auth-v1',JSON.stringify({user:{id:'qa-master',email:'grupooutlet.rj@gmail.com'},access_token:'qa-local-only',refresh_token:'qa-local-only',expires_at:Math.floor(Date.now()/1000)+86400}));localStorage.setItem('forte-auth-shared-v1','1');
@@ -24,6 +28,7 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  if(url.includes('/rpc/save_collection')){const before=body.p_previous,name=body.p_name;if(before){fixtureModel.collections=fixtureModel.collections.map(c=>c===before?name:c);for(const p of fixtureModel.products){p.categories=p.categories.map(c=>c===before?name:c);if(p.category===before)p.category=name;}}else fixtureModel.collections.push(name);fixtureModel.collectionSettings[name]={...(fixtureModel.collectionSettings[before]||{}),active:body.p_active,sort:body.p_sort,...(body.p_product_ids?{productIds:body.p_product_ids}:{})};if(before!==name)delete fixtureModel.collectionSettings[before];return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_storefront')){fixtureModel.storefront=body.p_storefront;return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_navigation')){fixtureModel.navigation=body.p_navigation;return reply({version:++fixtureVersion});}
+ if(url.includes('/rpc/save_shipping_settings')){fixtureModel.settings.shippingOptions=body.p_options;fixtureModel.settings.shippingMode='regional';return reply({version:++fixtureVersion});}
  return reply({message:'Esta é uma prévia isolada; nenhuma alteração será enviada à loja.'},400);
 };</script>`;
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace('<head>','<head>'+preload);

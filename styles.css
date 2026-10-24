@@ -182,3 +182,25 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
 .cart-confirmation-item>div{flex:1;min-width:0}.cart-confirmation-item strong{font-size:14px;line-height:1.5}
 .cart-confirmation-item small{display:block;margin-top:5px;color:var(--muted);font-size:12px}
 @media(max-width:520px){.cart-confirmation-item{flex-wrap:wrap}.cart-confirmation-item>strong{flex:0 0 calc(100% - 84px);margin-left:84px}.cart-confirmation .form-actions{flex-direction:column}.cart-confirmation .form-actions>*{width:100%;justify-content:center}}
+/* Delivery regions share the store's neutral palette and gold actions. */
+.regional-freight-stats{display:flex;gap:24px;flex-wrap:wrap;padding:18px 0 22px;border-bottom:1px solid var(--border,#e2e4e6);margin-bottom:22px;color:var(--muted,#75808b)}
+.regional-freight-stats strong{color:var(--ink,#1c2228)}
+.regional-freight-filters{display:grid;grid-template-columns:minmax(240px,2fr) minmax(170px,1fr) 140px;gap:16px;margin:20px 0}
+.regional-freight-table{width:100%;border-collapse:collapse;min-width:780px}
+.regional-freight-table td{vertical-align:middle;padding-top:17px;padding-bottom:17px}
+.regional-freight-table td:first-child{max-width:350px;min-width:220px}
+.regional-freight-table small{display:block;color:var(--muted,#75808b);font-size:12px;line-height:1.5;margin-top:5px}
+.regional-freight-table .freight-price{white-space:nowrap;font-weight:650}
+.regional-freight-table .actions{flex-wrap:nowrap;justify-content:flex-end}
+.regional-freight-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0;color:var(--muted,#75808b);font-size:13px}
+.regional-freight-help{padding-top:16px;border-top:1px solid var(--border,#e2e4e6);font-size:13px}
+.regional-shipping-prompt,.regional-shipping-alert{background:#f6f7f8;border:1px solid #e2e4e6;border-radius:10px;padding:17px;font-size:13px;line-height:1.65}
+.regional-shipping-alert{background:#fffbeb;border-color:#ecdc9e}
+.regional-shipping-alert p{margin:7px 0 13px}
+.regional-shipping-alert .btn{white-space:normal;text-align:center}
+.regional-shipping-quote .shipping-choice small{display:block;color:#75808b;font-weight:400;margin-top:4px}
+.regional-shipping-note{font-size:13px;line-height:1.6;margin:12px 0;color:#6c5415}
+.regional-shipping-confirm{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.6;padding:10px 0}
+.regional-shipping-confirm input{width:17px;height:17px;flex:0 0 17px;margin-top:2px;accent-color:#c4a329}
+#freight-neighborhoods[hidden]{display:none}
+@media(max-width:760px){.regional-freight-filters{grid-template-columns:1fr 1fr}.regional-freight-filters>label:first-child{grid-column:1/-1}.regional-freight-stats{gap:12px 24px}.regional-freight-pagination{align-items:flex-start;flex-wrap:wrap}.regional-freight .shipping-settings-head{align-items:flex-start;flex-wrap:wrap}}

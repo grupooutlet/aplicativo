@@ -9,7 +9,7 @@ const context=vm.createContext({console,URL,URLSearchParams,Date,Map,Set,structu
   document:{baseURI:'https://grupooutlet.github.io/aplicativo/',querySelector:selector=>nodes[selector]||null,querySelectorAll:()=>[],addEventListener(){}},
   window:{addEventListener(){},scrollTo(){},render(){}},history:{pushState(){},replaceState(){}},
   setTimeout:()=>1,clearTimeout(){},fetch:async()=>{throw new Error('Unexpected network request')},FormData:class{constructor(form){return Object.entries(form.data||{})}}});
-for(const name of ['storefront-editor.js','app.js','production.js','enhancements.js','variations.js','fulfillment.js','operations.js','commerce.js','merchandising.js','menus.js','storefront-runtime.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8').replace(/boot\(\);\s*$/,''),context,{filename:name});
+for(const name of ['storefront-editor.js','app.js','production.js','enhancements.js','variations.js','fulfillment.js','operations.js','commerce.js','merchandising.js','menus.js','shipping.js','storefront-runtime.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8').replace(/boot\(\);\s*$/,''),context,{filename:name});
 const run=code=>vm.runInContext(code,context);
 run(`storefront.init(db);isOwner=true;role='Proprietário';currentProfile={role:'master',name:'Grupo Outlet'};authSession={user:{id:'master',email:'grupooutlet.rj@gmail.com'}}`);
 const initial=run('JSON.stringify(db.storefront)');

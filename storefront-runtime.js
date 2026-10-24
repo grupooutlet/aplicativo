@@ -78,6 +78,7 @@ if(isStorePreview){
     if(!/^55\d{10,11}$/.test(brazilPhoneDigits(fields.phone)))return toast('Confira o WhatsApp com DDD.');
     if(!db.cart.length)return toast('Seu carrinho está vazio.');
     const shipping=formShippingOption(form);if(!shipping)return toast('Selecione uma opção de frete.');
+    if(!checkShippingRestriction(form,shipping))return;
     try{
       updateCheckoutProductOptions();
       const items=db.cart.map(line=>{const product=db.products.find(p=>p.id===line.id&&p.active);if(!product||cartQuantity(line.id)>available(line.id))throw new Error('Revise o estoque do carrinho.');const options=validateProductOptions(product,line.options||{});return {id:product.id,name:product.name+(optionText(options)?' · '+optionText(options):''),options,qty:line.qty,price:salePrice(product)}});

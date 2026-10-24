@@ -114,7 +114,7 @@ function paymentFormBase(form) {
   }
   const delivery = form.elements.namedItem('delivery')?.value;
   const selected = form.querySelector('input[name="shippingOptionId"]:checked')?.value;
-  return cartTotal() + Number(shippingOptionsFor(delivery).find(option => option.id === selected)?.price || 0);
+  return cartTotal() + Number((typeof regionalShippingEnabled === 'function' && regionalShippingEnabled() ? formShippingOption(form) : shippingOptionsFor(delivery).find(option => option.id === selected))?.price || 0);
 }
 function updatePaymentChoices(form) {
   const selected = form.elements.namedItem('paymentMethodId')?.value;
@@ -295,8 +295,9 @@ checkout = async form => {
   if (!db.cart.length) return toast('Seu carrinho está vazio.');
   if (String(fields.cpf || '').replace(/\D/g, '').length !== 11) return toast('Informe um CPF com 11 números.');
   if (fields.delivery === 'Entrega' && String(fields.cep || '').replace(/\D/g, '').length !== 8) return toast('Confira o CEP.');
-  const shipping = shippingOptionsFor(fields.delivery).find(option => option.id === fields.shippingOptionId);
+  const shipping = typeof regionalShippingEnabled === 'function' && regionalShippingEnabled() ? formShippingOption(form) : shippingOptionsFor(fields.delivery).find(option => option.id === fields.shippingOptionId);
   if (!shipping) return toast('Selecione um frete ou retirada disponível.');
+  if (typeof checkShippingRestriction === 'function' && !checkShippingRestriction(form, shipping)) return;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(fields.email || '').trim())) return toast('Informe um e-mail válido para contato.');
   let quote, selectedBumps = [];
   try {
@@ -313,6 +314,8 @@ checkout = async form => {
     email: fields.email.trim().toLowerCase(), phone: fields.phone.trim(), cpf: fields.cpf.trim(), address,
     delivery: fields.delivery, paymentTiming: fields.paymentTiming, paymentMethodId: quote.paymentMethodId,
     installments: quote.installments, expectedTotal: quote.total, shippingOptionId: shipping.id, notes: fields.notes,
+    addressParts: typeof shippingFormAddress === 'function' ? shippingFormAddress(form) : {},
+    shippingRestrictionConfirmed: fields.shippingRestrictionConfirmed === 'true',
     orderBumps: selectedBumps,
     items: db.cart.reduce((lines, item) => {
       const matching = lines.find(line => line.id === item.id && JSON.stringify(line.options) === JSON.stringify(item.options));

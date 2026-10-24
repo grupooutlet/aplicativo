@@ -209,6 +209,28 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
 .cart-confirmation-item>div{flex:1;min-width:0}.cart-confirmation-item strong{font-size:14px;line-height:1.5}
 .cart-confirmation-item small{display:block;margin-top:5px;color:var(--muted);font-size:12px}
 @media(max-width:520px){.cart-confirmation-item{flex-wrap:wrap}.cart-confirmation-item>strong{flex:0 0 calc(100% - 84px);margin-left:84px}.cart-confirmation .form-actions{flex-direction:column}.cart-confirmation .form-actions>*{width:100%;justify-content:center}}
+/* Delivery regions share the store's neutral palette and gold actions. */
+.regional-freight-stats{display:flex;gap:24px;flex-wrap:wrap;padding:18px 0 22px;border-bottom:1px solid var(--border,#e2e4e6);margin-bottom:22px;color:var(--muted,#75808b)}
+.regional-freight-stats strong{color:var(--ink,#1c2228)}
+.regional-freight-filters{display:grid;grid-template-columns:minmax(240px,2fr) minmax(170px,1fr) 140px;gap:16px;margin:20px 0}
+.regional-freight-table{width:100%;border-collapse:collapse;min-width:780px}
+.regional-freight-table td{vertical-align:middle;padding-top:17px;padding-bottom:17px}
+.regional-freight-table td:first-child{max-width:350px;min-width:220px}
+.regional-freight-table small{display:block;color:var(--muted,#75808b);font-size:12px;line-height:1.5;margin-top:5px}
+.regional-freight-table .freight-price{white-space:nowrap;font-weight:650}
+.regional-freight-table .actions{flex-wrap:nowrap;justify-content:flex-end}
+.regional-freight-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0;color:var(--muted,#75808b);font-size:13px}
+.regional-freight-help{padding-top:16px;border-top:1px solid var(--border,#e2e4e6);font-size:13px}
+.regional-shipping-prompt,.regional-shipping-alert{background:#f6f7f8;border:1px solid #e2e4e6;border-radius:10px;padding:17px;font-size:13px;line-height:1.65}
+.regional-shipping-alert{background:#fffbeb;border-color:#ecdc9e}
+.regional-shipping-alert p{margin:7px 0 13px}
+.regional-shipping-alert .btn{white-space:normal;text-align:center}
+.regional-shipping-quote .shipping-choice small{display:block;color:#75808b;font-weight:400;margin-top:4px}
+.regional-shipping-note{font-size:13px;line-height:1.6;margin:12px 0;color:#6c5415}
+.regional-shipping-confirm{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.6;padding:10px 0}
+.regional-shipping-confirm input{width:17px;height:17px;flex:0 0 17px;margin-top:2px;accent-color:#c4a329}
+#freight-neighborhoods[hidden]{display:none}
+@media(max-width:760px){.regional-freight-filters{grid-template-columns:1fr 1fr}.regional-freight-filters>label:first-child{grid-column:1/-1}.regional-freight-stats{gap:12px 24px}.regional-freight-pagination{align-items:flex-start;flex-wrap:wrap}.regional-freight .shipping-settings-head{align-items:flex-start;flex-wrap:wrap}}
 
 .storefront-builder{display:grid;grid-template-columns:minmax(305px,385px) minmax(0,1fr);gap:22px;align-items:start}.builder-column{display:grid;gap:17px;min-width:0}.builder-card,.builder-preview-panel{background:#fff;border:1px solid var(--line);border-radius:11px;overflow:hidden;min-width:0}.builder-card-head,.builder-preview-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:20px 22px;border-bottom:1px solid var(--line)}.builder-card-head h2{margin-top:7px;font-size:16px}.builder-count{background:#f4f4f2;border-radius:5px;padding:5px 8px;color:#666;font-size:12px}.builder-fields{display:grid;gap:17px;padding:22px}.builder-fields .field{min-width:0}.builder-fields .field input,.builder-fields .field select,.builder-fields .field textarea{font-size:14px}.builder-fields .field textarea{min-height:95px}.builder-fields .field small,.builder-hint{font-size:12px;line-height:1.6;color:#878d91}.builder-hint{padding:0 22px 19px}.builder-fields .builder-hint{padding:0;margin:-8px 0 0}.builder-switch{display:flex;align-items:center;gap:7px;font-size:12px;color:#60676c;white-space:nowrap}.builder-switch input{accent-color:#a68700;width:16px;height:16px}.builder-section-list{padding:8px}.builder-section-row{display:flex;gap:5px;align-items:center;padding:4px;border:1px solid transparent;border-radius:8px;margin-bottom:3px}.builder-section-row.active{border-color:#e9d886;background:#fffbec}.builder-section-row.is-hidden{opacity:.56}.builder-section-select{display:flex;align-items:center;gap:10px;min-width:0;flex:1;text-align:left;padding:7px}.builder-section-select>span:last-child{min-width:0}.builder-section-select strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600}.builder-section-select small{display:block;margin-top:4px;font-size:11px}.builder-section-icon{width:34px;height:34px;display:grid;place-items:center;background:#f1f2f2;border-radius:7px;flex-shrink:0;color:#687077}.builder-section-icon .icon{width:17px;height:17px}.builder-section-actions{display:flex;gap:2px}.builder-section-actions button{width:25px;height:30px;border-radius:5px;font-size:18px;color:#687077}.builder-section-actions button:hover{background:#f0eee3}.builder-section-actions button:disabled{opacity:.25;cursor:default}.builder-add{display:flex;align-items:center;justify-content:center;gap:7px;margin:11px 15px 16px;padding:11px;border:1px dashed #c8c7bf;border-radius:7px;width:calc(100% - 30px);font-size:13px;font-weight:600}.builder-add:hover{background:#fffbea;border-color:#e3bd16}.builder-add .icon{width:17px;height:17px}.builder-card-foot{display:flex;justify-content:space-between;gap:10px;padding:18px 22px;border-top:1px solid var(--line)}.builder-image-preview{background:#f6f6f4;border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px}.builder-image-preview img{height:65px;width:86px;object-fit:cover;border-radius:5px}.builder-benefit-fields{padding:17px;border:1px solid var(--line);border-radius:8px;display:grid;gap:12px}.builder-benefit-fields h3{font-size:14px}.builder-preview-panel{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto}.builder-preview-head{position:sticky;top:0;background:white;z-index:3}.builder-preview-head strong{font-size:14px}.builder-preview-head small{display:block;margin-top:5px}.builder-view-switch{display:flex;gap:3px;padding:4px;background:#f3f3f2;border-radius:7px}.builder-view-switch button{padding:7px 9px;border-radius:5px;font-size:12px}.builder-view-switch button.active{background:white;box-shadow:0 1px 3px #0002;font-weight:600}.builder-preview-panel #editor-preview{padding:18px;background:#f3f3f1;min-height:600px}.preview-store{background:white;border:1px solid #e5e5e5;border-radius:6px;overflow:hidden;box-shadow:0 5px 22px #0000000b;max-width:100%;margin:auto}.preview-store .store-promo{font-size:10px;padding:7px}.preview-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 20px;border-bottom:1px solid var(--line)}.preview-header img{width:135px;height:auto;object-fit:contain}.preview-header span{display:flex;align-items:center;gap:8px;background:#f6f6f5;color:#888;font-size:11px;padding:9px 12px;border-radius:6px;min-width:140px;flex:1}.preview-header .icon{width:17px;height:17px}.preview-store .store-content{padding:17px 18px 28px}.preview-store .store-hero{min-height:300px}.preview-store .hero-content{padding:27px;max-width:370px}.preview-store .hero-content h1{font-size:29px;margin:14px 0}.preview-store .hero-content p{font-size:12px;max-width:270px}.preview-store .home-section+.home-section{margin-top:28px}.preview-store .store-benefits{padding:17px 0;gap:8px}.preview-store .benefit{gap:5px}.preview-store .benefit .icon{width:14px;height:14px}.preview-store .benefit strong{font-size:9px}.preview-store .benefit small{font-size:8px}.preview-store .catalog{gap:9px}.preview-store .product-photo img{height:115px}.preview-store .shop-product h3{font-size:10px}.preview-store .shop-product .price{font-size:14px}.preview-store .catalog-head h2{font-size:22px}.preview-store .eyebrow{font-size:9px}.preview-store .btn{padding:7px 9px;min-height:30px;font-size:10px}.preview-store .storefront-image-copy h2{font-size:24px}.preview-store .storefront-video-frame{max-height:320px}.preview-store.preview-mobile{max-width:390px}.preview-store.preview-mobile .preview-header span{display:none}.preview-store.preview-mobile .store-content{padding:12px}.preview-store.preview-mobile .store-hero{min-height:345px}.preview-store.preview-mobile .hero-content{background:linear-gradient(180deg,#f5f3eeec,#f5f3eeb3 74%,transparent);min-height:345px;width:100%;padding:25px}.preview-store.preview-mobile .hero-content h1{font-size:30px}.preview-store.preview-mobile .store-benefits{grid-template-columns:1fr 1fr;gap:12px}.preview-store.preview-mobile .catalog{grid-template-columns:repeat(2,minmax(0,1fr))}.preview-store.preview-mobile .product-photo img{height:125px}.preview-store.preview-mobile .storefront-image{grid-template-columns:1fr}.preview-store.preview-mobile .storefront-image-photo img{height:200px}.preview-store.preview-mobile .storefront-image-copy{padding:20px}.preview-store.preview-mobile .storefront-image.image-right .storefront-image-photo{order:0}.builder-add-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.builder-add-grid button{display:flex;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);border-radius:8px;padding:14px}.builder-add-grid button:hover{border-color:#d6b011;background:#fffbea}.builder-add-grid button strong{font-size:13px}.builder-add-grid .icon{color:#ae8d1a}.storefront-home .home-section+.home-section{margin-top:48px}.storefront-home .store-benefits{margin-bottom:0}.storefront-banner.align-right{justify-content:flex-end}.storefront-banner.align-right .hero-content{text-align:right;background:linear-gradient(270deg,#eeebe6f5,#eeebe6dd 75%,transparent)}.storefront-banner.align-right .hero-content p{margin-left:auto}.storefront-image{display:grid;grid-template-columns:1fr 1fr;border-radius:12px;background:#f4f3f0;overflow:hidden;min-height:350px}.storefront-image.image-right .storefront-image-photo{order:2}.storefront-image-photo{min-height:300px;display:grid;place-items:center;color:#85898d;font-size:14px;background:#e8e8e4}.storefront-image-photo img{width:100%;height:100%;min-height:300px;max-height:520px;object-fit:cover}.storefront-image-copy{padding:clamp(25px,6vw,75px);display:flex;flex-direction:column;align-items:flex-start;justify-content:center}.storefront-image-copy h2{font-size:clamp(26px,3vw,42px);letter-spacing:-1px;margin:13px 0}.storefront-image-copy p,.storefront-text p,.storefront-video .catalog-head p{white-space:pre-wrap;line-height:1.7;color:#646b70;font-size:15px}.storefront-image-copy .btn{margin-top:22px}.storefront-video-frame{background:#1c2228;border-radius:12px;aspect-ratio:16/9;overflow:hidden;display:grid;place-items:center;color:#d2d6d9;font-size:14px}.storefront-video-frame iframe,.storefront-video-frame video{width:100%;height:100%;border:0;object-fit:contain}.storefront-text{padding:60px 30px;text-align:center;max-width:850px;margin:auto}.storefront-text h2{font-size:clamp(28px,3vw,42px);letter-spacing:-1px;margin:14px 0}.storefront-text p{margin-bottom:22px}.storefront-collection .catalog-head{margin-bottom:23px}
 @media(max-width:1100px){.storefront-builder{grid-template-columns:340px minmax(0,1fr)}.preview-store .catalog{grid-template-columns:repeat(2,1fr)}}
@@ -1892,8 +1914,8 @@ checkoutPage = () => {
   html = html.replace('name="city" type="text"', 'name="city" type="text"');
   html = html.replace('</div><h2 style="margin:28px 0 18px">Pagamento</h2>',
     '</div><p id="cep-feedback" class="subtle" role="status" style="margin-top:10px"></p><h2 style="margin:28px 0 18px">Pagamento</h2>');
-  html = html.replace(/(<label class="field full">Como prefere receber\?<select name="delivery"[\s\S]*?<\/select><\/label>)/,
-    `$1<div id="shipping-options" class="full">${shippingChoices('Entrega')}</div>`);
+  html = html.replace('<h2 style="margin:28px 0 18px">Pagamento</h2>',
+    `<div id="shipping-options" class="full" style="margin-top:18px">${shippingChoices('Entrega')}</div><h2 style="margin:28px 0 18px">Pagamento</h2>`);
   html = html.replace('<span class="subtle">A confirmar no atendimento</span>',
     `<strong id="checkout-freight">${shippingOptionsFor('Entrega').length ? money(shippingOptionsFor('Entrega')[0].price) : 'Selecione uma opção'}</strong>`);
   html = html.replace(/<div class="total-line final"><span>Subtotal<\/span><span>[^<]*<\/span><\/div>/,
@@ -2494,7 +2516,7 @@ function scheduleDeliveryModal(id) {
   if (!canScheduleDelivery()) return;
   const order = db.orders.find(item => item.id === id && item.delivery === 'Entrega');
   if (!order || ['delivered', 'cancelled'].includes(order.status)) return;
-  const choices = shippingOptionsFor('Entrega');
+  const choices = shippingOptionsFor('Entrega', orderAddressParts(order));
   modal('Agendar entrega', `<form onsubmit="event.preventDefault();scheduleDelivery(${id},this)"><p>Pedido #${id} · ${esc(order.customer)}</p>
     ${field('Data da entrega', 'deliveryDate', order.deliveryDate || '', 'date', `required min="${localToday()}"`)}
     ${order.freightPending ? `<label class="field">Frete<select name="shippingOptionId" required><option value="">Selecione uma opção</option>${choices.map(option => `<option value="${esc(option.id)}">${esc(option.name)} · ${money(option.price)}</option>`).join('')}</select></label>
@@ -2776,7 +2798,7 @@ function paymentFormBase(form) {
   }
   const delivery = form.elements.namedItem('delivery')?.value;
   const selected = form.querySelector('input[name="shippingOptionId"]:checked')?.value;
-  return cartTotal() + Number(shippingOptionsFor(delivery).find(option => option.id === selected)?.price || 0);
+  return cartTotal() + Number((typeof regionalShippingEnabled === 'function' && regionalShippingEnabled() ? formShippingOption(form) : shippingOptionsFor(delivery).find(option => option.id === selected))?.price || 0);
 }
 function updatePaymentChoices(form) {
   const selected = form.elements.namedItem('paymentMethodId')?.value;
@@ -2957,8 +2979,9 @@ checkout = async form => {
   if (!db.cart.length) return toast('Seu carrinho está vazio.');
   if (String(fields.cpf || '').replace(/\D/g, '').length !== 11) return toast('Informe um CPF com 11 números.');
   if (fields.delivery === 'Entrega' && String(fields.cep || '').replace(/\D/g, '').length !== 8) return toast('Confira o CEP.');
-  const shipping = shippingOptionsFor(fields.delivery).find(option => option.id === fields.shippingOptionId);
+  const shipping = typeof regionalShippingEnabled === 'function' && regionalShippingEnabled() ? formShippingOption(form) : shippingOptionsFor(fields.delivery).find(option => option.id === fields.shippingOptionId);
   if (!shipping) return toast('Selecione um frete ou retirada disponível.');
+  if (typeof checkShippingRestriction === 'function' && !checkShippingRestriction(form, shipping)) return;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(fields.email || '').trim())) return toast('Informe um e-mail válido para contato.');
   let quote, selectedBumps = [];
   try {
@@ -2975,6 +2998,8 @@ checkout = async form => {
     email: fields.email.trim().toLowerCase(), phone: fields.phone.trim(), cpf: fields.cpf.trim(), address,
     delivery: fields.delivery, paymentTiming: fields.paymentTiming, paymentMethodId: quote.paymentMethodId,
     installments: quote.installments, expectedTotal: quote.total, shippingOptionId: shipping.id, notes: fields.notes,
+    addressParts: typeof shippingFormAddress === 'function' ? shippingFormAddress(form) : {},
+    shippingRestrictionConfirmed: fields.shippingRestrictionConfirmed === 'true',
     orderBumps: selectedBumps,
     items: db.cart.reduce((lines, item) => {
       const matching = lines.find(line => line.id === item.id && JSON.stringify(line.options) === JSON.stringify(item.options));
@@ -3868,6 +3893,177 @@ let menuLastRoute='';
 const renderBeforeMenuQueries=render;
 render=()=>{const current=location.hash;if(current!==menuLastRoute){menuLastRoute=current;if(routePath()==='/loja/catalogo'){const query=new URLSearchParams(current.split('?')[1]||'');if(query.has('colecao')){catalogCategory=query.get('colecao');catalogQuery='';}}}return renderBeforeMenuQueries();};
 </script>
+  <script>// Regional delivery quotes. The database independently checks the same address and price.
+function shippingKey(value) {
+  const words=String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(/\s+/);
+  const aliases={jd:'jardim',jard:'jardim',pq:'parque',vl:'vila',sta:'santa',sto:'santo',eng:'engenheiro',conj:'conjunto'};
+  return words.map(word=>aliases[word]||word).join(' ');
+}
+function regionalShippingEnabled(){return db.settings?.shippingMode==='regional';}
+function shippingFormAddress(form){
+  const value=name=>String(form?.elements.namedItem(name)?.value||'').trim();
+  const city=value('city').split(/\s*\/\s*/);
+  return {cep:value('cep'),street:value('street'),number:value('number'),neighborhood:value('neighborhood'),city:city[0],state:value('state')||city[1]||'',complement:value('complement')};
+}
+function regionalShippingMatch(options,address={}){
+  const city=shippingKey(address.city),state=shippingKey(address.state),neighborhood=shippingKey(address.neighborhood);
+  if(!city||!state||!neighborhood)return null;
+  const candidates=options.filter(option=>option.delivery==='Entrega'&&option.region&&shippingKey(option.region.city)===city&&shippingKey(option.region.state)===state);
+  // A paused local override must not fall back to a cheaper city-wide rate.
+  const exact=candidates.filter(option=>option.region.neighborhoods?.some(name=>shippingKey(name)===neighborhood));
+  const matches=exact.length?exact:candidates.filter(option=>!option.region.neighborhoods?.length);
+  return matches.length===1&&matches[0].active!==false?matches[0]:null;
+}
+const shippingOptionsBeforeRegions=shippingOptionsFor;
+shippingOptionsFor=(delivery,address)=>{
+  if(!regionalShippingEnabled()||delivery!=='Entrega')return shippingOptionsBeforeRegions(delivery);
+  const match=regionalShippingMatch(allShippingOptions(),address);
+  return match?[match]:[];
+};
+function shippingSupportUrl(address){
+  const phone=String(db.settings.phone||'').replace(/\D/g,'');
+  const place=[address.neighborhood,address.city,address.state].filter(Boolean).join(', ');
+  const detail=[address.street,address.number,address.cep&&'CEP '+address.cep].filter(Boolean).join(', ');
+  return phone?'https://wa.me/'+phone+'?text='+encodeURIComponent('Olá! Gostaria de saber se vocês fazem entrega para '+place+(detail?' ('+detail+')':'')+'. Podem confirmar a disponibilidade e o valor do frete?'):'';
+}
+function regionalShippingNotice(address){
+  if(!address.city||!address.state||!address.neighborhood)return '<div class="regional-shipping-prompt">Preencha o CEP, a cidade e o bairro para consultar o frete.</div>';
+  const url=shippingSupportUrl(address);
+  return `<div class="regional-shipping-alert" role="status"><strong>Vamos consultar a entrega para sua região</strong><p>Ainda não há frete disponível para ${esc(address.neighborhood)}, ${esc(address.city)} / ${esc(address.state)}. Fale com nossa equipe antes de finalizar com entrega.</p>${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Consultar entrega pelo WhatsApp</a>`:'<p>Entre em contato com o atendimento da loja para consultar a entrega.</p>'}</div>`;
+}
+const shippingChoicesBeforeRegions=shippingChoices;
+shippingChoices=(delivery,address)=>{
+  if(!regionalShippingEnabled()||delivery!=='Entrega')return shippingChoicesBeforeRegions(delivery);
+  address=address||shippingFormAddress(document.querySelector('form:has(#shipping-options)'));
+  const option=shippingOptionsFor(delivery,address)[0];
+  if(!option)return regionalShippingNotice(address);
+  return `<fieldset class="shipping-choices regional-shipping-quote"><legend>Frete para seu endereço</legend><label class="shipping-choice"><input type="radio" name="shippingOptionId" value="${esc(option.id)}" checked required><span><strong>${esc(option.name)}</strong><b>${money(option.price)}</b><small>${esc(address.city)} / ${esc(address.state)}</small></span></label>${option.note?`<p class="regional-shipping-note">${esc(option.note)}</p>`:''}${option.confirmationRequired?'<label class="regional-shipping-confirm"><input type="checkbox" name="shippingRestrictionConfirmed" required value="true">Confirmo que o endereço está dentro da área de entrega indicada acima.</label>':''}</fieldset>`;
+};
+const formShippingBeforeRegions=formShippingOption;
+formShippingOption=form=>{
+  if(!regionalShippingEnabled())return formShippingBeforeRegions(form);
+  const delivery=form.elements.namedItem('delivery')?.value;
+  const selected=form.id==='order-form'?form.elements.namedItem('shippingOptionId')?.value:form.querySelector('input[name="shippingOptionId"]:checked')?.value;
+  return shippingOptionsFor(delivery,shippingFormAddress(form)).find(option=>option.id===selected);
+};
+function checkShippingRestriction(form,option){
+  if(option?.confirmationRequired&&!form.elements.namedItem('shippingRestrictionConfirmed')?.checked){toast('Confirme que o endereço fica dentro da área de entrega indicada.');return false;}
+  return true;
+}
+const updateCheckoutShippingBeforeRegions=updateCheckoutShipping;
+updateCheckoutShipping=()=>{
+  if(!regionalShippingEnabled())return updateCheckoutShippingBeforeRegions();
+  const form=document.querySelector('form:has(#shipping-options)');if(!form)return;
+  const option=formShippingOption(form),freight=form.querySelector('#checkout-freight');
+  if(freight)freight.textContent=option?money(option.price):'Aguardando endereço atendido';
+  updatePaymentTotal(form);
+};
+const adminShippingBeforeRegions=updateAdminShippingOptions;
+updateAdminShippingOptions=form=>{
+  if(!regionalShippingEnabled())return adminShippingBeforeRegions(form);
+  const select=form.elements.namedItem('shippingOptionId');if(!select)return;
+  const address=shippingFormAddress(form),delivery=form.elements.namedItem('delivery').value;
+  const options=shippingOptionsFor(delivery,address);
+  select.innerHTML=options.length?options.map(option=>`<option value="${esc(option.id)}">${esc(option.name)} · ${money(option.price)}</option>`).join(''):'<option value="">Preencha um endereço atendido</option>';
+  let notice=form.querySelector('#admin-shipping-coverage');
+  if(!notice){select.closest('label').insertAdjacentHTML('afterend','<div id="admin-shipping-coverage" class="full"></div>');notice=form.querySelector('#admin-shipping-coverage');}
+  if(notice){const option=options[0];notice.innerHTML=delivery!=='Entrega'?'':!option?regionalShippingNotice(address):`${option.note?`<p class="regional-shipping-note">${esc(option.note)}</p>`:''}${option.confirmationRequired?'<label class="regional-shipping-confirm"><input type="checkbox" name="shippingRestrictionConfirmed" required value="true">Endereço dentro da área atendida indicada.</label>':''}`;}
+};
+function refreshRegionalShipping(form,force=false){
+  if(!form||!regionalShippingEnabled())return;
+  const key=JSON.stringify([form.elements.namedItem('delivery')?.value,shippingFormAddress(form),db.settings.shippingOptions]);
+  if(!force&&form.dataset.regionalQuote===key)return;
+  form.dataset.regionalQuote=key;
+  if(form.id==='order-form'){updateAdminShippingOptions(form);updateOrderEstimate();}
+  else{const target=form.querySelector('#shipping-options');if(target){target.innerHTML=shippingChoices(form.elements.namedItem('delivery')?.value,shippingFormAddress(form));updateCheckoutShipping();}}
+}
+const lookupCepBeforeRegions=lookupCep;
+lookupCep=async input=>{await lookupCepBeforeRegions(input);refreshRegionalShipping(input.form);};
+const lookupAdminCepBeforeRegions=lookupAdminCep;
+lookupAdminCep=async input=>{await lookupAdminCepBeforeRegions(input);refreshRegionalShipping(input.form);};
+const newOrderBeforeRegions=newOrder;
+newOrder=()=>{newOrderBeforeRegions();refreshRegionalShipping(document.querySelector('#order-form'),true);};
+const createAdminBeforeRegions=createAdminOrder;
+createAdminOrder=form=>{const option=formShippingOption(form);if(!checkShippingRestriction(form,option))return;return createAdminBeforeRegions(form);};
+const renderBeforeRegions=render;
+render=()=>{const result=renderBeforeRegions();refreshRegionalShipping(document.querySelector('form:has(#shipping-options)'));return result;};
+for(const eventName of ['input','change'])document.addEventListener(eventName,event=>{
+  if(['cep','street','number','neighborhood','city','state','delivery'].includes(event.target?.name)){
+    const form=event.target.form;if(form&&(form.id==='order-form'||form.querySelector('#shipping-options')))refreshRegionalShipping(form);
+  }
+});
+
+let freightQuery='',freightCity='',freightStatus='all',freightPage=1,freightSaving=false;
+const regionalFreightRows=()=>allShippingOptions().map((option,index)=>({option,index})).filter(({option})=>option.delivery==='Entrega'&&(!freightCity||option.region?.city===freightCity)&&(freightStatus==='all'||(option.active!==false)===(freightStatus==='active'))&&shippingKey([option.name,option.region?.city,...(option.region?.neighborhoods||[])].join(' ')).includes(shippingKey(freightQuery))).sort((a,b)=>(a.option.region?.city||'').localeCompare(b.option.region?.city||'','pt-BR')||a.option.name.localeCompare(b.option.name,'pt-BR'));
+function updateFreightFilter(name,value){if(name==='query')freightQuery=value;if(name==='city')freightCity=value;if(name==='status')freightStatus=value;freightPage=1;const target=document.querySelector('#regional-freight-list');if(target)target.innerHTML=regionalFreightTable();}
+function regionalFreightTable(){
+  const rows=regionalFreightRows(),pages=Math.max(1,Math.ceil(rows.length/25));freightPage=Math.min(freightPage,pages);
+  return `<div class="table-wrap"><table class="regional-freight-table"><thead><tr><th>Região / localidade</th><th>Cidade</th><th>Frete</th><th>Situação</th><th><span class="sr-only">Ações</span></th></tr></thead><tbody>${rows.slice((freightPage-1)*25,freightPage*25).map(({option,index})=>`<tr><td><strong>${esc(option.name)}</strong><small>${option.region?.neighborhoods?.length?'Bairros e localidades':'Toda a cidade'}${option.note?' · '+esc(option.note):''}</small></td><td>${esc(option.region?.city||'Sem região')} / ${esc(option.region?.state||'RJ')}</td><td class="freight-price">${money(option.price)}</td><td><span class="badge ${option.active===false?'':'green'}">${option.active===false?'Pausada':'Ativa'}</span></td><td><div class="actions">${button('Editar',`onclick="shippingModal(${index})"`,'small','edit')}${button(option.active===false?'Ativar':'Pausar',`onclick="toggleFreight(${index})"`,'small')}${button('Excluir',`onclick="deleteShippingOption(${index})"`,'small danger','trash')}</div></td></tr>`).join('')||'<tr><td colspan="5" class="empty">Nenhuma região encontrada.</td></tr>'}</tbody></table></div><div class="regional-freight-pagination"><span>${rows.length} região(ões) · Página ${freightPage} de ${pages}</span><div class="actions">${button('Anterior',`onclick="freightPage--;refreshFreightTable()" ${freightPage<=1?'disabled':''}`,'small')}${button('Próxima',`onclick="freightPage++;refreshFreightTable()" ${freightPage>=pages?'disabled':''}`,'small')}</div></div>`;
+}
+function refreshFreightTable(){const target=document.querySelector('#regional-freight-list');if(target)target.innerHTML=regionalFreightTable();}
+freightSettingsPage=()=>{
+  const options=allShippingOptions().filter(o=>o.delivery==='Entrega'),cities=[...new Set(options.map(o=>o.region?.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  return `<section class="card pad regional-freight"><div class="shipping-settings-head"><div><h2>Regiões de entrega</h2><p class="subtle">O frete é calculado pelo endereço no checkout. Cadastre cidades inteiras ou localidades específicas.</p></div>${button('Adicionar região','onclick="shippingModal()"','primary','plus')}</div><div class="regional-freight-stats"><span><strong>${options.filter(o=>o.active!==false).length}</strong> regiões ativas</span><span><strong>${cities.length}</strong> cidades</span><span>Retirada na loja <strong>grátis</strong></span></div><div class="regional-freight-filters"><label class="field">Buscar região<input type="search" placeholder="Cidade, bairro ou localidade" value="${esc(freightQuery)}" oninput="updateFreightFilter('query',this.value)"></label><label class="field">Cidade<select onchange="updateFreightFilter('city',this.value)"><option value="">Todas as cidades</option>${cities.map(city=>`<option ${city===freightCity?'selected':''}>${esc(city)}</option>`).join('')}</select></label><label class="field">Situação<select onchange="updateFreightFilter('status',this.value)">${[['all','Todas'],['active','Ativas'],['paused','Pausadas']].map(([value,label])=>`<option value="${value}" ${freightStatus===value?'selected':''}>${label}</option>`).join('')}</select></label></div><div id="regional-freight-list">${regionalFreightTable()}</div><p class="subtle regional-freight-help">Localidades específicas têm prioridade sobre o preço da cidade. Fora da cobertura, o cliente poderá consultar o WhatsApp da loja.</p></section>`;
+};
+shippingModal=(index=-1)=>{
+  if(!canConfigureFreight()||freightSaving)return;
+  const option=allShippingOptions()[index]||{name:'',price:'',region:{city:'',state:'RJ',neighborhoods:[]}};
+  if(option.delivery&&option.delivery!=='Entrega')return;
+  const region=option.region||{},cities=[...new Set(allShippingOptions().map(o=>o.region?.city).filter(Boolean))];
+  modal(index<0?'Adicionar região de entrega':'Editar região de entrega',`<form onsubmit="event.preventDefault();saveShippingOption(this,${index})"><div class="form-grid"><label class="field full">Nome da região<input name="name" value="${esc(option.name)}" required maxlength="120" placeholder="Ex.: Camboinhas e Piratininga"></label><label class="field">Cidade<input name="city" value="${esc(region.city||'')}" list="freight-cities" required maxlength="100" placeholder="Ex.: Niterói"><datalist id="freight-cities">${cities.map(city=>`<option value="${esc(city)}">`).join('')}</datalist></label>${field('Estado (UF)','state',region.state||'RJ','text','required minlength="2" maxlength="2" pattern="[A-Za-z]{2}" oninput="this.value=this.value.toUpperCase()"')}${field('Preço do frete (R$)','price',option.price,'number','required min="0" max="100000" step="0.01"')}<label class="field">Situação<select name="active"><option value="true" ${option.active!==false?'selected':''}>Ativa</option><option value="false" ${option.active===false?'selected':''}>Pausada</option></select></label><label class="field full">Cobertura<select name="scope" onchange="this.form.querySelector('#freight-neighborhoods').hidden=this.value==='city'"><option value="city" ${!region.neighborhoods?.length?'selected':''}>Toda a cidade</option><option value="neighborhoods" ${region.neighborhoods?.length?'selected':''}>Bairros / localidades específicas</option></select></label><label class="field full" id="freight-neighborhoods" ${!region.neighborhoods?.length?'hidden':''}>Bairros e nomes alternativos<textarea name="neighborhoods" rows="4" maxlength="5000" placeholder="Um por linha. Ex.:\nCamboinhas\nPiratininga">${esc((region.neighborhoods||[]).join('\n'))}</textarea><small class="subtle">Inclua os nomes usados no endereço. Abreviações como Jd. e Pq. são reconhecidas.</small></label><label class="field full">Observação de cobertura (opcional)<input name="note" value="${esc(option.note||'')}" maxlength="240" placeholder="Ex.: Entrega somente até a UPA"></label><label class="regional-shipping-confirm full"><input type="checkbox" name="confirmationRequired" ${option.confirmationRequired?'checked':''}>Exigir confirmação de que o endereço está dentro da área indicada.</label></div><div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary" type="submit">Salvar região</button></div></form>`);
+};
+function validateRegionalFreight(options){
+  const keys=new Set(),ids=new Set();
+  if(options.length>500)throw Error('Cadastre até 500 opções de frete.');
+  for(const option of options){
+    if(!option.id||ids.has(option.id))throw Error('Identificador de frete duplicado.');ids.add(option.id);
+    if(!option.name?.trim()||option.name.length>120||!Number.isFinite(option.price)||option.price<0||option.price>100000||Math.abs(option.price*100-Math.round(option.price*100))>0.000001)throw Error('Confira o nome e o preço do frete.');
+    if(typeof option.active!=='boolean'||!['Entrega','Retirada'].includes(option.delivery))throw Error('Confira a situação e a modalidade.');
+    if(option.delivery!=='Entrega'){if(option.price!==0)throw Error('A retirada na loja deve ser gratuita.');continue;}
+    const region=option.region;
+    if(!region?.city?.trim()||region.city.length>100||!/^[A-Z]{2}$/.test(region.state)||!Array.isArray(region.neighborhoods)||region.neighborhoods.length>50)throw Error('Confira a cidade, a UF e os bairros.');
+    if(option.confirmationRequired&&!option.note?.trim())throw Error('Descreva a restrição de cobertura para exigir confirmação.');
+    for(const name of region.neighborhoods.length?region.neighborhoods:['*']){
+      if(name!=='*'&&!shippingKey(name)||name.length>120)throw Error('Confira os nomes dos bairros.');
+      const key=[shippingKey(region.state),shippingKey(region.city),name==='*'?'*':shippingKey(name)].join('|');
+      if(keys.has(key))throw Error('Esta cidade ou localidade já tem uma tarifa cadastrada. Edite a região existente.');keys.add(key);
+    }
+  }
+}
+async function persistRegionalFreight(next,form){
+  if(!canConfigureFreight()||freightSaving)return false;
+  try{validateRegionalFreight(next);}catch(error){toast(error.message);return false;}
+  freightSaving=true;const submit=form?.querySelector('button[type="submit"]');if(submit)submit.disabled=true;
+  let committed=false;
+  try{
+    await settleAdminWrites();
+    const expected={mode:db.settings.shippingMode||null,options:structuredClone(allShippingOptions())};
+    await backendRequest('/rest/v1/rpc/save_shipping_settings',{method:'POST',body:JSON.stringify({p_options:next,p_expected:expected})},true);
+    committed=true;db.settings.shippingMode='regional';db.settings.shippingOptions=next;
+    await loadAdminState();closeModal();render();toast('Regiões de entrega atualizadas.');return true;
+  }catch(error){toast(committed?'Frete salvo. Atualize a página antes de continuar.':catalogSaveError(error));return false;}
+  finally{freightSaving=false;if(submit)submit.disabled=false;}
+}
+saveShippingOption=async(form,index)=>{
+  if(!canConfigureFreight())return;
+  const data=Object.fromEntries(new FormData(form)),options=structuredClone(allShippingOptions());
+  const neighborhoods=data.scope==='city'?[]:[...new Set(String(data.neighborhoods||'').split(/\r?\n/).map(n=>n.trim()).filter(Boolean))];
+  if(data.scope!=='city'&&!neighborhoods.length)return toast('Informe pelo menos um bairro ou localidade.');
+  const option={id:options[index]?.id||'ship-'+crypto.randomUUID(),name:String(data.name||'').trim(),price:data.price===''?NaN:Number(data.price),active:data.active==='true',delivery:'Entrega',region:{state:String(data.state||'').toUpperCase().trim(),city:String(data.city||'').trim(),neighborhoods},note:String(data.note||'').trim(),confirmationRequired:data.confirmationRequired==='on'};
+  if(index>=0)options[index]=option;else options.push(option);
+  return persistRegionalFreight(options,form);
+};
+deleteShippingOption=async index=>{
+  if(!canConfigureFreight()||freightSaving)return;
+  const option=allShippingOptions()[index];if(option?.delivery!=='Entrega')return;
+  if(!confirm(`Excluir a região "${option.name}"? Os pedidos anteriores manterão o frete registrado.`))return;
+  await persistRegionalFreight(allShippingOptions().filter((_,i)=>i!==index));
+};
+toggleFreight=async index=>{
+  if(!canConfigureFreight()||freightSaving||allShippingOptions()[index]?.delivery!=='Entrega')return;
+  const options=structuredClone(allShippingOptions());options[index].active=options[index].active===false;await persistRegionalFreight(options);
+};
+</script>
   <script>// The published store and the editor frame share these exact renderers and styles.
 const storePreviewParams=new URLSearchParams(location.search);
 const isStorePreview=storePreviewParams.get('storePreview')==='1'&&window.parent!==window;
@@ -3948,6 +4144,7 @@ if(isStorePreview){
     if(!/^55\d{10,11}$/.test(brazilPhoneDigits(fields.phone)))return toast('Confira o WhatsApp com DDD.');
     if(!db.cart.length)return toast('Seu carrinho está vazio.');
     const shipping=formShippingOption(form);if(!shipping)return toast('Selecione uma opção de frete.');
+    if(!checkShippingRestriction(form,shipping))return;
     try{
       updateCheckoutProductOptions();
       const items=db.cart.map(line=>{const product=db.products.find(p=>p.id===line.id&&p.active);if(!product||cartQuantity(line.id)>available(line.id))throw new Error('Revise o estoque do carrinho.');const options=validateProductOptions(product,line.options||{});return {id:product.id,name:product.name+(optionText(options)?' · '+optionText(options):''),options,qty:line.qty,price:salePrice(product)}});
