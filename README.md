@@ -24,6 +24,13 @@ As rotas usam `#` para funcionar em hospedagem estática sem redirecionamentos.
 - Em **Loja online**, **Página de vendas** edita um modelo compartilhado por todos os produtos; **Coleção** edita o modelo de todas as coleções e do catálogo. Cada produto mantém seus dados próprios. A prévia permite navegar entre produtos, coleções e demais páginas.
 - A grade reserva espaço uniforme para títulos, preços normais/promocionais e botões. A descrição do produto fica abaixo da área de compra.
 
+## Estoque
+
+- A tela inicia com os produtos ativos e permite visualizar todos os produtos ou somente rascunhos.
+- As quantidades aparecem separadas em físico, reservado e disponível. Os alertas consideram o saldo disponível e o mínimo configurado no produto: zero é **Esgotado**; saldo positivo até o mínimo é **Estoque baixo**.
+- Busca por nome/código, filtros por situação e ordenação por menor estoque disponível, maior estoque disponível ou nome. A posição de estoque e o histórico têm paginações independentes.
+- Vendedores consultam os saldos sem botões de movimentação ou dados de custo. As permissões de alteração continuam sendo verificadas no servidor.
+
 ## Segurança e dados
 
 - O catálogo público vem de `shop_public`, gerado no banco sem custos de produto, dados de clientes ou comprovantes.

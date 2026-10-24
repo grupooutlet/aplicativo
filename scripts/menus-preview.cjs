@@ -6,6 +6,11 @@ const model={products:[product(1,'Sofá retrátil Grécia',1597),{...product(2,'
 const link=(id,label,type,target='')=>({id,label,type,target,children:[],newTab:false});
 model.products[2].category='Poltronas';model.products[2].categories=['Poltronas'];
 model.navigation={locations:{header:'main-menu',footerAbout:'footer-about',footerHelp:'footer-help'},menus:[{id:'main-menu',name:'Menu principal',active:true,items:[link('all-products','Todos os móveis','catalog'),{...link('living','Sala de estar','group'),children:[link('collection-1','Sofás','collection','Sofás'),link('collection-3','Poltronas','collection','Poltronas')]},link('collection-2','Mesas e cadeiras','collection','Mesas e cadeiras')]},{id:'footer-about',name:'Sobre a loja',active:true,items:model.pages.map(p=>link('page-'+p.id,p.title,'page',String(p.id)))},{id:'footer-help',name:'Conte com a gente',active:true,items:[link('account','Meus pedidos','account'),link('admin','Painel da loja','admin')]}]};
+if(process.env.QA_INVENTORY==='1'){
+ model.products=Array.from({length:65},(_,i)=>({...product(i+1,['Sofá retrátil Grécia','Mesa de jantar com quatro cadeiras','Poltrona de apoio'][i%3]+' '+(i+1),497+i*20),stock:i===0?0:i===1?2:10+i,min:3,active:i<60}));
+ model.orders=[{id:1,status:'pending',items:[{id:3,qty:2}]}];
+ model.movements=Array.from({length:45},(_,i)=>({id:1000+i,product:model.products[i].name,qty:10,reason:'Ajuste de demonstração',date:'24/10/2026, 10:00:00',by:i%2?'Grupo Outlet':'Eduardo Thales'}));
+}
 const preload=`<script>
 let fixtureModel=${JSON.stringify(model)},fixtureVersion=1;
 localStorage.setItem('forte-auth-v1',JSON.stringify({user:{id:'qa-master',email:'grupooutlet.rj@gmail.com'},access_token:'qa-local-only',refresh_token:'qa-local-only',expires_at:Math.floor(Date.now()/1000)+86400}));localStorage.setItem('forte-auth-shared-v1','1');
