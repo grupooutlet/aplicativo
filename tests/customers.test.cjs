@@ -37,6 +37,8 @@ assert.equal(run('customerProfileData(customerRows()[0]).orders.length'), 3, 'Us
 assert.equal(run('customerProfileData(customerRows()[0]).orderedTotal'), 400, 'Exclude cancelled orders from the total');
 assert.equal(run('customerProfileData(customerRows()[0]).addresses.length'), 2, 'Deduplicate addresses and exclude pickup/store address');
 assert.equal(run('customerProfileData(customerRows()[0]).phones.length'), 2, 'Read phone from the linked order and every contact');
+run("customerContacts.push({id:'pickup-contact',email:'ana@example.invalid',address:'Endereço da loja'});");
+assert.equal(run('customerProfileData(customerRows()[0]).addresses.length'), 2, 'Legacy pickup contact must not add the store as a customer address');
 let list = context.customersPage();
 assert.match(list, /Visualizar/);assert.match(list, /Telefone não informado/);
 assert.doesNotMatch(list, /Tornar da equipe|Excluir cliente/);

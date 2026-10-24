@@ -2631,6 +2631,9 @@ function customerProfileData(row) {
   const orders = customerOrders(row);
   const contacts = [...row.contacts].sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
   const phones = [], addresses = [], phoneKeys = new Set(), addressKeys = new Set();
+  const addressKey = address => address.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const pickupAddresses = new Set(orders.filter(order => order.delivery === 'Retirada')
+    .map(order => addressKey(String(order.address || '').trim())).filter(Boolean));
   for (const record of [...orders, ...contacts]) {
     const digits = String(record.phone || '').replace(/\D/g, '');
     const key = digits.length === 10 || digits.length === 11 ? '55' + digits : digits;
@@ -2640,8 +2643,11 @@ function customerProfileData(row) {
     const parts = orderAddressParts(record);
     const address = !record.addressParts && typeof record.address === 'string' ? record.address.trim() :
       parts.street && parts.number && parts.city && parts.state ? formatAddress(parts) : '';
-    const key = address.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const key = addressKey(address);
     if (!key || addressKeys.has(key)) continue;
+    // Older checkout contacts also stored the pickup location in their address field.
+    // A pickup location is not a saved delivery address for this customer.
+    if (contacts.includes(record) && pickupAddresses.has(key)) continue;
     addressKeys.add(key);
     addresses.push({ address, source: orders.includes(record) ? 'Usado no pedido #' + record.id : 'Informado no cadastro' });
   }
