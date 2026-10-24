@@ -24,6 +24,8 @@ savePage=async(form,id)=>{
 
 const auditAreas={products:'Produtos',orders:'Pedidos',movements:'Estoque',collections:'Coleções',collectionSettings:'Coleções',orderBumps:'Order Bumps',attributeCatalog:'Variações',storefront:'Loja online',navigation:'Menus',pages:'Páginas',shippingOptions:'Fretes',paymentMethods:'Pagamentos',settings:'Configurações',profiles:'Equipe e perfis',customer_contacts:'Clientes',team:'Equipe'};
 const canSeeChangeHistory=()=>isOwner&&canManage()&&['master','admin'].includes(currentProfile?.role);
+const modalBeforeChangeHistory=modal;
+modal=(...args)=>{document.querySelector('#modal')?.classList.remove('audit-detail-dialog');return modalBeforeChangeHistory(...args);};
 let auditRows=[],auditLoading=false,auditLoaded=false,auditError='',auditArea='',auditQuery='',auditBefore=null,auditNext=null,auditCursors=[],auditSerial=0,auditReverting=false;
 function auditTime(value){return value?new Date(value).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'medium'}):'—';}
 function auditStatus(row){return row.reverted_at?'Revertida':row.reversal_of?'Reversão registrada':'Registrada';}
