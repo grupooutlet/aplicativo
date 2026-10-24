@@ -41,7 +41,7 @@ async function boot() {
     driverDeliveries = [];
     if (authSession) {
       const id = authSession.user?.id;
-      const rows = await backendRequest(`/rest/v1/profiles?select=user_id,email,name,role,position&user_id=eq.${encodeURIComponent(id)}`, {}, true);
+      const rows = await backendRequest(`/rest/v1/profiles?select=user_id,email,name,phone,role,position&user_id=eq.${encodeURIComponent(id)}`, {}, true);
       currentProfile = rows?.[0] || null;
       if (currentProfile?.role === 'master' || currentProfile?.role === 'admin') {
         await loadAdminState();
@@ -49,7 +49,7 @@ async function boot() {
           : currentProfile.position === 'Gerente' ? 'Gerente'
           : currentProfile.position === 'Vendedor' ? 'Vendedor' : 'Estoque';
         currentSeller = currentProfile.name || '';
-        accountProfiles = await backendRequest('/rest/v1/profiles?select=user_id,email,name,role,position,created_at&order=created_at.desc', {}, true);
+        accountProfiles = await backendRequest('/rest/v1/profiles?select=user_id,email,name,phone,role,position,created_at&order=created_at.desc', {}, true);
         customerContacts = await backendRequest('/rest/v1/customer_contacts?select=id,name,email,phone,cpf,address,created_at&order=created_at.desc', {}, true);
       } else if (currentProfile?.role === 'driver') {
         role = 'Entregador';
@@ -76,6 +76,34 @@ async function boot() {
   }
 }
 
+// Brazilian fixed and mobile numbering; formatting does not prove line ownership.
+const registrationDdds = new Set('11 12 13 14 15 16 17 18 19 21 22 24 27 28 31 32 33 34 35 37 38 41 42 43 44 45 46 47 48 49 51 53 54 55 61 62 63 64 65 66 67 68 69 71 73 74 75 77 79 81 82 83 84 85 86 87 88 89 91 92 93 94 95 96 97 98 99'.split(' '));
+function normalizeRegistrationPhone(value) {
+  const input = String(value || '').trim();
+  if (input.length > 40 || !/^\+?[\d\s().-]+$/.test(input) || (input.startsWith('+') && !input.startsWith('+55'))) return '';
+  let digits = input.replace(/\D/g, '');
+  if ([12, 13].includes(digits.length) && digits.startsWith('55')) digits = digits.slice(2);
+  if (!registrationDdds.has(digits.slice(0, 2)) || ![10, 11].includes(digits.length) || /^(\d)\1+$/.test(digits)) return '';
+  const subscriber = digits.slice(2);
+  if (!/^[2-5]\d{7}$/.test(subscriber) && !/^9\d{8}$/.test(subscriber)) return '';
+  return '+55' + digits;
+}
+function clearSignupPhoneError(input) {
+  input.setCustomValidity(''); input.removeAttribute('aria-invalid');
+  const feedback = input.form?.querySelector('#signup-phone-error');
+  if (feedback) { feedback.textContent = ''; feedback.hidden = true; }
+}
+function validateSignupPhone(input) {
+  if (!input) return false;
+  const phone = normalizeRegistrationPhone(input.value);
+  const message = phone ? '' : 'Informe um telefone brasileiro com DDD válido. Ex.: (21) 96846-4050.';
+  input.setCustomValidity(message);
+  input.setAttribute('aria-invalid', phone ? 'false' : 'true');
+  const feedback = input.form?.querySelector('#signup-phone-error');
+  if (feedback) { feedback.textContent = message; feedback.hidden = !message; }
+  if (phone) input.value = formatBrazilPhone(phone);
+  return Boolean(phone);
+}
 function authPage(mode = 'login') {
   const signup = mode === 'signup';
   $('#app').innerHTML = `<main class="auth-page"><section class="card pad auth-card">
@@ -86,6 +114,7 @@ function authPage(mode = 'login') {
     <form onsubmit="event.preventDefault();${signup ? 'registerAccount' : 'signInAccount'}(this)">
       ${signup ? '<label class="field">Nome completo<input name="name" autocomplete="name" maxlength="120" required></label>' : ''}
       <label class="field">E-mail<input type="email" name="email" autocomplete="username" required></label>
+      ${signup ? '<label class="field">Telefone<input type="tel" inputmode="tel" name="phone" autocomplete="tel" placeholder="(21) 96846-4050" maxlength="25" aria-describedby="signup-phone-help signup-phone-error" oninput="clearSignupPhoneError(this)" onblur="validateSignupPhone(this)" required><small id="signup-phone-help" class="signup-phone-help">Celular ou telefone fixo com DDD.</small><small id="signup-phone-error" class="signup-phone-error" aria-live="polite" hidden></small></label>' : ''}
       <label class="field">Senha<input type="password" name="password" autocomplete="${signup ? 'new-password' : 'current-password'}" minlength="8" required></label>
       ${signup ? '<label class="field">Confirmar senha<input type="password" name="passwordConfirm" autocomplete="new-password" minlength="8" required></label>' : ''}
       <button class="btn primary auth-submit">${signup ? 'Criar conta' : 'Entrar'}</button>
@@ -126,16 +155,22 @@ async function registerAccount(form) {
   const passwordInput = form.elements.namedItem('password');
   const passwordConfirm = form.elements.namedItem('passwordConfirm');
   const nameInput = form.elements.namedItem('name');
+  const phoneInput = form.elements.namedItem('phone');
   button.disabled = true;
   try {
     const email = emailInput.value.trim().toLowerCase();
     const password = passwordInput.value;
     if (!passwordConfirm || password !== passwordConfirm.value) throw new Error('As senhas não coincidem. Confira os dois campos.');
+    const phone = normalizeRegistrationPhone(phoneInput?.value);
+    if (!phone) {
+      if (phoneInput) validateSignupPhone(phoneInput);
+      throw new Error('Informe um telefone brasileiro com DDD válido. Ex.: (21) 96846-4050.');
+    }
     const name = nameInput.value.trim();
     if (name.length < 2) throw new Error('Informe seu nome completo.');
     const response = await fetch(backendUrl + '/auth/v1/signup', {
       method: 'POST', headers: requestHeaders(),
-      body: JSON.stringify({ email, password, data: { name } })
+      body: JSON.stringify({ email, password, data: { name, phone } })
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.msg || result.message || 'Não foi possível criar a conta.');
@@ -210,7 +245,7 @@ async function promoteCustomer(form, id) {
   button.disabled = true;
   try {
     await backendRequest('/rest/v1/rpc/promote_customer', { method: 'POST', body: JSON.stringify({ p_user_id: id, p_position: form.elements.namedItem('position').value }) }, true);
-    accountProfiles = await backendRequest('/rest/v1/profiles?select=user_id,email,name,role,position,created_at&order=created_at.desc', {}, true);
+    accountProfiles = await backendRequest('/rest/v1/profiles?select=user_id,email,name,phone,role,position,created_at&order=created_at.desc', {}, true);
     closeModal(); render(); toast('Perfil de administrador atualizado.');
   } catch (error) { toast(error.message); button.disabled = false; }
 }

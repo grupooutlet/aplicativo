@@ -65,7 +65,8 @@ if(isStorePreview){
   function previewSignIn(form,signup=false){
     const data=Object.fromEntries(new FormData(form));
     if(signup&&data.password!==data.passwordConfirm)return toast('As senhas não coincidem.');
-    currentProfile={name:signup?String(data.name||'Cliente da prévia'):'Cliente da prévia',role:'customer',email:data.email,user_id:'preview-customer'};
+    if(signup&&!normalizeRegistrationPhone(data.phone))return toast('Informe um telefone brasileiro com DDD válido.');
+    currentProfile={name:signup?String(data.name||'Cliente da prévia'):'Cliente da prévia',role:'customer',email:data.email,phone:signup?normalizeRegistrationPhone(data.phone):'',user_id:'preview-customer'};
     authSession={user:{id:'preview-customer',email:data.email}};sessionStore.setItem('forte-customer',data.email);go('/loja/conta');toast('Acesso simulado na prévia.');
   }
   signInAccount=form=>previewSignIn(form);

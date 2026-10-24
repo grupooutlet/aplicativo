@@ -40,14 +40,14 @@ Deno.serve(async (req: Request) => {
       return response(400, { message: "Cliente inválido." });
     if (!authority[body.action]) return response(403, { message: "Seu perfil não pode realizar esta alteração." });
     let profile: { user_id: string; email: string; name: string; role: string } | null = null;
-    let contact: { id: string; email: string; name: string } | null = null;
+    let contact: { id: string; email: string; name: string; phone: string } | null = null;
     if (uuid(body.userId)) {
       const result = await admin.from("profiles").select("user_id,email,name,role").eq("user_id", body.userId).maybeSingle();
       if (result.error) throw result.error;
       profile = result.data;
     }
     if (uuid(body.contactId)) {
-      const result = await admin.from("customer_contacts").select("id,email,name").eq("id", body.contactId).maybeSingle();
+      const result = await admin.from("customer_contacts").select("id,email,name,phone").eq("id", body.contactId).maybeSingle();
       if (result.error) throw result.error;
       contact = result.data;
     }
@@ -80,7 +80,7 @@ Deno.serve(async (req: Request) => {
       if (typeof body.password !== "string" || body.password.length < 8 || body.password.length > 128)
         return response(400, { message: "Defina uma senha entre 8 e 128 caracteres." });
       const { data, error } = await admin.auth.admin.createUser({
-        email, password: body.password, email_confirm: true, user_metadata: { name: contact!.name },
+        email, password: body.password, email_confirm: true, user_metadata: { name: contact!.name, phone: contact!.phone },
       });
       if (error || !data.user) throw error || new Error("Não foi possível criar o acesso.");
       createdId = data.user.id;

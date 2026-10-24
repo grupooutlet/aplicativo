@@ -167,7 +167,9 @@ function checkoutContact() {
   const ownOrders = authSession ? db.orders.filter(order => order.status !== 'cancelled' &&
     (!isOwner || order.user_id === userId)).sort((a, b) => Number(b.id) - Number(a.id)) : [];
   const contact = cached && (!userId || cached.userId === userId) ? cached : ownOrders[0];
-  return contact ? { ...contact, ...splitCustomerName(contact), addressParts: orderAddressParts(contact) } : null;
+  if (contact) return { ...contact, ...splitCustomerName(contact), addressParts: orderAddressParts(contact) };
+  return currentProfile ? { ...splitCustomerName(currentProfile), email: currentProfile.email,
+    phone: currentProfile.phone || '', addressParts: {} } : null;
 }
 function fillCheckoutContact(html, contact) {
   if (!contact) return html;
@@ -292,6 +294,7 @@ checkout = async form => {
   const fields = Object.fromEntries(new FormData(form));
   if (!validPersonName(fields.firstName) || !validPersonName(fields.lastName))
     return toast('Informe nome e sobrenome com letras. Confira se os dois campos estão completos.');
+  if (!normalizeRegistrationPhone(fields.phone)) return toast('Informe um telefone brasileiro com DDD válido.');
   if (!db.cart.length) return toast('Seu carrinho está vazio.');
   if (String(fields.cpf || '').replace(/\D/g, '').length !== 11) return toast('Informe um CPF com 11 números.');
   if (fields.delivery === 'Entrega' && String(fields.cep || '').replace(/\D/g, '').length !== 8) return toast('Confira o CEP.');

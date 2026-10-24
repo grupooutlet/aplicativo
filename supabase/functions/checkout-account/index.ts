@@ -48,7 +48,7 @@ Deno.serve(async req => {
     if (!lookup.data) {
       const password = crypto.randomUUID() + crypto.randomUUID();
       const result = await admin.auth.admin.createUser({ email, password, email_confirm: true,
-        user_metadata: { name }, app_metadata: { checkout_account: true } });
+        user_metadata: { name, phone: request.phone }, app_metadata: { checkout_account: true } });
       // A concurrent signup may win this email. Continue as guest, never reset it.
       if (result.error && !["email_exists", "user_already_exists"].includes(result.error.code)) throw result.error;
       if (result.data?.user) {

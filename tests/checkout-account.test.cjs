@@ -8,7 +8,7 @@ async function scenario(existing, failOrder = false) {
   const client = {
     from() { return { select() { return { eq() { return { maybeSingle: async () => ({ data: existing ? { user_id: 'existing' } : null, error: null }) }; } }; } }; },
     auth: {
-      admin: { createUser: async data => { calls.push({ create: data.email }); return { data: { user: { id: 'new' } }, error: null }; },
+      admin: { createUser: async data => { calls.push({ create: data.email, phone: data.user_metadata.phone }); return { data: { user: { id: 'new' } }, error: null }; },
         deleteUser: async id => { calls.push({ remove: id }); return {}; } },
       signInWithPassword: async data => { calls.push({ login: data.email }); return { data: { session: { access_token: 'new-session' } } }; }
     },
@@ -19,7 +19,7 @@ async function scenario(existing, failOrder = false) {
     Deno: { env: { get: key => key === 'SUPABASE_URL' ? 'https://project.supabase.co' : 'mock-key' }, serve: fn => { handler = fn; } }
   });
   vm.runInContext(source, context);
-  const body = { request: { firstName: 'Ana', lastName: 'Silva', email: 'ana@example.com' } };
+  const body = { request: { firstName: 'Ana', lastName: 'Silva', email: 'ana@example.com', phone: '+5521961234567' } };
   const result = await handler(new Request('https://project.supabase.co/functions/v1/checkout-account', {
     method: 'POST', headers: { apikey: 'public-test', 'Content-Type': 'application/json' }, body: JSON.stringify(body)
   }));
@@ -30,6 +30,7 @@ async function scenario(existing, failOrder = false) {
   assert.equal(fresh.result.status, 200);
   assert.equal(fresh.data.session.access_token, 'new-session');
   assert.deepEqual(fresh.calls.map(item => Object.keys(item)[0]), ['create', 'login', 'rpc']);
+  assert.equal(fresh.calls[0].phone, '+5521961234567', 'Checkout-created accounts carry the required phone');
   const existing = await scenario(true);
   assert.equal(existing.data.session, null, 'An existing account must never be connected based on its checkout email');
   assert.deepEqual(existing.calls, [{ rpc: 'place_order' }]);
