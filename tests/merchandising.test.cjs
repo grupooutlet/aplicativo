@@ -5,7 +5,7 @@ class Fields {constructor(form){this.rows=form.data||[];}[Symbol.iterator](){ret
 const context=vm.createContext({console,URL,URLSearchParams,Date,Map,Set,structuredClone,crypto:require('node:crypto').webcrypto,FormData:Fields,
  location:{protocol:'https:',origin:'https://grupooutlet.github.io',pathname:'/aplicativo/',search:'',hash:'#/app/products'},
  document:{baseURI:'https://grupooutlet.github.io/aplicativo/',querySelector:s=>nodes[s]||null,querySelectorAll:()=>[],addEventListener(){}},window:{addEventListener(){},scrollTo(){}},history:{pushState(){},replaceState(){}},setTimeout:()=>1,clearTimeout(){},fetch:async()=>{throw Error('Unexpected network');}});
-for(const name of ['storefront-editor.js','app.js','production.js','enhancements.js','variations.js','fulfillment.js','operations.js','commerce.js','merchandising.js','menus.js','shipping.js','storefront-runtime.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8').replace(/boot\(\);\s*$/,''),context,{filename:name});
+for(const name of ['storefront-editor.js','app.js','production.js','enhancements.js','variations.js','fulfillment.js','operations.js','commerce.js','merchandising.js','menus.js','shipping.js','change-history.js','storefront-runtime.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8').replace(/boot\(\);\s*$/,''),context,{filename:name});
 const run=code=>vm.runInContext(code,context),plain=value=>JSON.parse(JSON.stringify(value));
 run(`db=defaults();db.products=[{id:1,name:'Sofá',sku:'GO-00001',price:1000,cost:600,stock:10,min:0,active:true,image:'photo.jpg',images:['photo.jpg'],categories:['Sofás','Queima de Estoque'],category:'Sofás',variations:[]},{id:2,name:'Poltrona',sku:'GO-00002',price:400,cost:200,stock:5,min:0,active:true,image:'photo.jpg',images:['photo.jpg'],category:'Queima de Estoque',variations:[{name:'Cor',values:['Bege','Cinza']}]}];db.collections=['Sofás','Queima de Estoque','Oculta'];db.collectionSettings={'Queima de Estoque':{productIds:[2,1]},Oculta:{active:false}};db.orders=[];db.cart=[{id:1,qty:1,options:{}}];role='Proprietário';isOwner=true;currentProfile={role:'master',name:'Grupo Outlet'};authSession={user:{id:'master',email:'grupooutlet.rj@gmail.com'}};stateVersion=10;render=()=>{};`);
 run('storefront.init(db)');
@@ -16,7 +16,7 @@ assert.equal(run("collectionProducts('Oculta',true).length"),0);
 assert.match(run('storeHeader()'),/Queima de Estoque/);assert.doesNotMatch(run('storeHeader()'),/>Oculta</);
 assert.doesNotMatch(run('productsPage()'),/option value="(duplicate|imported)"/);
 assert.match(run('productsPage()'),/Selecionar todos os produtos exibidos/);
-assert.equal(run("allowed('order-bumps')"),true);run("role='Vendedor'");assert.equal(run("allowed('order-bumps')"),false);run("role='Proprietário'");
+assert.equal(run("allowed('order-bumps')"),true);run("role='Vendedor'");assert.equal(run("allowed('order-bumps')"),true);run("role='Proprietário'");
 run(`db.orderBumps=[{id:'svc',title:'Impermeabilização',description:'Proteção do tecido',kind:'service',active:true,allProducts:false,targetProductIds:[1],price:99.90,cost:20},{id:'physical',title:'Poltrona especial',kind:'product',productId:2,active:true,allProducts:true,targetProductIds:[],price:300},{id:'other',title:'Outra oferta',kind:'service',active:true,allProducts:false,targetProductIds:[999],price:10},{id:'off',title:'Desativada',kind:'service',active:false,allProducts:true,targetProductIds:[],price:10}];`);
 assert.deepEqual(plain(run('eligibleOrderBumps().map(b=>b.id)')),['svc','physical']);
 assert.equal(run('orderBumpTotal()'),0);
@@ -45,7 +45,7 @@ const button={disabled:false};context.bulkForm={data:[['bulkCollections','Queima
  const deletionButton={disabled:false};context.deleteForm={elements:{namedItem:()=>({value:'Queima de Estoque'})},querySelector:()=>deletionButton};
  assert.match(run("collectionDetailPage('Queima de Estoque')"),/Excluir coleção/);
  run('deleteCollectionModal(1)');assert.match(nodes['#modal'].innerHTML,/produtos serão mantidos/);assert.match(nodes['#modal'].innerHTML,/seções da página inicial/);assert.equal(writes,beforeWrites,'opening confirmation does not delete');
- run("role='Vendedor'");assert.doesNotMatch(run("collectionDetailPage('Queima de Estoque')"),/Excluir coleção/);await run('deleteCollection(deleteForm)');assert.equal(writes,beforeWrites,'seller cannot delete collections');run("role='Gerente'");
+ run("role='Estoque'");assert.doesNotMatch(run("collectionDetailPage('Queima de Estoque')"),/Excluir coleção/);await run('deleteCollection(deleteForm)');assert.equal(writes,beforeWrites,'stock staff cannot delete collections');run("role='Gerente'");
  context.toast=message=>{nodes['#toast'].textContent=message};
  const realRequest=context.backendRequest;context.backendRequest=async()=>{throw Error('Falha de conexão')};
  await run('deleteCollection(deleteForm)');assert.deepEqual(plain(run('db')),before,'failed save preserves all data');assert.equal(deletionButton.disabled,false,'failure allows retry');assert.match(nodes['#toast'].textContent,/Falha de conexão/);context.backendRequest=realRequest;

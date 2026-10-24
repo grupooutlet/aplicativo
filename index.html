@@ -231,6 +231,12 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
 .regional-shipping-confirm input{width:17px;height:17px;flex:0 0 17px;margin-top:2px;accent-color:#c4a329}
 #freight-neighborhoods[hidden]{display:none}
 @media(max-width:760px){.regional-freight-filters{grid-template-columns:1fr 1fr}.regional-freight-filters>label:first-child{grid-column:1/-1}.regional-freight-stats{gap:12px 24px}.regional-freight-pagination{align-items:flex-start;flex-wrap:wrap}.regional-freight .shipping-settings-head{align-items:flex-start;flex-wrap:wrap}}
+.audit-filters form{display:grid;grid-template-columns:minmax(220px,2fr) minmax(170px,1fr) auto;gap:16px;align-items:end;margin:22px 0}
+.audit-history-note{padding:15px 17px;border:1px solid #e8dfb8;background:#fffbec;border-radius:9px;font-size:13px;line-height:1.7;color:#66561f}
+.change-history-table{min-width:850px;width:100%}.change-history-table td{vertical-align:middle;padding-top:19px;padding-bottom:19px}.change-history-table small{display:block;font-size:12px;line-height:1.6;margin-top:5px}.change-history-table td:nth-child(3){max-width:360px}.audit-date{white-space:nowrap;font-size:13px}
+.audit-pagination{display:flex;justify-content:space-between;align-items:center;gap:15px;padding-top:18px;font-size:13px;color:#777e83}
+.audit-detail-dialog{max-width:950px!important}.audit-detail-heading{display:flex;flex-wrap:wrap;gap:8px 20px;line-height:1.7;margin-bottom:20px}.audit-detail-heading p{width:100%;color:#777e83;font-size:13px}.audit-detail-changes{max-height:55vh;overflow:auto;padding-right:7px}.audit-change{border:1px solid #e7e8e9;border-radius:10px;padding:17px;margin-bottom:15px}.audit-change h3{margin-bottom:14px;font-size:15px}.audit-diff{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin:15px 0}.audit-diff>strong{grid-column:1/-1;font-size:13px}.audit-diff small{display:block;margin-bottom:5px}.audit-diff pre{font:12px/1.7 'DM Sans',sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f6f7;border:1px solid #e8e9e9;border-radius:7px;padding:11px;max-height:210px;overflow:auto;margin:0}.audit-detail-dialog .form-actions{padding-top:18px}
+@media(max-width:650px){.audit-filters form{grid-template-columns:1fr}.audit-diff{grid-template-columns:1fr}.audit-detail-changes{max-height:52vh}}
 
 .storefront-builder{display:grid;grid-template-columns:minmax(305px,385px) minmax(0,1fr);gap:22px;align-items:start}.builder-column{display:grid;gap:17px;min-width:0}.builder-card,.builder-preview-panel{background:#fff;border:1px solid var(--line);border-radius:11px;overflow:hidden;min-width:0}.builder-card-head,.builder-preview-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:20px 22px;border-bottom:1px solid var(--line)}.builder-card-head h2{margin-top:7px;font-size:16px}.builder-count{background:#f4f4f2;border-radius:5px;padding:5px 8px;color:#666;font-size:12px}.builder-fields{display:grid;gap:17px;padding:22px}.builder-fields .field{min-width:0}.builder-fields .field input,.builder-fields .field select,.builder-fields .field textarea{font-size:14px}.builder-fields .field textarea{min-height:95px}.builder-fields .field small,.builder-hint{font-size:12px;line-height:1.6;color:#878d91}.builder-hint{padding:0 22px 19px}.builder-fields .builder-hint{padding:0;margin:-8px 0 0}.builder-switch{display:flex;align-items:center;gap:7px;font-size:12px;color:#60676c;white-space:nowrap}.builder-switch input{accent-color:#a68700;width:16px;height:16px}.builder-section-list{padding:8px}.builder-section-row{display:flex;gap:5px;align-items:center;padding:4px;border:1px solid transparent;border-radius:8px;margin-bottom:3px}.builder-section-row.active{border-color:#e9d886;background:#fffbec}.builder-section-row.is-hidden{opacity:.56}.builder-section-select{display:flex;align-items:center;gap:10px;min-width:0;flex:1;text-align:left;padding:7px}.builder-section-select>span:last-child{min-width:0}.builder-section-select strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600}.builder-section-select small{display:block;margin-top:4px;font-size:11px}.builder-section-icon{width:34px;height:34px;display:grid;place-items:center;background:#f1f2f2;border-radius:7px;flex-shrink:0;color:#687077}.builder-section-icon .icon{width:17px;height:17px}.builder-section-actions{display:flex;gap:2px}.builder-section-actions button{width:25px;height:30px;border-radius:5px;font-size:18px;color:#687077}.builder-section-actions button:hover{background:#f0eee3}.builder-section-actions button:disabled{opacity:.25;cursor:default}.builder-add{display:flex;align-items:center;justify-content:center;gap:7px;margin:11px 15px 16px;padding:11px;border:1px dashed #c8c7bf;border-radius:7px;width:calc(100% - 30px);font-size:13px;font-weight:600}.builder-add:hover{background:#fffbea;border-color:#e3bd16}.builder-add .icon{width:17px;height:17px}.builder-card-foot{display:flex;justify-content:space-between;gap:10px;padding:18px 22px;border-top:1px solid var(--line)}.builder-image-preview{background:#f6f6f4;border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px}.builder-image-preview img{height:65px;width:86px;object-fit:cover;border-radius:5px}.builder-benefit-fields{padding:17px;border:1px solid var(--line);border-radius:8px;display:grid;gap:12px}.builder-benefit-fields h3{font-size:14px}.builder-preview-panel{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto}.builder-preview-head{position:sticky;top:0;background:white;z-index:3}.builder-preview-head strong{font-size:14px}.builder-preview-head small{display:block;margin-top:5px}.builder-view-switch{display:flex;gap:3px;padding:4px;background:#f3f3f2;border-radius:7px}.builder-view-switch button{padding:7px 9px;border-radius:5px;font-size:12px}.builder-view-switch button.active{background:white;box-shadow:0 1px 3px #0002;font-weight:600}.builder-preview-panel #editor-preview{padding:18px;background:#f3f3f1;min-height:600px}.preview-store{background:white;border:1px solid #e5e5e5;border-radius:6px;overflow:hidden;box-shadow:0 5px 22px #0000000b;max-width:100%;margin:auto}.preview-store .store-promo{font-size:10px;padding:7px}.preview-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 20px;border-bottom:1px solid var(--line)}.preview-header img{width:135px;height:auto;object-fit:contain}.preview-header span{display:flex;align-items:center;gap:8px;background:#f6f6f5;color:#888;font-size:11px;padding:9px 12px;border-radius:6px;min-width:140px;flex:1}.preview-header .icon{width:17px;height:17px}.preview-store .store-content{padding:17px 18px 28px}.preview-store .store-hero{min-height:300px}.preview-store .hero-content{padding:27px;max-width:370px}.preview-store .hero-content h1{font-size:29px;margin:14px 0}.preview-store .hero-content p{font-size:12px;max-width:270px}.preview-store .home-section+.home-section{margin-top:28px}.preview-store .store-benefits{padding:17px 0;gap:8px}.preview-store .benefit{gap:5px}.preview-store .benefit .icon{width:14px;height:14px}.preview-store .benefit strong{font-size:9px}.preview-store .benefit small{font-size:8px}.preview-store .catalog{gap:9px}.preview-store .product-photo img{height:115px}.preview-store .shop-product h3{font-size:10px}.preview-store .shop-product .price{font-size:14px}.preview-store .catalog-head h2{font-size:22px}.preview-store .eyebrow{font-size:9px}.preview-store .btn{padding:7px 9px;min-height:30px;font-size:10px}.preview-store .storefront-image-copy h2{font-size:24px}.preview-store .storefront-video-frame{max-height:320px}.preview-store.preview-mobile{max-width:390px}.preview-store.preview-mobile .preview-header span{display:none}.preview-store.preview-mobile .store-content{padding:12px}.preview-store.preview-mobile .store-hero{min-height:345px}.preview-store.preview-mobile .hero-content{background:linear-gradient(180deg,#f5f3eeec,#f5f3eeb3 74%,transparent);min-height:345px;width:100%;padding:25px}.preview-store.preview-mobile .hero-content h1{font-size:30px}.preview-store.preview-mobile .store-benefits{grid-template-columns:1fr 1fr;gap:12px}.preview-store.preview-mobile .catalog{grid-template-columns:repeat(2,minmax(0,1fr))}.preview-store.preview-mobile .product-photo img{height:125px}.preview-store.preview-mobile .storefront-image{grid-template-columns:1fr}.preview-store.preview-mobile .storefront-image-photo img{height:200px}.preview-store.preview-mobile .storefront-image-copy{padding:20px}.preview-store.preview-mobile .storefront-image.image-right .storefront-image-photo{order:0}.builder-add-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.builder-add-grid button{display:flex;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);border-radius:8px;padding:14px}.builder-add-grid button:hover{border-color:#d6b011;background:#fffbea}.builder-add-grid button strong{font-size:13px}.builder-add-grid .icon{color:#ae8d1a}.storefront-home .home-section+.home-section{margin-top:48px}.storefront-home .store-benefits{margin-bottom:0}.storefront-banner.align-right{justify-content:flex-end}.storefront-banner.align-right .hero-content{text-align:right;background:linear-gradient(270deg,#eeebe6f5,#eeebe6dd 75%,transparent)}.storefront-banner.align-right .hero-content p{margin-left:auto}.storefront-image{display:grid;grid-template-columns:1fr 1fr;border-radius:12px;background:#f4f3f0;overflow:hidden;min-height:350px}.storefront-image.image-right .storefront-image-photo{order:2}.storefront-image-photo{min-height:300px;display:grid;place-items:center;color:#85898d;font-size:14px;background:#e8e8e4}.storefront-image-photo img{width:100%;height:100%;min-height:300px;max-height:520px;object-fit:cover}.storefront-image-copy{padding:clamp(25px,6vw,75px);display:flex;flex-direction:column;align-items:flex-start;justify-content:center}.storefront-image-copy h2{font-size:clamp(26px,3vw,42px);letter-spacing:-1px;margin:13px 0}.storefront-image-copy p,.storefront-text p,.storefront-video .catalog-head p{white-space:pre-wrap;line-height:1.7;color:#646b70;font-size:15px}.storefront-image-copy .btn{margin-top:22px}.storefront-video-frame{background:#1c2228;border-radius:12px;aspect-ratio:16/9;overflow:hidden;display:grid;place-items:center;color:#d2d6d9;font-size:14px}.storefront-video-frame iframe,.storefront-video-frame video{width:100%;height:100%;border:0;object-fit:contain}.storefront-text{padding:60px 30px;text-align:center;max-width:850px;margin:auto}.storefront-text h2{font-size:clamp(28px,3vw,42px);letter-spacing:-1px;margin:14px 0}.storefront-text p{margin-bottom:22px}.storefront-collection .catalog-head{margin-bottom:23px}
 @media(max-width:1100px){.storefront-builder{grid-template-columns:340px minmax(0,1fr)}.preview-store .catalog{grid-template-columns:repeat(2,1fr)}}
@@ -444,7 +450,7 @@ dialog.catalog-product-dialog{width:min(1120px,calc(100% - 32px))}
   }
   function select(id){if(!home().sections.some(s=>s.id===id))return;selected=id;render()}
   function change(key,value){
-    if(!canManage()||saving)return;
+    if(!canConfigureSite()||saving)return;
     const s=section();if(!s)return;
     if(key.startsWith('items.')){const [,index,field]=key.split('.');if(!s.items?.[Number(index)]||!['title','body','icon'].includes(field))return;s.items[Number(index)][field]=value}
     else if(['eyebrow','title','subtitle','body','image','imageAlt','url','align','layout','buttonLabel','buttonLink','category','limit','showText'].includes(key))s[key]=key==='limit'?Math.max(1,Math.min(24,Number(value)||1)):key==='showText'?Boolean(value):value;
@@ -452,31 +458,31 @@ dialog.catalog-product-dialog{width:min(1120px,calc(100% - 32px))}
     refresh();
   }
   function changePage(key,value){
-    if(!canManage()||saving||!['title','intro','note','showDescription','galleryFit','columns','showFilters'].includes(key))return;
+    if(!canConfigureSite()||saving||!['title','intro','note','showDescription','galleryFit','columns','showFilters'].includes(key))return;
     const scope=pageKey(previewRoute,previewCategory,previewView),model=home();model.pageSettings||={};
     // Shared templates replace legacy per-item overrides in the draft only.
     if(['product','collection'].includes(scope))for(const name of Object.keys(model.pageSettings)){if(name.startsWith(scope+':')||(scope==='collection'&&name==='catalog'))delete model.pageSettings[name];}
     model.pageSettings[scope]||={};model.pageSettings[scope][key]=value;refresh();
   }
-  function changeAnnouncement(key,value){if(!canManage()||saving||!['enabled','text','highlight'].includes(key))return;home().announcement[key]=value;if(key==='enabled')render();else refresh()}
-  function toggle(id,enabled){if(!canManage()||saving)return;const s=home().sections.find(s=>s.id===id);if(!s)return;s.enabled=enabled;render()}
-  function move(id,step){if(!canManage()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id),j=i+step;if(i<0||j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];render()}
+  function changeAnnouncement(key,value){if(!canConfigureSite()||saving||!['enabled','text','highlight'].includes(key))return;home().announcement[key]=value;if(key==='enabled')render();else refresh()}
+  function toggle(id,enabled){if(!canConfigureSite()||saving)return;const s=home().sections.find(s=>s.id===id);if(!s)return;s.enabled=enabled;render()}
+  function move(id,step){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id),j=i+step;if(i<0||j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];render()}
   function addModal(){modal('Adicionar seção',`<p>Escolha o conteúdo para a página inicial. A nova seção começa oculta.</p><div class="builder-add-grid">${Object.entries(labels).map(([type,label])=>`<button onclick="storefront.add('${type}')">${icon(({banner:'image',image:'image',video:'eye',collection:'layers',text:'page',benefits:'shield'})[type])}<strong>${label}</strong></button>`).join('')}</div>`)}
   function add(type){
-    if(!canManage()||saving||!labels[type])return;
+    if(!canConfigureSite()||saving||!labels[type])return;
     if(home().sections.length>=80)return toast('O limite é de 80 seções.');
     const base={id:newId(),type,enabled:false};
     const presets={banner:{showText:false,eyebrow:'',title:'',subtitle:'',image:'',imageAlt:'',buttonLabel:'',buttonLink:'/loja/catalogo',align:'left'},collection:{eyebrow:'EXPLORE A LOJA',title:'Nossa seleção',category:'Todos',limit:4},image:{eyebrow:'FORTE OUTLET',title:'Sua casa merece esse cuidado.',body:'',image:'',imageAlt:'',layout:'image-left',buttonLabel:'',buttonLink:'/loja/catalogo'},video:{eyebrow:'INSPIRE-SE',title:'Veja de perto',body:'',url:''},text:{eyebrow:'NOSSA HISTÓRIA',title:'Sua casa merece o melhor.',body:'',buttonLabel:'',buttonLink:'/loja/catalogo'},benefits:{items:structuredClone(defaultBenefits)}};
     Object.assign(base,presets[type]);home().sections.push(base);selected=base.id;closeModal();render();toast('Seção adicionada ao rascunho.');
   }
-  function duplicate(id){if(!canManage()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0||list.length>=80)return;const copy=structuredClone(list[i]);copy.id=newId();copy.enabled=false;list.splice(i+1,0,copy);selected=copy.id;render()}
+  function duplicate(id){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0||list.length>=80)return;const copy=structuredClone(list[i]);copy.id=newId();copy.enabled=false;list.splice(i+1,0,copy);selected=copy.id;render()}
   function removeModal(id){const s=home().sections.find(s=>s.id===id);if(!s)return;modal('Excluir seção',`<p>Remover <strong>${esc(s.title||labels[s.type])}</strong> do rascunho?</p><div class="form-actions"><button class="btn" onclick="closeModal()">Manter seção</button><button class="btn danger" onclick="storefront.remove('${id}')">Remover do rascunho</button></div>`)}
-  function remove(id){if(!canManage()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0)return;if(list.length===1)return toast('Oculte a última seção ou adicione outra antes de excluir.');list.splice(i,1);selected=list[Math.min(i,list.length-1)]?.id||'';closeModal();render()}
+  function remove(id){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0)return;if(list.length===1)return toast('Oculte a última seção ou adicione outra antes de excluir.');list.splice(i,1);selected=list[Math.min(i,list.length-1)]?.id||'';closeModal();render()}
   async function uploadImage(input,key){
-    const s=section(),file=input.files?.[0];if(!canManage()||saving||uploading||!s||!file)return;
+    const s=section(),file=input.files?.[0];if(!canConfigureSite()||saving||uploading||!s||!file)return;
     if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>2*1024*1024)return toast('Envie JPG, PNG ou WebP de até 2 MB.');
     uploading=true;input.disabled=true;refresh();
-    try{s[key]=await uploadProductPhoto(file);toast('Imagem adicionada ao rascunho. Salve as mudanças para publicá-la.')}catch(error){toast(error.message)}finally{uploading=false;input.disabled=false;render()}
+    try{s[key]=await uploadProductPhoto(file,'storefront');toast('Imagem adicionada ao rascunho. Salve as mudanças para publicá-la.')}catch(error){toast(error.message)}finally{uploading=false;input.disabled=false;render()}
   }
   function setPreview(size){previewSize=size==='mobile'?'mobile':'desktop';document.querySelectorAll('[data-device]').forEach(b=>b.classList.toggle('active',b.dataset.device===previewSize));sizeFrame()}
   function sizeFrame(){
@@ -503,7 +509,7 @@ dialog.catalog-product-dialog{width:min(1120px,calc(100% - 32px))}
   let observer;
   function mountPreview(){if(!editing())return;const stage=document.querySelector('#editor-preview');if(!stage)return;observer?.disconnect();observer=new ResizeObserver(sizeFrame);observer.observe(stage);sizeFrame()}
   async function publish(){
-    if(!canManage()||saving||uploading||!dirty())return;
+    if(!canConfigureSite()||saving||uploading||!dirty())return;
     saving=true;refresh();
     try{
       await settleAdminWrites();
@@ -558,9 +564,10 @@ const localStore=safeStorage('localStorage'),sessionStore=safeStorage('sessionSt
 let db=defaults();
 let role='Proprietário',currentSeller='Loja online',orderFilter='all',productQuery='',orderQuery='',catalogCategory='Todos',catalogQuery='',period='month';
 let save=()=>true;
-const allowed=page=>({Proprietário:['dashboard','orders','deliveries','payments','products','order-bumps','collections','inventory','customers','reports','store-editor','menus','pages','team','settings'],Gerente:['dashboard','orders','deliveries','payments','products','order-bumps','collections','inventory','customers','reports','store-editor','menus','pages','team'],Vendedor:['dashboard','orders','deliveries','products','inventory','customers'],Estoque:['dashboard','orders','deliveries','inventory'],Entregador:['dashboard','deliveries','settings']}[role]||[]).includes(page);
+const allowed=page=>({Proprietário:['dashboard','orders','deliveries','payments','products','order-bumps','collections','inventory','customers','reports','store-editor','menus','pages','team','settings','change-history'],Gerente:['dashboard','orders','deliveries','payments','products','order-bumps','collections','inventory','customers','reports','store-editor','menus','pages','team','settings','change-history'],Vendedor:['dashboard','orders','deliveries','products','inventory','customers','payments','order-bumps','collections','store-editor','menus','pages','settings'],Estoque:['dashboard','orders','deliveries','inventory'],Entregador:['dashboard','deliveries','settings']}[role]||[]).includes(page);
 const canManage=()=>['Proprietário','Gerente'].includes(role);
 const canSell=()=>['Proprietário','Gerente','Vendedor'].includes(role);
+const canConfigureSite=()=>canSell();
 const canPay=()=>['Proprietário','Gerente','Vendedor'].includes(role);
 const orderTotal=o=>o.items.reduce((n,i)=>n+i.price*i.qty,0)+(Number(o.freight)||0)+(Number(o.paymentFee)||0);
 const completed=o=>Boolean(o.paid)&&(o.paymentTiming==='Na entrega'?o.status==='delivered':['transit','delivered'].includes(o.status));
@@ -674,8 +681,8 @@ function teamModal(id){if(!canManage())return;const t=db.team.find(t=>t.id===id)
 function saveTeam(form,id){if(!canManage())return;const f=Object.fromEntries(new FormData(form));if(db.team.some(t=>t.email.toLowerCase()===f.email.toLowerCase()&&t.id!==id))return toast('Este e-mail já está cadastrado.');const existing=db.team.find(t=>t.id===id);if(existing?.role==='Proprietário'||role==='Gerente'&&(existing?.role==='Gerente'||f.role==='Gerente'))return;const data={name:f.name,email:f.email,role:f.role,active:f.active==='true'};if(id)Object.assign(existing,data);else db.team.push({...data,id:Date.now()});save();closeModal();render();toast('Pessoa salva no ambiente de demonstração.')}
 function editorPage(){return storefront.editorPage()}
 function pagesPage(){return heading('Páginas','As informações que ajudam seu cliente a comprar com confiança.',button('Nova página','onclick="pageModal()"','primary','plus'))+`<section class="card"><div class="tablewrap"><table><thead><tr><th>Título</th><th>Visibilidade</th><th></th></tr></thead><tbody>${db.pages.map(p=>`<tr class="clickable" tabindex="0" onkeydown="if(event.key==='Enter'){this.click()}" onclick="pageModal(${p.id})"><td>${esc(p.title)}</td><td><span class="badge ${p.active?'green':'gray'}">${p.active?'Visível na loja':'Rascunho'}</span></td><td>${icon('edit')}</td></tr>`).join('')}</tbody></table></div></section>`}
-function pageModal(id){if(!canManage())return;const p=db.pages.find(p=>p.id===id)||{title:'',content:'',active:true};modal(id?'Editar página':'Nova página',`<form onsubmit="event.preventDefault();savePage(this,${id||0})"><div class="form-grid">${field('Título','title',p.title,'text','required data-full')}<label class="field full">Conteúdo<textarea style="min-height:190px" name="content" required>${esc(p.content)}</textarea></label><label class="field full">Visibilidade<select name="active"><option value="true" ${p.active?'selected':''}>Visível na loja</option><option value="false" ${!p.active?'selected':''}>Rascunho</option></select></label></div><div class="form-actions"><button class="btn primary">Salvar página</button></div></form>`)}
-function savePage(form,id){if(!canManage())return;const f=Object.fromEntries(new FormData(form));const data={title:f.title,content:f.content,active:f.active==='true'};if(id)Object.assign(db.pages.find(p=>p.id===id),data);else db.pages.push({...data,id:Date.now()});save();closeModal();render();toast('Página salva na loja.')}
+function pageModal(id){if(!canConfigureSite())return;const p=db.pages.find(p=>p.id===id)||{title:'',content:'',active:true};modal(id?'Editar página':'Nova página',`<form onsubmit="event.preventDefault();savePage(this,${id||0})"><div class="form-grid">${field('Título','title',p.title,'text','required data-full')}<label class="field full">Conteúdo<textarea style="min-height:190px" name="content" required>${esc(p.content)}</textarea></label><label class="field full">Visibilidade<select name="active"><option value="true" ${p.active?'selected':''}>Visível na loja</option><option value="false" ${!p.active?'selected':''}>Rascunho</option></select></label></div><div class="form-actions"><button class="btn primary">Salvar página</button></div></form>`)}
+function savePage(form,id){if(!canConfigureSite())return;const f=Object.fromEntries(new FormData(form));const data={title:f.title,content:f.content,active:f.active==='true'};if(id)Object.assign(db.pages.find(p=>p.id===id),data);else db.pages.push({...data,id:Date.now()});save();closeModal();render();toast('Página salva na loja.')}
 function settingsPage(){const a=db.settings.addressParts||parseAddress(db.settings.address);return heading('Configurações','As informações que acompanham seus pedidos.')+`<div class="settings-grid"><section class="card pad"><h2 style="margin-bottom:22px">Dados da loja</h2><form onsubmit="event.preventDefault();saveSettings(this)"><div class="form-grid">${field('Nome da loja','name',db.settings.name,'text','required')}${field('WhatsApp da loja (com DDI e DDD)','phone',db.settings.phone,'tel','placeholder="5521999999999" pattern="[0-9]{12,13}"')}${addressFields('store',a)}</div><p class="subtle" style="line-height:1.7;margin-top:18px">Ao configurar o número, o checkout oferece um botão para abrir o WhatsApp com o resumo do pedido. Nenhuma mensagem é enviada automaticamente nesta demonstração.</p><div class="form-actions"><button class="btn primary">Salvar dados</button></div></form></section><section class="card pad"><h2>Sobre esta demonstração</h2><p style="font-size:14px;line-height:1.8;margin:15px 0">O catálogo, os pedidos, os comprovantes e as alterações ficam neste navegador. Os dados iniciais de clientes, custos, estoque e vendas são fictícios. Os produtos e as fotos usam a loja atual como referência.</p><p class="subtle" style="line-height:1.8">Autenticação, permissões no servidor, pagamentos, envio automático de WhatsApp e sincronização entre dispositivos serão conectados na etapa de backend. O documento impresso é um pedido de venda não fiscal.</p><div class="form-actions">${button('Restaurar dados de demonstração','onclick="resetModal()"','danger')}</div></section></div>`}
 function saveSettings(form){if(role!=='Proprietário')return;const data=Object.fromEntries(new FormData(form));const addressParts=addressFromForm(data,'store');Object.assign(db.settings,{name:data.name,phone:data.phone,addressParts,address:formatAddress(addressParts)});save();render();toast('Dados da loja salvos.')}
 function resetModal(){modal('Restaurar demonstração',`<p>Isso remove os pedidos, comprovantes e alterações que você criou neste navegador e restaura os exemplos iniciais.</p><div class="form-actions">${button('Manter meus dados','onclick="closeModal()"')}${button('Restaurar exemplos','onclick="db=defaults();save();closeModal();render();toast(\'Demonstração restaurada.\')"','danger')}</div>`)}
@@ -1315,9 +1322,9 @@ productModal = id => {
     </div><div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary product-save">Salvar produto</button></div>
   </form>`);
 };
-async function uploadProductPhoto(file) {
+async function uploadProductPhoto(file, folder = 'products') {
   const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-  const path = `products/${crypto.randomUUID()}.${ext}`;
+  const path = `${folder === 'storefront' ? 'storefront' : 'products'}/${crypto.randomUUID()}.${ext}`;
   await refreshAuth();
   const response = await fetch(`${backendUrl}/storage/v1/object/${photoBucket}/${path}`, {
     method: 'POST',
@@ -2387,7 +2394,7 @@ function isDeliveryDate(value, future = false) {
 }
 const deliveryDateLabel = value => value ? new Date(value + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : 'A agendar';
 const isDeliveryDriverView = () => currentProfile?.role === 'driver' || (currentProfile?.role === 'master' && role === 'Entregador');
-const canConfigureFreight = () => isOwner && canManage() && ['master', 'admin'].includes(currentProfile?.role);
+const canConfigureFreight = () => isOwner && canConfigureSite() && ['master', 'admin'].includes(currentProfile?.role);
 const canScheduleDelivery = () => isOwner && !isDeliveryDriverView();
 function deliveryOrders() {
   return (currentProfile?.role === 'driver' ? driverDeliveries : db.orders)
@@ -2693,7 +2700,7 @@ const paymentMethods = () => defaultPayments().map(fallback => {
   return stored ? { ...stored, installments: stored.kind === 'credit' ? stored.installments : [{ count: 1, rate: 0 }] } : fallback;
 });
 const activePayments = () => paymentMethods().filter(method => method.active !== false);
-const canConfigurePayments = () => isOwner && canManage() && ['master', 'admin'].includes(currentProfile?.role);
+const canConfigurePayments = () => isOwner && canConfigureSite() && ['master', 'admin'].includes(currentProfile?.role);
 const productSubtotal = order => order.items.reduce((total, item) => total + item.price * item.qty, 0);
 function paymentQuote(method, count, base) {
   if (!method || !paymentKinds[method.kind] || (method.kind !== 'credit' && Number(count) !== 1)) throw new Error('Selecione uma forma de pagamento disponível.');
@@ -2775,13 +2782,13 @@ function savePaymentMethod(form, index) {
   const methods = [...paymentMethods()];
   methods[index] = { id: method.id, title, kind,
     active: methods[index]?.active !== false, installments: installments.sort((a, b) => a.count - b.count) };
-  db.settings.paymentMethods = methods; save(); closeModal(); render(); toast('Forma de pagamento salva.');
+  return persistSiteSection('paymentMethods',methods,db.settings.paymentMethods,{form,close:true,message:'Forma de pagamento salva.'});
 }
 function togglePaymentMethod(index) {
   if (!canConfigurePayments()) return;
   const methods = structuredClone(paymentMethods());
   methods[index].active = methods[index].active === false;
-  db.settings.paymentMethods = methods; save(); render();
+  return persistSiteSection('paymentMethods',methods,db.settings.paymentMethods,{message:'Forma de pagamento atualizada.'});
 }
 function paymentSelect(name = 'paymentMethodId', selected = '') {
   return `<label class="field">Forma de pagamento<select name="${name}" required onchange="updatePaymentChoices(this.form)"><option value="">Selecione</option>${activePayments().map(method => `<option value="${esc(method.id)}" ${method.id === selected ? 'selected' : ''}>${esc(method.title)}</option>`).join('')}</select></label><div class="payment-choice-details" hidden><label class="field">Parcelamento<select name="installments" disabled onchange="updatePaymentTotal(this.form)"><option value="1">À vista</option></select></label></div>`;
@@ -3283,13 +3290,12 @@ settingsPage = () => settingsBeforeCommerce()
   .replace(/(<input name="storeCep"[^>]*)(>)/, '$1 maxlength="9" oninput="lookupStoreCep(this)"$2')
   .replace('</div><p class="subtle"', '</div><p id="store-cep-feedback" class="subtle" role="status"></p><p class="subtle"');
 saveSettings = form => {
-  if (role !== 'Proprietário') return;
+  if (!canConfigureSite()) return;
   const fields = Object.fromEntries(new FormData(form));
   const phone = brazilPhoneDigits(fields.phone);
   if (phone && !/^55\d{10,11}$/.test(phone)) return toast('Informe um WhatsApp brasileiro com DDD.');
   const addressParts = addressFromForm(fields, 'store');
-  Object.assign(db.settings, { name: fields.name.trim(), phone: formatBrazilPhone(phone), addressParts, address: formatAddress(addressParts) });
-  save(); render(); toast('Dados da loja salvos.');
+  return persistSiteSection('store',{ name: fields.name.trim(), phone: formatBrazilPhone(phone), addressParts, address: formatAddress(addressParts) },storeConfigSnapshot(),{form,message:'Dados da loja salvos.'});
 };
 const noteBeforeCommerce = deliveryNote;
 deliveryNote = order => {
@@ -3496,7 +3502,7 @@ function applyCollectionEdit(model,previous,name,active,sort,ids=null) {
 }
 function catalogSaveError(error){return error instanceof TypeError||/Failed to fetch|NetworkError|fetch failed/i.test(error.message)?'Não foi possível conectar ao servidor. Suas alterações foram mantidas nesta tela. Tente salvar novamente.':error.message;}
 async function commitCollectionEdit(previous,name,active,sort,ids=null) {
-  if(!canManage())throw new Error('Você não tem permissão para editar coleções.');
+  if(!canConfigureSite())throw new Error('Você não tem permissão para editar coleções.');
   if(catalogWriteBusy)throw new Error('Aguarde a alteração em andamento.');
   if(!name||name.length>100||db.collections.some(c=>c!==previous&&c.toLocaleLowerCase('pt-BR')===name.toLocaleLowerCase('pt-BR')))throw new Error('Informe um nome único para a coleção.');
   catalogWriteBusy=true;
@@ -3511,7 +3517,7 @@ async function commitCollectionEdit(previous,name,active,sort,ids=null) {
 }
 const catalogChangeKeys = ['products','collections','collectionSettings','orderBumps','attributeCatalog','nextProductId','storefront'];
 async function commitCatalogChanges(mutate) {
-  if (!canManage() || catalogWriteBusy) throw new Error('Aguarde a alteração em andamento.');
+  if (!canConfigureSite() || catalogWriteBusy) throw new Error('Aguarde a alteração em andamento.');
   catalogWriteBusy=true;
   try {
     await settleAdminWrites();
@@ -3614,22 +3620,22 @@ function collectionDetailPage(name) {
   const mode=draft?collectionSortDraft.mode||'manual':collectionConfig(name).sort||'manual',manual=mode==='manual';
   if(draft)products=sortedCollectionProducts(products,mode,collectionSortDraft.ids);
   const index=db.collections.indexOf(name),active=collectionConfig(name).active!==false;
-  return `<a class="back-link" href="/app/collections">${icon('back')}Coleções</a>`+heading(esc(name),`${products.length} produtos · ${active?'Ativa na loja':'Desativada na loja'}`,`<div class="actions">${canManage()?button('Excluir coleção',`onclick="deleteCollectionModal(${index})"`,'danger','trash'):''}${button('Editar coleção',`onclick="collectionModal(${index})"`,'','edit')}${button('Adicionar produtos',`onclick="collectionProductPicker(${index})"`,'primary','plus')}</div>`)+
+  return `<a class="back-link" href="/app/collections">${icon('back')}Coleções</a>`+heading(esc(name),`${products.length} produtos · ${active?'Ativa na loja':'Desativada na loja'}`,`<div class="actions">${canConfigureSite()?button('Excluir coleção',`onclick="deleteCollectionModal(${index})"`,'danger','trash'):''}${button('Editar coleção',`onclick="collectionModal(${index})"`,'','edit')}${button('Adicionar produtos',`onclick="collectionProductPicker(${index})"`,'primary','plus')}</div>`)+
   `${draft?`<div class="collection-sort-notice"><span>Nova ordem de exibição ainda não salva.</span><div class="actions">${button('Cancelar','onclick="collectionSortDraft=null;render()"','small')}${button('Salvar ordem',`onclick="saveCollectionOrder(this)"`,'small primary')}</div></div>`:''}<section class="card collection-workspace"><div class="toolbar collection-order-toolbar"><label class="collection-order-control">Organizar produtos<select class="control" aria-label="Ordenação da coleção" onchange="setCollectionSort(${index},this.value)">${collectionSortOptions.map(([value,label])=>`<option value="${value}" ${mode===value?'selected':''}>${label}</option>`).join('')}</select></label><label class="collection-switch"><input type="checkbox" ${active?'checked':''} onchange="toggleCollection(${index},this.checked)">Coleção ativa</label></div><p class="collection-order-help">${manual?'Arraste os produtos ou use as setas para decidir a ordem.':'A ordem é atualizada automaticamente na loja. Para mover os produtos, selecione Livre · ordem manual.'}</p><div class="collection-product-list">${products.map((p,i)=>`<article class="collection-product-item" draggable="${manual}" ${manual?`ondragstart="dragCollectionProduct(${p.id},event)" ondragover="event.preventDefault()" ondrop="dropCollectionProduct(${index},${p.id},event)"`:''}><span class="drag-handle" aria-hidden="true">${manual?'⠿':icon('layers')}</span><span class="collection-position">${i+1}</span><img src="${esc(p.image||'assets/product-placeholder.svg')}" alt="" loading="lazy"><div class="collection-product-name"><strong>${esc(p.name)}</strong><small>${esc(p.sku)} · ${p.active?'Ativo':'Rascunho'} · ${money(salePrice(p))}</small></div><div class="actions">${manual?`<button class="btn small icon-button" ${i===0?'disabled':''} onclick="moveCollectionProduct(${index},${p.id},-1)" aria-label="Mover ${esc(p.name)} para cima">↑</button><button class="btn small icon-button" ${i===products.length-1?'disabled':''} onclick="moveCollectionProduct(${index},${p.id},1)" aria-label="Mover ${esc(p.name)} para baixo">↓</button>`:''}${button('Remover',`onclick="removeCollectionProduct(${index},${p.id})"`,'small danger')}</div></article>`).join('')||'<div class="empty">Adicione produtos para começar esta coleção.</div>'}</div></section>`;
 }
 function collectionModal(index=-1) {
-  if(!canManage())return;
+  if(!canConfigureSite())return;
   const name=db.collections[index]||'';
   modal(index<0?'Nova coleção':'Editar coleção',`<form onsubmit="event.preventDefault();saveCollection(this,${index})"><input type="hidden" name="previousName" value="${esc(name)}">${field('Nome da coleção','name',name,'text','required maxlength="100"')}<label class="field">Organizar produtos<select name="sort">${collectionSortOptions.map(([value,label])=>`<option value="${value}" ${(collectionConfig(name).sort||'manual')===value?'selected':''}>${label}</option>`).join('')}</select></label><label class="check-row"><input type="checkbox" name="active" ${collectionConfig(name).active!==false?'checked':''}>Ativa na loja</label><div class="form-actions">${index>=0?button('Excluir coleção',`type="button" onclick="deleteCollectionModal(${index})"`,'danger','trash'):''}${button('Cancelar','type="button" onclick="closeModal()"')}<button type="submit" class="btn primary">Salvar coleção</button></div></form>`);
 }
 function deleteCollectionModal(index) {
-  if(!canManage())return;
+  if(!canConfigureSite())return;
   const name=db.collections[index];if(!name)return;
   const linkedSections=(db.storefront?.sections||[]).some(section=>section.type==='collection'&&section.category===name);
   modal('Excluir coleção',`<form onsubmit="event.preventDefault();deleteCollection(this)"><input type="hidden" name="collectionName" value="${esc(name)}"><p>Excluir a coleção <strong>${esc(name)}</strong>?</p><p>Os produtos serão mantidos no catálogo e nas outras coleções. Apenas esta coleção será excluída.</p>${linkedSections?'<p>As seções da página inicial vinculadas a ela serão desativadas.</p>':''}<div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button type="submit" class="btn danger">Excluir coleção</button></div></form>`);
 }
 async function deleteCollection(form) {
-  if(!canManage())return;
+  if(!canConfigureSite())return;
   const name=form.elements.namedItem('collectionName').value,submit=form.querySelector('button[type="submit"]');submit.disabled=true;
   try {
     await commitCatalogChanges(next=>{
@@ -3662,10 +3668,10 @@ async function saveCollectionProducts(form,index) {
 }
 async function removeCollectionProduct(index,id) { try{await commitCatalogChanges(next=>{const p=next.products.find(p=>p.id===id);assignProductCollections(p,productCollections(p).filter(c=>c!==next.collections[index]));});render();toast('Produto removido desta coleção.');}catch(error){toast(error.message);} }
 function collectionDraftIds(index) { const name=db.collections[index];if(collectionSortDraft?.name!==name)collectionSortDraft={name,mode:collectionConfig(name).sort||'manual',ids:sortedCollectionProducts(collectionProducts(name),'manual',collectionConfig(name).productIds||[]).map(p=>p.id)};return collectionSortDraft.ids; }
-function setCollectionSort(index,mode){if(!canManage()||!collectionSortOptions.some(([value])=>value===mode))return;collectionDraftIds(index);collectionSortDraft.mode=mode;render();}
-function moveCollectionProduct(index,id,delta) { if(!canManage())return;const ids=collectionDraftIds(index);if((collectionSortDraft.mode||'manual')!=='manual')return;const position=ids.indexOf(id),to=position+delta;if(position<0||to<0||to>=ids.length)return;ids.splice(position,1);ids.splice(to,0,id);render(); }
+function setCollectionSort(index,mode){if(!canConfigureSite()||!collectionSortOptions.some(([value])=>value===mode))return;collectionDraftIds(index);collectionSortDraft.mode=mode;render();}
+function moveCollectionProduct(index,id,delta) { if(!canConfigureSite())return;const ids=collectionDraftIds(index);if((collectionSortDraft.mode||'manual')!=='manual')return;const position=ids.indexOf(id),to=position+delta;if(position<0||to<0||to>=ids.length)return;ids.splice(position,1);ids.splice(to,0,id);render(); }
 function dragCollectionProduct(id,event) { event.dataTransfer.setData('text/plain',String(id));event.dataTransfer.effectAllowed='move'; }
-function dropCollectionProduct(index,target,event) {event.preventDefault();if(!canManage())return;const id=Number(event.dataTransfer.getData('text/plain')),ids=collectionDraftIds(index);if((collectionSortDraft.mode||'manual')!=='manual')return;const position=ids.indexOf(id),to=ids.indexOf(target);if(position<0||to<0)return;ids.splice(position,1);ids.splice(to,0,id);render();}
+function dropCollectionProduct(index,target,event) {event.preventDefault();if(!canConfigureSite())return;const id=Number(event.dataTransfer.getData('text/plain')),ids=collectionDraftIds(index);if((collectionSortDraft.mode||'manual')!=='manual')return;const position=ids.indexOf(id),to=ids.indexOf(target);if(position<0||to<0)return;ids.splice(position,1);ids.splice(to,0,id);render();}
 async function saveCollectionOrder(submit) { if(!collectionSortDraft)return;if(submit)submit.disabled=true;try{const draft=structuredClone(collectionSortDraft);await commitCollectionEdit(draft.name,draft.name,collectionConfig(draft.name).active!==false,draft.mode||'manual',draft.ids);collectionSortDraft=null;render();toast('Ordem da coleção salva na loja.');}catch(error){toast(catalogSaveError(error));}finally{if(submit)submit.disabled=false;} }
 
 const selectedBumpOffers = new Map();
@@ -3706,9 +3712,9 @@ renderStore=()=>{renderStoreBeforeBumps();if(routePath()==='/loja/checkout'){con
 function orderBumpPreviewItems() { return selectedCheckoutBumps().map(item=>{const b=db.orderBumps.find(b=>b.id===item.offerId);return {id:b.kind==='product'?b.productId:0,name:b.title+(optionText(item.options)?' · '+optionText(item.options):''),qty:1,price:Number(b.price),options:item.options,orderBumpId:b.id,stockTracked:b.kind==='product'};}); }
 function orderBumpsPage() { const offers=db.orderBumps||[];return heading('Order Bumps','Ofertas especiais para complementar o pedido no checkout.',button('Novo Order Bump','onclick="orderBumpModal()"','primary','plus'))+`<div class="bump-admin-grid">${offers.map((b,index)=>`<section class="card pad bump-admin-card"><div class="bump-card-heading"><span class="task-symbol">${icon(b.kind==='service'?'shield':'box')}</span><span class="badge ${b.active?'green':'gray'}">${b.active?'Ativo':'Desativado'}</span></div><h2>${esc(b.title)}</h2><p>${esc(b.description||'Oferta adicional no checkout.')}</p><strong class="bump-price">${money(b.price)}</strong><small>${b.allProducts?'Disponível para todos os produtos':b.targetProductIds.length+' produtos selecionados'} · ${b.kind==='service'?'Serviço':'Produto'}</small><div class="actions">${button('Editar',`onclick="orderBumpModal(${index})"`,'small','edit')}${button(b.active?'Desativar':'Ativar',`onclick="toggleOrderBump(${index})"`,'small')}${button('Excluir',`onclick="deleteOrderBumpModal(${index})"`,'small danger')}</div></section>`).join('')||`<section class="card empty bump-empty">${icon('plus')}<h2>Ofertas que complementam a compra</h2><p>Cadastre um serviço, como impermeabilização, ou uma oferta de um produto do catálogo.</p>${button('Criar primeiro Order Bump','onclick="orderBumpModal()"','primary','plus')}</section>`}</div>`; }
 function orderBumpModal(index=-1) {
-  if(!canManage())return;
+  if(!canConfigureSite())return;
   const b=db.orderBumps?.[index]||{title:'',description:'',price:'',cost:0,kind:'service',active:false,allProducts:false,targetProductIds:[]};
-  modal(index<0?'Novo Order Bump':'Editar Order Bump',`<form class="bump-editor" onsubmit="event.preventDefault();saveOrderBump(this,${index})"><div class="form-grid">${field('Título da oferta','title',b.title,'text','required maxlength="160" data-full')}<label class="field full">Descrição da oferta<textarea name="description" maxlength="2000" placeholder="Explique o benefício desta oferta.">${esc(b.description)}</textarea></label><label class="field">Tipo de oferta<select name="kind" onchange="toggleBumpKind(this.form)"><option value="service" ${b.kind==='service'?'selected':''}>Serviço</option><option value="product" ${b.kind==='product'?'selected':''}>Produto do catálogo</option><option value="new_product">Cadastrar novo produto</option></select></label><label class="field">Status<select name="active"><option value="true" ${b.active?'selected':''}>Ativo</option><option value="false" ${!b.active?'selected':''}>Desativado</option></select></label><label class="field full" data-bump-product ${b.kind==='product'?'':'hidden'}>Produto da oferta<select name="productId" ${b.kind==='product'?'required':'disabled'}><option value="">Selecione o produto</option>${db.products.map(p=>`<option value="${p.id}" ${p.id===b.productId?'selected':''}>${esc(p.name)} · ${esc(p.sku)}${p.active?'':' · Rascunho'}</option>`).join('')}</select><small>Para cadastrar um produto novo, use Adicionar produto em Produtos.</small></label>${field('Preço da oferta (R$)','price',b.price,'number','min="0.01" step="0.01" required')}${field('Custo do serviço (R$)','cost',b.cost||0,'number','min="0" step="0.01" data-bump-service')}</div><section class="new-bump-product" data-bump-new-product hidden><h3>Novo produto no catálogo</h3><div class="form-grid">${field('Preço de venda na loja (R$)','newProductPrice','','number','min="0.01" step="0.01"')}${field('Quantidade em estoque','newProductStock',0,'number','min="0" step="1"')}<label class="field">Status do produto<select name="newProductActive"><option value="true">Ativo na loja</option><option value="false">Rascunho</option></select></label><label class="field full">Foto do produto<input name="newProductPhoto" type="file" accept="image/png,image/jpeg,image/webp"><small>JPG, PNG ou WebP de até 7 MB.</small></label></div></section><section class="bump-targets"><h3>Onde esta oferta aparece?</h3><label class="check-row"><input name="allProducts" type="checkbox" ${b.allProducts?'checked':''} onchange="this.form.querySelector('.bump-target-picker').hidden=this.checked">Em todos os produtos</label><div class="bump-target-picker" ${b.allProducts?'hidden':''}>${productPicker(b.targetProductIds,'targets')}</div></section><div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary">Salvar Order Bump</button></div></form>`);
+  modal(index<0?'Novo Order Bump':'Editar Order Bump',`<form class="bump-editor" onsubmit="event.preventDefault();saveOrderBump(this,${index})"><div class="form-grid">${field('Título da oferta','title',b.title,'text','required maxlength="160" data-full')}<label class="field full">Descrição da oferta<textarea name="description" maxlength="2000" placeholder="Explique o benefício desta oferta.">${esc(b.description)}</textarea></label><label class="field">Tipo de oferta<select name="kind" onchange="toggleBumpKind(this.form)"><option value="service" ${b.kind==='service'?'selected':''}>Serviço</option><option value="product" ${b.kind==='product'?'selected':''}>Produto do catálogo</option>${canManage()?'<option value="new_product">Cadastrar novo produto</option>':''}</select></label><label class="field">Status<select name="active"><option value="true" ${b.active?'selected':''}>Ativo</option><option value="false" ${!b.active?'selected':''}>Desativado</option></select></label><label class="field full" data-bump-product ${b.kind==='product'?'':'hidden'}>Produto da oferta<select name="productId" ${b.kind==='product'?'required':'disabled'}><option value="">Selecione o produto</option>${db.products.map(p=>`<option value="${p.id}" ${p.id===b.productId?'selected':''}>${esc(p.name)} · ${esc(p.sku)}${p.active?'':' · Rascunho'}</option>`).join('')}</select><small>Para cadastrar um produto novo, use Adicionar produto em Produtos.</small></label>${field('Preço da oferta (R$)','price',b.price,'number','min="0.01" step="0.01" required')}${canManage()?field('Custo do serviço (R$)','cost',b.cost||0,'number','min="0" step="0.01" data-bump-service'):'<label hidden><input name="cost" type="hidden" value="0"></label>'}</div><section class="new-bump-product" data-bump-new-product hidden><h3>Novo produto no catálogo</h3><div class="form-grid">${field('Preço de venda na loja (R$)','newProductPrice','','number','min="0.01" step="0.01"')}${field('Quantidade em estoque','newProductStock',0,'number','min="0" step="1"')}<label class="field">Status do produto<select name="newProductActive"><option value="true">Ativo na loja</option><option value="false">Rascunho</option></select></label><label class="field full">Foto do produto<input name="newProductPhoto" type="file" accept="image/png,image/jpeg,image/webp"><small>JPG, PNG ou WebP de até 7 MB.</small></label></div></section><section class="bump-targets"><h3>Onde esta oferta aparece?</h3><label class="check-row"><input name="allProducts" type="checkbox" ${b.allProducts?'checked':''} onchange="this.form.querySelector('.bump-target-picker').hidden=this.checked">Em todos os produtos</label><div class="bump-target-picker" ${b.allProducts?'hidden':''}>${productPicker(b.targetProductIds,'targets')}</div></section><div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary">Salvar Order Bump</button></div></form>`);
   $('#modal').classList.add('catalog-offer-dialog');toggleBumpKind($('#modal form'));
 }
 function toggleBumpKind(form) {
@@ -3718,8 +3724,8 @@ function toggleBumpKind(form) {
   form.querySelector('[data-bump-new-product]').hidden=!creating;
   form.elements.namedItem('newProductPrice').disabled=!creating;form.elements.namedItem('newProductPrice').required=creating;
   form.elements.namedItem('newProductStock').disabled=!creating;form.elements.namedItem('newProductStock').required=creating;
-  form.elements.namedItem('cost').closest('label').hidden=product;
-  form.elements.namedItem('cost').closest('label').firstChild.textContent=creating?'Custo do produto (R$)':'Custo do serviço (R$)';
+  form.elements.namedItem('cost').closest('label').hidden=product||!canManage();
+  if(canManage())form.elements.namedItem('cost').closest('label').firstChild.textContent=creating?'Custo do produto (R$)':'Custo do serviço (R$)';
 }
 async function saveOrderBump(form,index) {
  const submit=form.querySelector('button:not([type])');submit.disabled=true;
@@ -3814,14 +3820,14 @@ function menusPage(){
 function flattenMenuItems(items){return items.flatMap(item=>[item,...flattenMenuItems(item.children||[])]);}
 function menuDestinationDescription(item){const type=menuLinkTypes.find(([value])=>value===item.type)?.[1]||'Link';return type+(item.target?' · '+(item.type==='product'?db.products.find(p=>String(p.id)===item.target)?.name||'Produto indisponível':item.type==='page'?db.pages.find(p=>String(p.id)===item.target)?.title||'Página indisponível':item.target):'');}
 function menuEditorRows(items,menuId,depth=1){return items.map((item,index)=>`<div class="menu-tree-node"><div class="menu-item-row" draggable="true" ondragstart="dragMenuItem('${item.id}',event)" ondragover="event.preventDefault()" ondrop="dropMenuItem('${menuId}','${item.id}',event)"><span class="drag-handle" aria-hidden="true">⠿</span><div class="menu-item-copy"><strong>${esc(item.label)}</strong><small>${esc(menuDestinationDescription(item))}${item.newTab?' · Nova aba':''}</small></div><div class="menu-item-actions"><button class="btn small icon-button" aria-label="Subir ${esc(item.label)}" onclick="moveMenuItem('${menuId}','${item.id}',-1)" ${index===0?'disabled':''}>↑</button><button class="btn small icon-button" aria-label="Descer ${esc(item.label)}" onclick="moveMenuItem('${menuId}','${item.id}',1)" ${index===items.length-1?'disabled':''}>↓</button><button class="btn small icon-button" aria-label="Diminuir recuo de ${esc(item.label)}" onclick="outdentMenuItem('${menuId}','${item.id}')" ${depth===1?'disabled':''}>←</button><button class="btn small icon-button" aria-label="Criar submenu com ${esc(item.label)}" onclick="indentMenuItem('${menuId}','${item.id}')" ${index===0||depth+menuTreeHeight(item)>3?'disabled':''}>→</button><button class="btn small icon-button" aria-label="Editar ${esc(item.label)}" onclick="menuItemModal('${menuId}','${item.id}')">${icon('edit')}</button><button class="btn small danger icon-button" aria-label="Remover ${esc(item.label)}" onclick="removeMenuItem('${menuId}','${item.id}')">${icon('trash')}</button></div></div>${depth<3&&['group','collection'].includes(item.type)?`<button class="menu-add-collections" onclick="menuSubcollectionsModal('${menuId}','${item.id}')">${icon('plus')}Adicionar subcoleções</button>`:''}${item.children?.length?`<div class="menu-children">${menuEditorRows(item.children,menuId,depth+1)}</div>`:''}</div>`).join('');}
-function newMenuModal(){if(!canManage()||menusSaving)return;modal('Criar menu',`<form onsubmit="event.preventDefault();createMenuDraft(this)">${field('Nome do menu','name','','text','required maxlength="80" placeholder="Ex.: Menu principal"')}<div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button type="submit" class="btn primary">Criar menu</button></div></form>`);}
-function createMenuDraft(form){if(!canManage()||menusSaving)return;const name=form.elements.namedItem('name').value.trim();if(!name)return toast('Informe o nome do menu.');const model=editableMenus();if(model.menus.length>=40)return toast('O limite é de 40 menus.');const id=crypto.randomUUID();model.menus.push({id,name,active:true,items:[]});closeModal();go('/app/menus/'+id);}
-function changeMenuName(id,name){if(!canManage()||menusSaving)return;editableMenus().menus.find(m=>m.id===id).name=name;refreshMenusSaveBar();}
-function changeMenuActive(id,active){if(!canManage()||menusSaving)return;editableMenus().menus.find(m=>m.id===id).active=active;refreshMenusSaveBar();}
-function setMenuPlacement(slot,id){if(!canManage()||!menuLocations.some(([name])=>name===slot))return;editableMenus().locations[slot]=id;refreshMenusSaveBar();}
+function newMenuModal(){if(!canConfigureSite()||menusSaving)return;modal('Criar menu',`<form onsubmit="event.preventDefault();createMenuDraft(this)">${field('Nome do menu','name','','text','required maxlength="80" placeholder="Ex.: Menu principal"')}<div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button type="submit" class="btn primary">Criar menu</button></div></form>`);}
+function createMenuDraft(form){if(!canConfigureSite()||menusSaving)return;const name=form.elements.namedItem('name').value.trim();if(!name)return toast('Informe o nome do menu.');const model=editableMenus();if(model.menus.length>=40)return toast('O limite é de 40 menus.');const id=crypto.randomUUID();model.menus.push({id,name,active:true,items:[]});closeModal();go('/app/menus/'+id);}
+function changeMenuName(id,name){if(!canConfigureSite()||menusSaving)return;editableMenus().menus.find(m=>m.id===id).name=name;refreshMenusSaveBar();}
+function changeMenuActive(id,active){if(!canConfigureSite()||menusSaving)return;editableMenus().menus.find(m=>m.id===id).active=active;refreshMenusSaveBar();}
+function setMenuPlacement(slot,id){if(!canConfigureSite()||!menuLocations.some(([name])=>name===slot))return;editableMenus().locations[slot]=id;refreshMenusSaveBar();}
 function placeEditedMenu(id,slot,checked){setMenuPlacement(slot,checked?id:'');}
 function menuItemModal(menuId,itemId='',initialType='collection'){
- if(!canManage()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),item=menuItemLocation(menu.items,itemId)?.item||{label:'',type:initialType,target:'',newTab:false};
+ if(!canConfigureSite()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),item=menuItemLocation(menu.items,itemId)?.item||{label:'',type:initialType,target:'',newTab:false};
  modal(itemId?'Editar item do menu':'Adicionar item ao menu',`<form onsubmit="event.preventDefault();saveMenuItemDraft(this,'${menuId}','${itemId}')">${field('Título no menu','label',item.label,'text','required maxlength="100" placeholder="Ex.: Sofás"')}<label class="field">Tipo de item<select name="type" onchange="changeMenuItemType(this.form)">${menuLinkTypes.map(([value,label])=>`<option value="${value}" ${item.type===value?'selected':''}>${label}</option>`).join('')}</select></label><div id="menu-link-destination">${menuDestinationField(item.type,item.target)}</div><label class="check-row" id="menu-new-tab" ${item.type==='group'?'hidden':''}><input name="newTab" type="checkbox" ${item.newTab?'checked':''}>Abrir em uma nova aba</label><div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button type="submit" class="btn primary">Confirmar item</button></div></form>`);
 }
 function menuDestinationField(type,target=''){
@@ -3833,7 +3839,7 @@ function menuDestinationField(type,target=''){
 }
 function changeMenuItemType(form){const type=form.elements.namedItem('type').value;$('#menu-link-destination').innerHTML=menuDestinationField(type);$('#menu-new-tab').hidden=type==='group';}
 function saveMenuItemDraft(form,menuId,itemId){
- if(!canManage()||menusSaving)return;const fields=Object.fromEntries(new FormData(form)),label=String(fields.label||'').trim(),type=fields.type,target=String(fields.target||'').trim();
+ if(!canConfigureSite()||menusSaving)return;const fields=Object.fromEntries(new FormData(form)),label=String(fields.label||'').trim(),type=fields.type,target=String(fields.target||'').trim();
  if(!label||label.length>100)return toast('Informe um título de até 100 caracteres.');
  if(type==='external'){try{if(new URL(target).protocol!=='https:'||/\s/.test(target))throw Error();}catch{return toast('Use um endereço completo começando por https://.');}}
  if(['collection','product','page'].includes(type)&&!target)return toast('Selecione o destino do link.');
@@ -3844,14 +3850,14 @@ function saveMenuItemDraft(form,menuId,itemId){
  closeModal();render();
 }
 function menuSubcollectionsModal(menuId,parentId){
- if(!canManage()||menusSaving)return;
+ if(!canConfigureSite()||menusSaving)return;
  const menu=editableMenus().menus.find(m=>m.id===menuId),parent=menu&&menuItemLocation(menu.items,parentId)?.item;
  if(!parent||menuItemDepth(menu.items,parentId)>=3)return;
  const linked=new Set(parent.children.filter(item=>item.type==='collection').map(item=>item.target));
  modal('Adicionar subcoleções',`<form onsubmit="event.preventDefault();addMenuSubcollections(this,'${menuId}','${parentId}')"><p class="subtle">Selecione as coleções que deseja colocar em <strong>${esc(parent.label)}</strong>.</p><div class="menu-collection-picker">${db.collections.map(name=>`<label class="check-row"><input type="checkbox" name="collections" value="${esc(name)}" ${linked.has(name)?'checked disabled':''}><span>${esc(name)}${linked.has(name)?'<small>Já adicionada</small>':collectionConfig(name).active===false?'<small>Desativada na loja</small>':''}</span></label>`).join('')||'<p class="empty">Cadastre uma coleção para adicioná-la ao menu.</p>'}</div><div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary" type="submit">Adicionar selecionadas</button></div></form>`);
 }
 function addMenuSubcollections(form,menuId,parentId){
- if(!canManage()||menusSaving)return;
+ if(!canConfigureSite()||menusSaving)return;
  const model=editableMenus(),menu=model.menus.find(m=>m.id===menuId),parent=menu&&menuItemLocation(menu.items,parentId)?.item;
  if(!parent||menuItemDepth(menu.items,parentId)>=3)return;
  const linked=new Set(parent.children.filter(item=>item.type==='collection').map(item=>item.target));
@@ -3861,17 +3867,17 @@ function addMenuSubcollections(form,menuId,parentId){
  parent.children.push(...names.map(name=>({id:crypto.randomUUID(),label:name,type:'collection',target:name,children:[],newTab:false})));
  closeModal();render();toast('Subcoleções adicionadas ao rascunho. Salve para publicar.');
 }
-function moveMenuItem(menuId,id,delta){if(!canManage()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),where=menuItemLocation(menu.items,id);if(!where)return;const to=where.index+delta;if(to<0||to>=where.list.length)return;where.list.splice(where.index,1);where.list.splice(to,0,where.item);render();}
-function indentMenuItem(menuId,id){if(!canManage()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),where=menuItemLocation(menu.items,id);if(!where||where.index===0||menuItemDepth(menu.items,id)+menuTreeHeight(where.item)>3)return;const parent=where.list[where.index-1];where.list.splice(where.index,1);parent.children.push(where.item);render();}
-function outdentMenuItem(menuId,id){if(!canManage()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),where=menuItemLocation(menu.items,id);if(!where?.parent)return;const parent=menuItemLocation(menu.items,where.parent.id);where.list.splice(where.index,1);parent.list.splice(parent.index+1,0,where.item);render();}
+function moveMenuItem(menuId,id,delta){if(!canConfigureSite()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),where=menuItemLocation(menu.items,id);if(!where)return;const to=where.index+delta;if(to<0||to>=where.list.length)return;where.list.splice(where.index,1);where.list.splice(to,0,where.item);render();}
+function indentMenuItem(menuId,id){if(!canConfigureSite()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),where=menuItemLocation(menu.items,id);if(!where||where.index===0||menuItemDepth(menu.items,id)+menuTreeHeight(where.item)>3)return;const parent=where.list[where.index-1];where.list.splice(where.index,1);parent.children.push(where.item);render();}
+function outdentMenuItem(menuId,id){if(!canConfigureSite()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),where=menuItemLocation(menu.items,id);if(!where?.parent)return;const parent=menuItemLocation(menu.items,where.parent.id);where.list.splice(where.index,1);parent.list.splice(parent.index+1,0,where.item);render();}
 function dragMenuItem(id,event){event.dataTransfer.setData('text/plain',id);event.dataTransfer.effectAllowed='move';event.stopPropagation();}
-function dropMenuItem(menuId,target,event){event.preventDefault();event.stopPropagation();if(!canManage()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),id=event.dataTransfer.getData('text/plain'),source=menuItemLocation(menu.items,id),destination=menuItemLocation(menu.items,target);if(!source||!destination||id===target)return;if(flattenMenuItems(source.item.children).some(item=>item.id===target))return;if(menuItemDepth(menu.items,target)+menuTreeHeight(source.item)-1>3)return toast('Use no máximo três níveis de menu.');source.list.splice(source.index,1);const to=destination.list.findIndex(item=>item.id===target);destination.list.splice(to,0,source.item);render();}
-function removeMenuItem(menuId,id){if(!canManage()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),where=menuItemLocation(menu.items,id);if(!where)return;if(where.item.children.length){modal('Remover item e submenus',`<p>Remover <strong>${esc(where.item.label)}</strong> e seus submenus deste rascunho?</p><div class="form-actions">${button('Cancelar','onclick="closeModal()"')}<button class="btn danger" onclick="confirmRemoveMenuItem('${menuId}','${id}')">Remover do menu</button></div>`);}else{where.list.splice(where.index,1);render();}}
-function confirmRemoveMenuItem(menuId,id){if(!canManage()||menusSaving)return;const where=menuItemLocation(editableMenus().menus.find(m=>m.id===menuId).items,id);if(where)where.list.splice(where.index,1);closeModal();render();}
-function deleteMenuModal(id){if(!canManage()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===id);modal('Excluir menu',`<p>Remover <strong>${esc(menu.name)}</strong> e seus links? As posições que usam este menu ficarão sem ele após salvar. Os produtos, coleções e páginas serão mantidos.</p><div class="form-actions">${button('Cancelar','onclick="closeModal()"')}<button class="btn danger" onclick="deleteMenuDraft('${id}')">Excluir do rascunho</button></div>`);}
-function deleteMenuDraft(id){if(!canManage()||menusSaving)return;const model=editableMenus();model.menus=model.menus.filter(m=>m.id!==id);for(const [slot] of menuLocations)if(model.locations[slot]===id)model.locations[slot]='';closeModal();go('/app/menus');}
+function dropMenuItem(menuId,target,event){event.preventDefault();event.stopPropagation();if(!canConfigureSite()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),id=event.dataTransfer.getData('text/plain'),source=menuItemLocation(menu.items,id),destination=menuItemLocation(menu.items,target);if(!source||!destination||id===target)return;if(flattenMenuItems(source.item.children).some(item=>item.id===target))return;if(menuItemDepth(menu.items,target)+menuTreeHeight(source.item)-1>3)return toast('Use no máximo três níveis de menu.');source.list.splice(source.index,1);const to=destination.list.findIndex(item=>item.id===target);destination.list.splice(to,0,source.item);render();}
+function removeMenuItem(menuId,id){if(!canConfigureSite()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===menuId),where=menuItemLocation(menu.items,id);if(!where)return;if(where.item.children.length){modal('Remover item e submenus',`<p>Remover <strong>${esc(where.item.label)}</strong> e seus submenus deste rascunho?</p><div class="form-actions">${button('Cancelar','onclick="closeModal()"')}<button class="btn danger" onclick="confirmRemoveMenuItem('${menuId}','${id}')">Remover do menu</button></div>`);}else{where.list.splice(where.index,1);render();}}
+function confirmRemoveMenuItem(menuId,id){if(!canConfigureSite()||menusSaving)return;const where=menuItemLocation(editableMenus().menus.find(m=>m.id===menuId).items,id);if(where)where.list.splice(where.index,1);closeModal();render();}
+function deleteMenuModal(id){if(!canConfigureSite()||menusSaving)return;const menu=editableMenus().menus.find(m=>m.id===id);modal('Excluir menu',`<p>Remover <strong>${esc(menu.name)}</strong> e seus links? As posições que usam este menu ficarão sem ele após salvar. Os produtos, coleções e páginas serão mantidos.</p><div class="form-actions">${button('Cancelar','onclick="closeModal()"')}<button class="btn danger" onclick="deleteMenuDraft('${id}')">Excluir do rascunho</button></div>`);}
+function deleteMenuDraft(id){if(!canConfigureSite()||menusSaving)return;const model=editableMenus();model.menus=model.menus.filter(m=>m.id!==id);for(const [slot] of menuLocations)if(model.locations[slot]===id)model.locations[slot]='';closeModal();go('/app/menus');}
 async function saveMenus(){
- if(!canManage()||menusSaving||!menusDirty())return;
+ if(!canConfigureSite()||menusSaving||!menusDirty())return;
  if(menusDraft.menus.some(m=>!m.name.trim()||m.name.trim().length>80))return toast('Informe um nome de até 80 caracteres para cada menu.');
  menusSaving=true;refreshMenusSaveBar();lockMenuFields(true);let committed=false;
  try{
@@ -3882,7 +3888,7 @@ async function saveMenus(){
  }catch(error){toast(committed?'Menus salvos. Não foi possível atualizar os outros dados do painel; atualize a página antes de continuar.':catalogSaveError(error));}
  finally{menusSaving=false;render();}
 }
-async function cancelMenusChanges(){if(menusSaving||!canManage())return;try{await settleAdminWrites();await loadAdminState();menusBaseline=null;menusDraft=null;render();toast('Mudanças nos menus descartadas.');}catch(error){toast(catalogSaveError(error));}}
+async function cancelMenusChanges(){if(menusSaving||!canConfigureSite())return;try{await settleAdminWrites();await loadAdminState();menusBaseline=null;menusDraft=null;render();toast('Mudanças nos menus descartadas.');}catch(error){toast(catalogSaveError(error));}}
 const adminPageBeforeMenus=adminPage;
 adminPage=page=>page==='menus'?menusPage():adminPageBeforeMenus(page);
 navigation.splice(navigation.findIndex(item=>item[0]==='store-editor')+1,0,['menus','Menus','menu']);
@@ -4063,6 +4069,89 @@ toggleFreight=async index=>{
   if(!canConfigureFreight()||freightSaving||allShippingOptions()[index]?.delivery!=='Entrega')return;
   const options=structuredClone(allShippingOptions());options[index].active=options[index].active===false;await persistRegionalFreight(options);
 };
+</script>
+  <script>// Store editing is shared with sellers. Audit records and reversal remain management-only.
+let siteWriteBusy=false;
+function storeConfigSnapshot(){return Object.fromEntries(['name','phone','address','addressParts'].filter(key=>Object.hasOwn(db.settings,key)).map(key=>[key,structuredClone(db.settings[key])]));}
+async function persistSiteSection(section,value,expected,{form,close=false,message='Alterações salvas.'}={}){
+  if(!isOwner||!canConfigureSite()||siteWriteBusy)return false;
+  siteWriteBusy=true;const submit=form?.querySelector('button[type="submit"],button:not([type])');if(submit)submit.disabled=true;
+  const baseline=structuredClone(expected??null);let committed=false;
+  try{
+    await settleAdminWrites();
+    await backendRequest('/rest/v1/rpc/save_site_section',{method:'POST',body:JSON.stringify({p_section:section,p_value:value,p_expected:baseline})},true);
+    committed=true;await loadAdminState();if(close)closeModal();render();toast(message);return true;
+  }catch(error){toast(committed?'Alteração salva. Atualize a página antes de continuar.':catalogSaveError(error));return false;}
+  finally{siteWriteBusy=false;if(submit)submit.disabled=false;}
+}
+savePage=async(form,id)=>{
+  if(!canConfigureSite())return;
+  const fields=Object.fromEntries(new FormData(form)),next=structuredClone(db.pages);
+  const page={title:String(fields.title||'').trim(),content:String(fields.content||'').trim(),active:fields.active==='true'};
+  if(!page.title||page.title.length>160||!page.content||page.content.length>50000)return toast('Informe o título e um conteúdo de até 50 mil caracteres.');
+  if(id){const existing=next.find(p=>p.id===id);if(!existing)return toast('Esta página foi removida. Atualize a lista.');Object.assign(existing,page);}
+  else next.push({...page,id:Math.max(Date.now(),...next.map(p=>Number(p.id)+1))});
+  return persistSiteSection('pages',next,db.pages,{form,close:true,message:'Página salva na loja.'});
+};
+
+const auditAreas={products:'Produtos',orders:'Pedidos',movements:'Estoque',collections:'Coleções',collectionSettings:'Coleções',orderBumps:'Order Bumps',attributeCatalog:'Variações',storefront:'Loja online',navigation:'Menus',pages:'Páginas',shippingOptions:'Fretes',paymentMethods:'Pagamentos',settings:'Configurações',profiles:'Equipe e perfis',customer_contacts:'Clientes',team:'Equipe'};
+const canSeeChangeHistory=()=>isOwner&&canManage()&&['master','admin'].includes(currentProfile?.role);
+let auditRows=[],auditLoading=false,auditLoaded=false,auditError='',auditArea='',auditQuery='',auditBefore=null,auditNext=null,auditCursors=[],auditSerial=0,auditReverting=false;
+function auditTime(value){return value?new Date(value).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'medium'}):'—';}
+function auditStatus(row){return row.reverted_at?'Revertida':row.reversal_of?'Reversão registrada':'Registrada';}
+function historyRowsMarkup(){
+  if(auditLoading)return '<div class="empty" role="status">Carregando histórico…</div>';
+  if(auditError)return `<div class="empty"><p>${esc(auditError)}</p>${button('Tentar novamente','onclick="loadChangeHistory()"')}</div>`;
+  if(!auditRows.length)return '<div class="empty"><h3>Nenhuma alteração neste filtro</h3><p>As alterações realizadas a partir da ativação deste histórico aparecem aqui automaticamente.</p></div>';
+  return `<div class="table-wrap"><table class="change-history-table"><thead><tr><th>Data e horário</th><th>Responsável</th><th>Alteração</th><th>Situação</th><th>Ações</th></tr></thead><tbody>${auditRows.map(row=>`<tr><td class="audit-date">${esc(auditTime(row.created_at))}</td><td><strong>${esc(row.actor_name)}</strong><small>${esc(row.actor_position||row.actor_role||'Sistema')}</small></td><td><strong>${esc(row.summary)}</strong><small>${row.areas.map(area=>esc(auditAreas[area]||area)).join(' · ')} · ${row.change_count} registro(s)</small></td><td><span class="badge ${row.reverted_at?'gray':'green'}">${auditStatus(row)}</span>${row.reverted_at?`<small>${esc(row.reverted_by_name||'Gestão')} · ${esc(auditTime(row.reverted_at))}</small>`:''}</td><td>${button('Ver alterações',`onclick="changeHistoryDetail(${row.id})"`,'small','eye')}</td></tr>`).join('')}</tbody></table></div><div class="audit-pagination"><span>Página ${auditCursors.length+1}</span><div class="actions">${button('Anterior',`onclick="previousChangeHistory()" ${auditCursors.length?'':'disabled'}`,'small')}${button('Próxima',`onclick="nextChangeHistory()" ${auditNext?'':'disabled'}`,'small')}</div></div>`;
+}
+function changeHistoryPage(){
+  if(!canSeeChangeHistory())return heading('Acesso restrito','O histórico é reservado à conta principal e aos gerentes.');
+  return heading('Histórico de alterações','Acompanhe o que mudou, quem alterou e restaure uma versão anterior.',button('Atualizar','onclick="loadChangeHistory()"'))+`<section class="card pad"><div class="audit-history-note">Cada ação mantém o responsável e os dados anteriores. Reversões também ficam registradas no histórico.</div><div class="audit-filters"><form onsubmit="event.preventDefault();filterChangeHistory(this)"><label class="field">Buscar por responsável ou alteração<input name="query" type="search" value="${esc(auditQuery)}" placeholder="Nome, produto, página ou configuração"></label><label class="field">Área<select name="area"><option value="">Todas as áreas</option>${Object.entries(auditAreas).filter(([key])=>!['collectionSettings','team'].includes(key)).map(([key,name])=>`<option value="${key}" ${key===auditArea?'selected':''}>${name}</option>`).join('')}</select></label><button class="btn" type="submit">Filtrar</button></form></div><div id="change-history-results">${historyRowsMarkup()}</div></section>`;
+}
+function refreshHistoryRows(){const target=document.querySelector('#change-history-results');if(target)target.innerHTML=historyRowsMarkup();}
+async function loadChangeHistory(){
+  if(!canSeeChangeHistory())return;
+  const serial=++auditSerial;auditLoading=true;auditError='';refreshHistoryRows();
+  try{const result=await backendRequest('/rest/v1/rpc/list_change_history',{method:'POST',body:JSON.stringify({p_before:auditBefore,p_area:auditArea||null,p_query:auditQuery||null})},true);if(serial!==auditSerial||!canSeeChangeHistory())return;auditRows=(result.entries||[]).map(row=>({...row,actor_role:({master:'Principal',admin:'Equipe',customer:'Cliente',driver:'Entregador',system:'Sistema'})[row.actor_role]||row.actor_role}));auditNext=result.next_cursor||null;auditLoaded=true;}
+  catch(error){if(serial===auditSerial)auditError=catalogSaveError(error);}
+  finally{if(serial===auditSerial){auditLoading=false;refreshHistoryRows();}}
+}
+function filterChangeHistory(form){const fields=Object.fromEntries(new FormData(form));auditArea=fields.area;auditQuery=String(fields.query||'').trim().slice(0,120);auditBefore=null;auditCursors=[];loadChangeHistory();}
+function nextChangeHistory(){if(!auditNext||auditLoading)return;auditCursors.push(auditBefore);auditBefore=auditNext;loadChangeHistory();}
+function previousChangeHistory(){if(!auditCursors.length||auditLoading)return;auditBefore=auditCursors.pop();loadChangeHistory();}
+const auditFieldNames={name:'Nome',title:'Título',price:'Preço',promoPrice:'Preço promocional',cost:'Custo',active:'Ativo',stock:'Estoque',min:'Estoque mínimo',phone:'WhatsApp',email:'E-mail',address:'Endereço',addressParts:'Endereço',city:'Cidade',state:'UF',neighborhood:'Bairro',street:'Rua',number:'Número',cep:'CEP',note:'Observação',content:'Conteúdo',role:'Tipo de perfil',position:'Cargo',paid:'Pagamento confirmado',status:'Status',deliveryDate:'Data da entrega',freight:'Frete',description:'Descrição',shippingOptions:'Fretes',paymentMethods:'Pagamentos',categories:'Coleções',category:'Coleção',sort:'Ordenação',enabled:'Visível',items:'Itens',receipt:'Comprovante',created_at:'Cadastro',updated_at:'Atualização'};
+function auditValue(value){
+  if(value===undefined)return 'Não existia';if(value===null)return 'Sem valor';if(typeof value==='boolean')return value?'Sim':'Não';
+  if(typeof value==='string'&&value.startsWith('data:image/'))return 'Comprovante / imagem anexada';
+  const text=typeof value==='object'?JSON.stringify(value,null,2):String(value);
+  return text.length>1600?text.slice(0,1600)+'…':text;
+}
+function auditFieldDiff(before,after,prefix='',depth=0){
+  if(JSON.stringify(before)===JSON.stringify(after))return [];
+  if(depth<3&&(before&&typeof before==='object'||after&&typeof after==='object')&&!Array.isArray(before)&&!Array.isArray(after))return [...new Set([...Object.keys(before||{}),...Object.keys(after||{})])].flatMap(key=>auditFieldDiff(before?.[key],after?.[key],[prefix,auditFieldNames[key]||key].filter(Boolean).join(' → '),depth+1));
+  return [{name:prefix||'Registro',before:auditValue(before),after:auditValue(after)}];
+}
+async function changeHistoryDetail(id){
+  if(!canSeeChangeHistory())return;
+  try{
+    const row=await backendRequest('/rest/v1/rpc/change_history_detail',{method:'POST',body:JSON.stringify({p_id:id})},true);
+    const changes=row.changes.map(change=>{const before=change.beforeExists?change.before:undefined,after=change.afterExists?change.after:undefined;const differences=auditFieldDiff(before,after);return `<section class="audit-change"><h3>${esc(change.label)}</h3>${differences.slice(0,80).map(diff=>`<div class="audit-diff"><strong>${esc(diff.name)}</strong><div><small>Antes</small><pre>${esc(diff.before)}</pre></div><div><small>Depois</small><pre>${esc(diff.after)}</pre></div></div>`).join('')}${differences.length>80?'<p class="subtle">Há outros campos neste registro.</p>':''}</section>`;}).join('');
+    modal('Detalhes da alteração',`<div class="audit-detail-heading"><strong>${esc(row.actor_name)}</strong><span>${esc(auditTime(row.created_at))}</span><p>${esc(row.summary)}</p></div><div class="audit-detail-changes">${changes}</div>${row.reverted_at?`<p class="audit-history-note">Revertida por ${esc(row.reverted_by_name)} em ${esc(auditTime(row.reverted_at))}.</p>`:row.revert_reason?`<p class="audit-history-note">${esc(row.revert_reason)}</p>`:''}<div class="form-actions">${button('Fechar','onclick="closeModal()"')}${row.can_revert?button('Reverter esta alteração',`onclick="confirmHistoryReversal(${id})"`,'danger'):''}</div>`);
+    document.querySelector('#modal')?.classList.add('audit-detail-dialog');
+  }catch(error){toast(catalogSaveError(error));}
+}
+function confirmHistoryReversal(id){if(!canSeeChangeHistory()||auditReverting)return;modal('Reverter alteração',`<p>Restaurar os dados anteriores desta ação?</p><p class="subtle" style="margin-top:12px">Se algum registro foi alterado novamente, a reversão será interrompida para preservar as mudanças mais recentes. Esta reversão também ficará registrada.</p><form onsubmit="event.preventDefault();revertHistoryChange(${id},this)"><div class="form-actions">${button('Voltar',`type="button" onclick="changeHistoryDetail(${id})"`)}<button class="btn danger" type="submit">Confirmar reversão</button></div></form>`);}
+async function revertHistoryChange(id,form){
+  if(!canSeeChangeHistory()||auditReverting)return;auditReverting=true;const submit=form.querySelector('button[type="submit"]');submit.disabled=true;
+  try{await settleAdminWrites();await backendRequest('/rest/v1/rpc/revert_change_history',{method:'POST',body:JSON.stringify({p_id:id})},true);await loadAdminState();menusBaseline=null;menusDraft=null;collectionSortDraft=null;closeModal();auditLoaded=false;auditBefore=null;auditCursors=[];await loadChangeHistory();render();toast('Alteração revertida. A reversão foi registrada no histórico.');}
+  catch(error){toast(catalogSaveError(error));}finally{auditReverting=false;submit.disabled=false;}
+}
+navigation.push(['change-history','Histórico de alterações','calendar']);
+const adminPageBeforeHistory=adminPage;
+adminPage=page=>page==='change-history'?changeHistoryPage():adminPageBeforeHistory(page);
+const renderBeforeHistory=render;
+render=()=>{const result=renderBeforeHistory();if(!canSeeChangeHistory()){auditRows=[];auditLoaded=false;auditLoading=false;auditSerial++;}else if(routePath()!=='/app/change-history')auditLoaded=false;else if(!auditLoaded&&!auditLoading)loadChangeHistory();return result;};
 </script>
   <script>// The published store and the editor frame share these exact renderers and styles.
 const storePreviewParams=new URLSearchParams(location.search);

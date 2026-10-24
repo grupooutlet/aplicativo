@@ -15,7 +15,7 @@ function isDeliveryDate(value, future = false) {
 }
 const deliveryDateLabel = value => value ? new Date(value + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : 'A agendar';
 const isDeliveryDriverView = () => currentProfile?.role === 'driver' || (currentProfile?.role === 'master' && role === 'Entregador');
-const canConfigureFreight = () => isOwner && canManage() && ['master', 'admin'].includes(currentProfile?.role);
+const canConfigureFreight = () => isOwner && canConfigureSite() && ['master', 'admin'].includes(currentProfile?.role);
 const canScheduleDelivery = () => isOwner && !isDeliveryDriverView();
 function deliveryOrders() {
   return (currentProfile?.role === 'driver' ? driverDeliveries : db.orders)

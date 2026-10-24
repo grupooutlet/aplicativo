@@ -9,7 +9,7 @@ const paymentMethods = () => defaultPayments().map(fallback => {
   return stored ? { ...stored, installments: stored.kind === 'credit' ? stored.installments : [{ count: 1, rate: 0 }] } : fallback;
 });
 const activePayments = () => paymentMethods().filter(method => method.active !== false);
-const canConfigurePayments = () => isOwner && canManage() && ['master', 'admin'].includes(currentProfile?.role);
+const canConfigurePayments = () => isOwner && canConfigureSite() && ['master', 'admin'].includes(currentProfile?.role);
 const productSubtotal = order => order.items.reduce((total, item) => total + item.price * item.qty, 0);
 function paymentQuote(method, count, base) {
   if (!method || !paymentKinds[method.kind] || (method.kind !== 'credit' && Number(count) !== 1)) throw new Error('Selecione uma forma de pagamento disponível.');
@@ -91,13 +91,13 @@ function savePaymentMethod(form, index) {
   const methods = [...paymentMethods()];
   methods[index] = { id: method.id, title, kind,
     active: methods[index]?.active !== false, installments: installments.sort((a, b) => a.count - b.count) };
-  db.settings.paymentMethods = methods; save(); closeModal(); render(); toast('Forma de pagamento salva.');
+  return persistSiteSection('paymentMethods',methods,db.settings.paymentMethods,{form,close:true,message:'Forma de pagamento salva.'});
 }
 function togglePaymentMethod(index) {
   if (!canConfigurePayments()) return;
   const methods = structuredClone(paymentMethods());
   methods[index].active = methods[index].active === false;
-  db.settings.paymentMethods = methods; save(); render();
+  return persistSiteSection('paymentMethods',methods,db.settings.paymentMethods,{message:'Forma de pagamento atualizada.'});
 }
 function paymentSelect(name = 'paymentMethodId', selected = '') {
   return `<label class="field">Forma de pagamento<select name="${name}" required onchange="updatePaymentChoices(this.form)"><option value="">Selecione</option>${activePayments().map(method => `<option value="${esc(method.id)}" ${method.id === selected ? 'selected' : ''}>${esc(method.title)}</option>`).join('')}</select></label><div class="payment-choice-details" hidden><label class="field">Parcelamento<select name="installments" disabled onchange="updatePaymentTotal(this.form)"><option value="1">À vista</option></select></label></div>`;
@@ -599,13 +599,12 @@ settingsPage = () => settingsBeforeCommerce()
   .replace(/(<input name="storeCep"[^>]*)(>)/, '$1 maxlength="9" oninput="lookupStoreCep(this)"$2')
   .replace('</div><p class="subtle"', '</div><p id="store-cep-feedback" class="subtle" role="status"></p><p class="subtle"');
 saveSettings = form => {
-  if (role !== 'Proprietário') return;
+  if (!canConfigureSite()) return;
   const fields = Object.fromEntries(new FormData(form));
   const phone = brazilPhoneDigits(fields.phone);
   if (phone && !/^55\d{10,11}$/.test(phone)) return toast('Informe um WhatsApp brasileiro com DDD.');
   const addressParts = addressFromForm(fields, 'store');
-  Object.assign(db.settings, { name: fields.name.trim(), phone: formatBrazilPhone(phone), addressParts, address: formatAddress(addressParts) });
-  save(); render(); toast('Dados da loja salvos.');
+  return persistSiteSection('store',{ name: fields.name.trim(), phone: formatBrazilPhone(phone), addressParts, address: formatAddress(addressParts) },storeConfigSnapshot(),{form,message:'Dados da loja salvos.'});
 };
 const noteBeforeCommerce = deliveryNote;
 deliveryNote = order => {

@@ -279,9 +279,9 @@ productModal = id => {
     </div><div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary product-save">Salvar produto</button></div>
   </form>`);
 };
-async function uploadProductPhoto(file) {
+async function uploadProductPhoto(file, folder = 'products') {
   const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-  const path = `products/${crypto.randomUUID()}.${ext}`;
+  const path = `${folder === 'storefront' ? 'storefront' : 'products'}/${crypto.randomUUID()}.${ext}`;
   await refreshAuth();
   const response = await fetch(`${backendUrl}/storage/v1/object/${photoBucket}/${path}`, {
     method: 'POST',

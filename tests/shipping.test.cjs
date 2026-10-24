@@ -3,7 +3,7 @@ const root=path.join(__dirname,'..'),nodes={};
 const context=vm.createContext({console,URL,URLSearchParams,Date,Map,Set,structuredClone,crypto:require('node:crypto').webcrypto,
  location:{protocol:'https:',origin:'https://forteoutlet.com.br',pathname:'/',search:'',hash:'#/app/deliveries'},
  document:{baseURI:'https://forteoutlet.com.br/',querySelector:s=>nodes[s]||null,querySelectorAll:()=>[],addEventListener(){}},window:{addEventListener(){},scrollTo(){}},history:{pushState(){},replaceState(){}},setTimeout:()=>1,clearTimeout(){},fetch:async()=>{throw Error('Unexpected network');},FormData:class{constructor(form){return Object.entries(form.data||{});}}});
-for(const name of ['storefront-editor.js','app.js','production.js','enhancements.js','variations.js','fulfillment.js','operations.js','commerce.js','merchandising.js','menus.js','shipping.js','storefront-runtime.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8').replace(/boot\(\);\s*$/,''),context,{filename:name});
+for(const name of ['storefront-editor.js','app.js','production.js','enhancements.js','variations.js','fulfillment.js','operations.js','commerce.js','merchandising.js','menus.js','shipping.js','change-history.js','storefront-runtime.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8').replace(/boot\(\);\s*$/,''),context,{filename:name});
 const run=code=>vm.runInContext(code,context),rows=require('../scripts/prepare-regional-shipping.cjs');
 context.options=[{id:'pickup',name:'Retirada na loja',delivery:'Retirada',active:true,price:0},...rows.map((r,i)=>({...r,id:'region-'+i}))];
 run(`db=defaults();db.settings.shippingMode='regional';db.settings.shippingOptions=options;db.settings.phone='5521968464050';db.orders=[{id:1,freight:300}];toast=message=>{globalThis.lastToast=message};`);
@@ -58,6 +58,6 @@ run(`isOwner=true;role='Proprietário';currentProfile={role:'master'};masterPrev
  assert.equal(await context.persistRegionalFreight(next),true);assert.equal(writes.length,1);
  assert.equal(writes[0].route,'/rest/v1/rpc/save_shipping_settings');assert.deepEqual(Object.keys(writes[0].body).sort(),['p_expected','p_options']);assert.equal(writes[0].body.p_expected.options.find(o=>o.id===specific.id).price,250);
  assert.equal(run('db.orders[0].freight'),300);
- run("role='Vendedor';currentProfile={role:'admin',position:'Vendedor'}");assert.equal(await context.persistRegionalFreight(next),false);assert.equal(writes.length,1);
+ run("role='Entregador';currentProfile={role:'driver',position:'Entregador'}");assert.equal(await context.persistRegionalFreight(next),false);assert.equal(writes.length,1);
  console.log(`${rows.length} regional rates verified: owner corrections, coverage precedence, pauses, address boundaries, support, restrictions, fees and isolated saving.`);
 })().catch(error=>{console.error(error);process.exitCode=1});

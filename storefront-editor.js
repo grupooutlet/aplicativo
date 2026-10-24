@@ -120,7 +120,7 @@ const storefront=(()=>{
   }
   function select(id){if(!home().sections.some(s=>s.id===id))return;selected=id;render()}
   function change(key,value){
-    if(!canManage()||saving)return;
+    if(!canConfigureSite()||saving)return;
     const s=section();if(!s)return;
     if(key.startsWith('items.')){const [,index,field]=key.split('.');if(!s.items?.[Number(index)]||!['title','body','icon'].includes(field))return;s.items[Number(index)][field]=value}
     else if(['eyebrow','title','subtitle','body','image','imageAlt','url','align','layout','buttonLabel','buttonLink','category','limit','showText'].includes(key))s[key]=key==='limit'?Math.max(1,Math.min(24,Number(value)||1)):key==='showText'?Boolean(value):value;
@@ -128,31 +128,31 @@ const storefront=(()=>{
     refresh();
   }
   function changePage(key,value){
-    if(!canManage()||saving||!['title','intro','note','showDescription','galleryFit','columns','showFilters'].includes(key))return;
+    if(!canConfigureSite()||saving||!['title','intro','note','showDescription','galleryFit','columns','showFilters'].includes(key))return;
     const scope=pageKey(previewRoute,previewCategory,previewView),model=home();model.pageSettings||={};
     // Shared templates replace legacy per-item overrides in the draft only.
     if(['product','collection'].includes(scope))for(const name of Object.keys(model.pageSettings)){if(name.startsWith(scope+':')||(scope==='collection'&&name==='catalog'))delete model.pageSettings[name];}
     model.pageSettings[scope]||={};model.pageSettings[scope][key]=value;refresh();
   }
-  function changeAnnouncement(key,value){if(!canManage()||saving||!['enabled','text','highlight'].includes(key))return;home().announcement[key]=value;if(key==='enabled')render();else refresh()}
-  function toggle(id,enabled){if(!canManage()||saving)return;const s=home().sections.find(s=>s.id===id);if(!s)return;s.enabled=enabled;render()}
-  function move(id,step){if(!canManage()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id),j=i+step;if(i<0||j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];render()}
+  function changeAnnouncement(key,value){if(!canConfigureSite()||saving||!['enabled','text','highlight'].includes(key))return;home().announcement[key]=value;if(key==='enabled')render();else refresh()}
+  function toggle(id,enabled){if(!canConfigureSite()||saving)return;const s=home().sections.find(s=>s.id===id);if(!s)return;s.enabled=enabled;render()}
+  function move(id,step){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id),j=i+step;if(i<0||j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];render()}
   function addModal(){modal('Adicionar seção',`<p>Escolha o conteúdo para a página inicial. A nova seção começa oculta.</p><div class="builder-add-grid">${Object.entries(labels).map(([type,label])=>`<button onclick="storefront.add('${type}')">${icon(({banner:'image',image:'image',video:'eye',collection:'layers',text:'page',benefits:'shield'})[type])}<strong>${label}</strong></button>`).join('')}</div>`)}
   function add(type){
-    if(!canManage()||saving||!labels[type])return;
+    if(!canConfigureSite()||saving||!labels[type])return;
     if(home().sections.length>=80)return toast('O limite é de 80 seções.');
     const base={id:newId(),type,enabled:false};
     const presets={banner:{showText:false,eyebrow:'',title:'',subtitle:'',image:'',imageAlt:'',buttonLabel:'',buttonLink:'/loja/catalogo',align:'left'},collection:{eyebrow:'EXPLORE A LOJA',title:'Nossa seleção',category:'Todos',limit:4},image:{eyebrow:'FORTE OUTLET',title:'Sua casa merece esse cuidado.',body:'',image:'',imageAlt:'',layout:'image-left',buttonLabel:'',buttonLink:'/loja/catalogo'},video:{eyebrow:'INSPIRE-SE',title:'Veja de perto',body:'',url:''},text:{eyebrow:'NOSSA HISTÓRIA',title:'Sua casa merece o melhor.',body:'',buttonLabel:'',buttonLink:'/loja/catalogo'},benefits:{items:structuredClone(defaultBenefits)}};
     Object.assign(base,presets[type]);home().sections.push(base);selected=base.id;closeModal();render();toast('Seção adicionada ao rascunho.');
   }
-  function duplicate(id){if(!canManage()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0||list.length>=80)return;const copy=structuredClone(list[i]);copy.id=newId();copy.enabled=false;list.splice(i+1,0,copy);selected=copy.id;render()}
+  function duplicate(id){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0||list.length>=80)return;const copy=structuredClone(list[i]);copy.id=newId();copy.enabled=false;list.splice(i+1,0,copy);selected=copy.id;render()}
   function removeModal(id){const s=home().sections.find(s=>s.id===id);if(!s)return;modal('Excluir seção',`<p>Remover <strong>${esc(s.title||labels[s.type])}</strong> do rascunho?</p><div class="form-actions"><button class="btn" onclick="closeModal()">Manter seção</button><button class="btn danger" onclick="storefront.remove('${id}')">Remover do rascunho</button></div>`)}
-  function remove(id){if(!canManage()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0)return;if(list.length===1)return toast('Oculte a última seção ou adicione outra antes de excluir.');list.splice(i,1);selected=list[Math.min(i,list.length-1)]?.id||'';closeModal();render()}
+  function remove(id){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0)return;if(list.length===1)return toast('Oculte a última seção ou adicione outra antes de excluir.');list.splice(i,1);selected=list[Math.min(i,list.length-1)]?.id||'';closeModal();render()}
   async function uploadImage(input,key){
-    const s=section(),file=input.files?.[0];if(!canManage()||saving||uploading||!s||!file)return;
+    const s=section(),file=input.files?.[0];if(!canConfigureSite()||saving||uploading||!s||!file)return;
     if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>2*1024*1024)return toast('Envie JPG, PNG ou WebP de até 2 MB.');
     uploading=true;input.disabled=true;refresh();
-    try{s[key]=await uploadProductPhoto(file);toast('Imagem adicionada ao rascunho. Salve as mudanças para publicá-la.')}catch(error){toast(error.message)}finally{uploading=false;input.disabled=false;render()}
+    try{s[key]=await uploadProductPhoto(file,'storefront');toast('Imagem adicionada ao rascunho. Salve as mudanças para publicá-la.')}catch(error){toast(error.message)}finally{uploading=false;input.disabled=false;render()}
   }
   function setPreview(size){previewSize=size==='mobile'?'mobile':'desktop';document.querySelectorAll('[data-device]').forEach(b=>b.classList.toggle('active',b.dataset.device===previewSize));sizeFrame()}
   function sizeFrame(){
@@ -179,7 +179,7 @@ const storefront=(()=>{
   let observer;
   function mountPreview(){if(!editing())return;const stage=document.querySelector('#editor-preview');if(!stage)return;observer?.disconnect();observer=new ResizeObserver(sizeFrame);observer.observe(stage);sizeFrame()}
   async function publish(){
-    if(!canManage()||saving||uploading||!dirty())return;
+    if(!canConfigureSite()||saving||uploading||!dirty())return;
     saving=true;refresh();
     try{
       await settleAdminWrites();
