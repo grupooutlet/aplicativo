@@ -17,6 +17,12 @@ if(process.env.QA_SHIPPING==='1'){
 }
 const qaPosition=process.env.QA_STAFF_POSITION||'Principal';
 const qaProfile={user_id:'qa-master',name:qaPosition==='Principal'?'Grupo Outlet':'Bianca QA',email:qaPosition==='Principal'?'grupooutlet.rj@gmail.com':'vendedor-qa@example.invalid',role:qaPosition==='Principal'?'master':'admin',position:qaPosition==='Principal'?null:qaPosition};
+const qaCustomers=[],qaContacts=[];
+if(process.env.QA_CUSTOMERS==='1'){
+ qaCustomers.push({user_id:'qa-customer',role:'customer',name:'Marina Oliveira',email:'marina@example.invalid',created_at:'2026-10-19T13:30:00Z'},{user_id:'qa-no-orders',role:'customer',name:'Pedro Santos',email:'pedro@example.invalid',created_at:'2026-10-23T15:15:00Z'});
+ qaContacts.push({id:'qa-contact',name:'Marina Oliveira',email:'marina@example.invalid',phone:'21999998888',created_at:'2026-10-19T13:30:00Z',address:'Rua das Flores, 100 · Centro · Nova Iguaçu / RJ · CEP 26000-000'});
+ model.orders=[{id:102,user_id:'qa-customer',customer_id:'qa-contact',customer:'Marina Oliveira',email:'marina@example.invalid',phone:'21999998888',status:'transit',createdAt:'2026-10-24T14:30:00Z',channel:'Loja online',seller:'Bianca Melo',payment:'Pix',paid:false,delivery:'Entrega',deliveryDate:'2026-10-26',address:'Rua das Palmeiras, 25 · Centro · Nova Iguaçu / RJ · CEP 26000-010',freight:100,items:[{id:1,name:'Sofá retrátil Grécia · Cor: Bege',qty:1,price:1597,cost:50}]},{id:101,user_id:'qa-customer',customer_id:'qa-contact',customer:'Marina Oliveira',email:'marina@example.invalid',status:'delivered',createdAt:'2026-10-19T13:30:00Z',channel:'Loja física',seller:'Eduardo Thales',payment:'Cartão de débito',paid:true,delivery:'Entrega',address:qaContacts[0].address,freight:100,items:[{id:3,name:'Poltrona de apoio',qty:2,price:497,cost:50}]}];
+}
 let qaHistory=[];
 if(process.env.QA_AUDIT==='1'){
  const freight=model.settings.shippingOptions.find(o=>o.name==='Niterói');const before=structuredClone(freight);freight.price=220;
@@ -24,15 +30,15 @@ if(process.env.QA_AUDIT==='1'){
 }
 const preload=`<script>
 let fixtureModel=${JSON.stringify(model)},fixtureVersion=1;
-let fixtureProfile=${JSON.stringify(qaProfile)},fixtureHistory=${JSON.stringify(qaHistory)};
+let fixtureProfile=${JSON.stringify(qaProfile)},fixtureHistory=${JSON.stringify(qaHistory)},fixtureCustomers=${JSON.stringify(qaCustomers)},fixtureContacts=${JSON.stringify(qaContacts)};
 localStorage.setItem('forte-auth-v1',JSON.stringify({user:{id:'qa-master',email:'grupooutlet.rj@gmail.com'},access_token:'qa-local-only',refresh_token:'qa-local-only',expires_at:Math.floor(Date.now()/1000)+86400}));localStorage.setItem('forte-auth-shared-v1','1');
 const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  const url=String(input);if(!url.includes('rwxqytomiorsrxpgtjin.supabase.co')||(url.includes('/storage/')&&['GET','HEAD'].includes(options.method||'GET')))return actualPreviewFetch(input,options);
  const body=options.body?JSON.parse(options.body):{},reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
  if(url.includes('/rest/v1/shop_public'))return reply([{data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p)}}]);
- if(url.includes('/rest/v1/profiles'))return reply([fixtureProfile]);
+ if(url.includes('/rest/v1/profiles'))return reply(url.includes('user_id=eq.')?[fixtureProfile]:[fixtureProfile,...fixtureCustomers]);
  if(url.includes('/rpc/sales_state'))return reply({data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p),orderBumps:fixtureModel.orderBumps.map(({cost,...b})=>b)},version:fixtureVersion});
- if(url.includes('/rest/v1/customer_contacts'))return reply([]);
+ if(url.includes('/rest/v1/customer_contacts'))return reply(fixtureContacts);
  if(url.includes('/rest/v1/app_state'))return reply([{data:fixtureModel,version:fixtureVersion}]);
  if(url.includes('/rpc/save_collection')){const before=body.p_previous,name=body.p_name;if(before){fixtureModel.collections=fixtureModel.collections.map(c=>c===before?name:c);for(const p of fixtureModel.products){p.categories=p.categories.map(c=>c===before?name:c);if(p.category===before)p.category=name;}}else fixtureModel.collections.push(name);fixtureModel.collectionSettings[name]={...(fixtureModel.collectionSettings[before]||{}),active:body.p_active,sort:body.p_sort,...(body.p_product_ids?{productIds:body.p_product_ids}:{})};if(before!==name)delete fixtureModel.collectionSettings[before];return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_storefront')){fixtureModel.storefront=body.p_storefront;return reply({version:++fixtureVersion});}

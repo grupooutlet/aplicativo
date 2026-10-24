@@ -216,35 +216,88 @@ saveOrderData = (form, id) => {
   save(); closeModal(); render(); toast('Dados do pedido atualizados.');
 };
 function customerRows() {
-  const staffEmails = new Set(accountProfiles.filter(profile => profile.role !== 'customer').map(profile => profile.email.toLowerCase()));
+  const staffEmails = new Set(accountProfiles.filter(profile => profile.role !== 'customer').map(profile => customerEmail(profile.email)).filter(Boolean));
   const rows = accountProfiles.filter(profile => profile.role === 'customer').map(profile => ({
     key: 'user-' + profile.user_id, userId: profile.user_id, name: profile.name, email: profile.email, createdAt: profile.created_at, contacts: []
   }));
   for (const contact of customerContacts) {
-    if (staffEmails.has(contact.email.toLowerCase())) continue;
-    let row = rows.find(item => item.email.toLowerCase() === contact.email.toLowerCase());
+    const email = customerEmail(contact.email);
+    if (staffEmails.has(email)) continue;
+    let row = email ? rows.find(item => customerEmail(item.email) === email) : null;
     if (!row) { row = { key: 'contact-' + contact.id, userId: null, name: contact.name, email: contact.email, createdAt: contact.created_at, contacts: [] }; rows.push(row); }
-    if (contact.created_at && (!row.createdAt || contact.created_at < row.createdAt)) row.createdAt = contact.created_at;
+    if (!row.userId && contact.created_at && (!row.createdAt || contact.created_at < row.createdAt)) row.createdAt = contact.created_at;
     row.contacts.push(contact); if (!row.name) row.name = contact.name;
   }
   return rows;
 }
+const customerEmail = value => String(value || '').trim().toLowerCase();
+function customerOrders(row) {
+  const ids = new Set(row.contacts.map(contact => contact.id));
+  // An explicit account or contact link takes precedence over an old email snapshot.
+  // Never merge people by their names, phone numbers or a shared household address.
+  return db.orders.filter(order => order.user_id ? order.user_id === row.userId :
+    order.customer_id ? ids.has(order.customer_id) :
+      customerEmail(row.email) && customerEmail(order.email) === customerEmail(row.email))
+    .sort((a, b) => Number(b.id) - Number(a.id));
+}
+function customerProfileData(row) {
+  const orders = customerOrders(row);
+  const contacts = [...row.contacts].sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+  const phones = [], addresses = [], phoneKeys = new Set(), addressKeys = new Set();
+  for (const record of [...orders, ...contacts]) {
+    const digits = String(record.phone || '').replace(/\D/g, '');
+    const key = digits.length === 10 || digits.length === 11 ? '55' + digits : digits;
+    if (key && !phoneKeys.has(key)) { phoneKeys.add(key); phones.push({ label: formatBrazilPhone(record.phone), digits: key }); }
+  }
+  for (const record of [...orders.filter(order => order.delivery === 'Entrega'), ...contacts]) {
+    const parts = orderAddressParts(record);
+    const address = !record.addressParts && typeof record.address === 'string' ? record.address.trim() :
+      parts.street && parts.number && parts.city && parts.state ? formatAddress(parts) : '';
+    const key = address.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!key || addressKeys.has(key)) continue;
+    addressKeys.add(key);
+    addresses.push({ address, source: orders.includes(record) ? 'Usado no pedido #' + record.id : 'Informado no cadastro' });
+  }
+  return { orders, phones, addresses, cpf: [...contacts, ...orders].find(record => record.cpf)?.cpf || '',
+    activeOrders: orders.filter(order => !['cancelled', 'delivered'].includes(order.status)).length,
+    orderedTotal: orders.filter(order => order.status !== 'cancelled').reduce((sum, order) => sum + orderTotal(order), 0) };
+}
 const canDeleteCustomers = () => isOwner && canManage() && (currentProfile?.role === 'master' ||
   (currentProfile?.role === 'admin' && currentProfile.position === 'Gerente'));
-const canPromoteCustomers = () => currentProfile?.role === 'master' && role === 'Proprietário';
+const canPromoteCustomers = () => canDeleteCustomers();
 customersPage = () => {
+  if (!isOwner || !allowed('customers')) return heading('Acesso restrito', 'Seu perfil não tem acesso aos clientes.');
   const rows = customerRows();
+  const key = routePath().split('/')[3];
+  if (key) {
+    const row = rows.find(item => encodeURIComponent(item.key) === key);
+    return row ? customerProfilePage(row) : `<a class="text-link" href="/app/customers">‹ Todos os clientes</a>` + heading('Cliente não encontrado', 'Este cadastro não está mais na lista de clientes.');
+  }
   return heading('Clientes', 'Cadastros e histórico de compras da loja.') + `<section class="card"><div class="card-header"><h2>${rows.length} clientes</h2></div>
-    <div class="tablewrap"><table><thead><tr><th>Cliente</th><th>Contato</th><th>Pedidos</th><th>${role === 'Vendedor' ? 'Cadastrado em' : 'Equipe'}</th>${canDeleteCustomers() ? '<th></th>' : ''}</tr></thead><tbody>
+    <div class="tablewrap"><table class="customers-table"><thead><tr><th>Cliente</th><th>Contato</th><th>Pedidos</th><th>Cadastrado em</th><th><span class="sr-only">Ações</span></th></tr></thead><tbody>
     ${rows.map(row => {
-      const ids = new Set(row.contacts.map(contact => contact.id));
-      const count = db.orders.filter(order => (row.userId && order.user_id === row.userId) || ids.has(order.customer_id)).length;
-      return `<tr><td><div class="customer"><span class="avatar">${esc(initials(row.name || row.email))}</span>${esc(row.name || 'Cliente')}</div></td>
-        <td>${esc(row.email)}${row.contacts[0]?.phone ? `<small style="display:block">${esc(row.contacts[0].phone)}</small>` : ''}</td><td>${count}</td>
-        <td>${role === 'Vendedor' ? esc(row.createdAt ? momentLabel(row.createdAt) : 'Data não registrada') : button('Tornar da equipe', canPromoteCustomers() ? `onclick="teamCustomerModal('${row.key}')"` : 'disabled title="A conta principal gerencia as permissões da equipe"', 'small')}</td>
-        ${canDeleteCustomers() ? `<td>${button('Excluir', `onclick="deleteCustomerModal('${row.key}')"`, 'small danger', 'trash')}</td>` : ''}</tr>`;
+      const profile = customerProfileData(row), url = '/app/customers/' + encodeURIComponent(row.key);
+      return `<tr><td><a class="customer customer-profile-link" href="${esc(url)}"><span class="avatar">${esc(initials(row.name || row.email || 'Cliente'))}</span><span>${esc(row.name || 'Cliente')}<small>${row.userId ? 'Conta cadastrada' : 'Cadastro de compra'}</small></span></a></td>
+        <td><span>${esc(row.email || 'E-mail não informado')}</span><small>${esc(profile.phones[0]?.label || 'Telefone não informado')}</small></td><td>${profile.orders.length}</td>
+        <td class="customer-created">${esc(row.createdAt ? momentLabel(row.createdAt) : 'Data não registrada')}</td>
+        <td><a class="btn small" href="${esc(url)}" aria-label="Visualizar perfil de ${esc(row.name || 'cliente')}">${icon('eye')}Visualizar</a></td></tr>`;
     }).join('') || '<tr><td colspan="5" class="empty">Nenhum cliente cadastrado.</td></tr>'}</tbody></table></div></section>`;
 };
+function customerProfilePage(row) {
+  const profile = customerProfileData(row), name = row.name || 'Cliente';
+  const action = fn => `onclick="${fn}(${esc(JSON.stringify(row.key))})"`;
+  return `<a class="text-link customer-back" href="/app/customers">${icon('back')}Todos os clientes</a>` +
+    heading('Perfil do cliente', 'Informações de contato e relacionamento com a loja.') +
+    `<section class="card customer-profile-summary"><div class="customer-profile-identity"><span class="avatar">${esc(initials(name))}</span><div><h2>${esc(name)}</h2><p>${esc(row.email || 'E-mail não informado')}</p><span class="badge gray">${row.userId ? 'Conta cadastrada' : 'Cadastro de compra'}</span></div></div>
+      <div class="customer-profile-stats"><div><span>Pedidos realizados</span><strong>${profile.orders.length}</strong></div><div><span>Em andamento</span><strong>${profile.activeOrders}</strong></div><div><span>Valor dos pedidos</span><strong>${money(profile.orderedTotal)}</strong><small>Sem os cancelados</small></div></div></section>
+    <div class="customer-profile-layout"><aside class="stack"><section class="card pad customer-profile-contact"><h2>Contato</h2><dl><div><dt>E-mail</dt><dd>${esc(row.email || 'Não informado')}</dd></div><div><dt>Telefone / WhatsApp</dt><dd>${profile.phones.length ? profile.phones.map(phone => `<span>${esc(phone.label)}</span>`).join('') : '<span class="subtle">Telefone não informado</span>'}</dd></div>${profile.cpf ? `<div><dt>CPF</dt><dd>${esc(profile.cpf)}</dd></div>` : ''}<div><dt>${row.userId ? 'Conta criada em' : 'Cliente desde'}</dt><dd>${esc(row.createdAt ? momentLabel(row.createdAt) : 'Data não registrada')}</dd></div></dl>
+      ${profile.phones[0] && /^55\d{10,11}$/.test(profile.phones[0].digits) ? `<a class="btn customer-contact-action" href="https://wa.me/${profile.phones[0].digits}" target="_blank" rel="noopener noreferrer">${icon('phone')}Abrir WhatsApp</a>` : ''}
+      ${!profile.phones.length ? `<p class="customer-profile-note">O cadastro da conta não solicita telefone. Esse dado aparece quando é informado em um pedido.</p>` : ''}</section>
+      ${canPromoteCustomers() || canDeleteCustomers() ? `<section class="card pad customer-profile-management"><h2>Gerenciar cliente</h2>${canPromoteCustomers() ? `<p>Adicione este perfil à equipe e escolha o cargo de acesso.</p>${button('Tornar da equipe', action('teamCustomerModal'), '', 'users')}` : ''}${canDeleteCustomers() ? `<div class="customer-delete-action">${button('Excluir cliente', action('deleteCustomerModal'), 'danger', 'trash')}</div>` : ''}</section>` : ''}</aside>
+      <div class="stack"><section class="card"><div class="card-header"><div><h2>Endereços <span class="customer-section-count">${profile.addresses.length}</span></h2><p class="subtle">Informados nos cadastros e pedidos.</p></div>${icon('truck')}</div>
+        <div class="customer-address-grid">${profile.addresses.map((item, index) => `<article class="customer-address"><span>Endereço ${index + 1}</span><p>${esc(item.address)}</p><small>${esc(item.source)}</small></article>`).join('') || `<div class="customer-profile-empty">${icon('truck')}<strong>Nenhum endereço informado</strong><p>Os endereços aparecerão aqui após serem informados em um pedido de entrega.</p></div>`}</div></section>
+      <section class="card"><div class="card-header"><h2>Histórico de pedidos <span class="customer-section-count">${profile.orders.length}</span></h2>${icon('bag')}</div><div class="customer-order-list">${profile.orders.map(order => `<article class="customer-order"><div class="customer-order-heading"><a href="/app/orders/${Number(order.id)}">Pedido #${esc(order.id)}</a>${statuses[order.status] ? badge(order) : '<span class="badge gray">Em acompanhamento</span>'}</div><p class="subtle">${esc(orderMoment(order))}</p><p class="customer-order-items">${esc((order.items || []).map(item => `${item.qty} × ${item.name}`).join(' · ') || 'Sem itens registrados')}</p><div class="customer-order-meta"><span>${esc(order.payment || 'Pagamento a combinar')} · ${order.paid ? 'Pago' : 'Pagamento pendente'}</span><strong>${money(orderTotal(order))}</strong></div><div class="customer-order-footer"><span>Vendedor: ${esc(responsibleName(order.seller || 'Loja online'))}</span><a class="text-link" href="/app/orders/${Number(order.id)}">Ver pedido ${icon('chevron')}</a></div></article>`).join('') || `<div class="customer-profile-empty">${icon('bag')}<strong>Ainda sem pedidos</strong><p>${row.userId ? 'Este cliente criou uma conta, mas ainda não possui pedidos vinculados.' : 'Não há pedidos vinculados a este cadastro.'}</p></div>`}</div></section></div></div>`;
+}
 function teamCustomerModal(key) {
   if (!canPromoteCustomers()) return;
   const row = customerRows().find(item => item.key === key); if (!row) return;
@@ -274,7 +327,7 @@ async function manageCustomer(form, key, action) {
     await loadAdminState();
     accountProfiles = await backendRequest('/rest/v1/profiles?select=user_id,email,name,role,position,created_at&order=created_at.desc', {}, true);
     customerContacts = await backendRequest('/rest/v1/customer_contacts?select=id,name,email,phone,cpf,address,created_at&order=created_at.desc', {}, true);
-    closeModal(); render(); toast(action === 'delete' ? 'Cliente excluído.' : 'Perfil adicionado à equipe.');
+    closeModal(); go('/app/customers'); render(); toast(action === 'delete' ? 'Cliente excluído.' : 'Perfil adicionado à equipe.');
   } catch (error) { toast(error.message); }
   finally { submit.disabled = false; }
 }

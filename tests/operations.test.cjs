@@ -33,7 +33,8 @@ run(`isOwner=true; role='Proprietário'; currentProfile={role:'master',name:'Gru
     {id:'c2',name:'Cliente B',email:'b@example.com'},{id:'c3',email:'staff@example.com'}];`);
 assert.equal(run('customerRows().length'), 2, 'Account and checkout contact must share one row; staff must not remain customers');
 assert.equal(run("customerRows()[0].contacts.length"), 1);
-assert.match(context.customersPage(), /Tornar da equipe/);
+assert.match(context.customersPage(), /Visualizar/);
+assert.doesNotMatch(context.customersPage(), /Tornar da equipe/);
 assert.doesNotMatch(context.customersPage(), /Cadastro pelo pedido/);
 run("role='Gerente';currentProfile={role:'admin',position:'Gerente'}");
 assert.equal(run('canDeleteCustomers()'), true);
