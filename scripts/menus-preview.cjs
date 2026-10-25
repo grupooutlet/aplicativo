@@ -16,6 +16,11 @@ if(process.env.QA_SHIPPING==='1'){
  model.settings.paymentMethods=[{id:'pix',kind:'pix',title:'Pix',active:true,installments:[{count:1,rate:0}]},{id:'credit',kind:'credit',title:'Cartão de crédito',active:true,installments:[{count:1,rate:0},{count:3,rate:5}]}];
 }
 const qaPosition=process.env.QA_STAFF_POSITION||'Principal';
+if(process.env.QA_COLLECTION_LIST==='1'){
+ const names=['Sofás','Racks','Guarda-roupas','Mesas de Jantar','Poltronas','Camas e colchões'];
+ model.collections=names;model.products=names.map((category,i)=>({...product(i+1,category+' de demonstração',497+i*200),category,categories:[category]}));
+ model.storefront.sections.unshift({id:'qa-collection-list',type:'collection-list',enabled:true,title:'O que você procura?',showHeading:true,shape:'square',imageFit:'cover',showTitles:true,columns:6,mobileColumns:2,mobileCarousel:true,background:'#1c2228',textColor:'#ffffff',cardBackground:'#f5f5f3',cardTextColor:'#1c2228',items:names.map((category,i)=>({id:'qa-collection-'+i,category,title:'',image:'',imageAlt:''}))});
+}
 const qaProfile={user_id:'qa-master',name:qaPosition==='Principal'?'Grupo Outlet':'Bianca QA',email:qaPosition==='Principal'?'grupooutlet.rj@gmail.com':'vendedor-qa@example.invalid',role:qaPosition==='Principal'?'master':'admin',position:qaPosition==='Principal'?null:qaPosition};
 const qaCustomers=[],qaContacts=[];
 if(process.env.QA_CUSTOMERS==='1'){

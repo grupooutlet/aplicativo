@@ -1,5 +1,5 @@
 const storefront=(()=>{
-  const labels={banner:'Banner',collection:'Coleção de produtos',image:'Imagem com texto',video:'Vídeo',text:'Texto',benefits:'Diferenciais da loja'};
+  const labels={banner:'Banner',collection:'Coleção de produtos','collection-list':'Lista de coleções',image:'Imagem com texto',video:'Vídeo',text:'Texto',benefits:'Diferenciais da loja'};
   const defaultBenefits=[
     {icon:'truck',title:'Entrega com cuidado',body:'Consulte sua região'},
     {icon:'wallet',title:'Compra do seu jeito',body:'Combine o pagamento com a loja'},
@@ -8,6 +8,7 @@ const storefront=(()=>{
   ];
   let selected='home-hero',previewSize='desktop',draft=null,baseline=null,saving=false,uploading=false;
   let previewRoute='/loja',previewCategory='Todos',previewView='home',previewIdentity='current';
+  let openedCollectionItem='';
   const channel=typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2);
   const editing=()=>routePath().startsWith('/app/store-editor');
   function ensureDraft(){
@@ -20,7 +21,7 @@ const storefront=(()=>{
   const photo=(value)=>{const url=String(value||'').trim();return /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(url)||/^https?:\/\//i.test(url)?url:''};
   const shopLink=(value)=>{const url=String(value||'').trim();return /^\/loja(?:\/|$)/.test(url)||/^https:\/\//i.test(url)?url:'/loja/catalogo'};
   const cta=(s,preview)=>!s.buttonLabel?'':preview?`<span class="btn dark">${esc(s.buttonLabel)}</span>`:`<a class="btn dark" href="${esc(shopLink(s.buttonLink))}" ${/^https:\/\//i.test(s.buttonLink||'')?'target="_blank" rel="noopener"':''}>${esc(s.buttonLabel)}</a>`;
-  const newId=()=>`sec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,5)}`;
+  const newId=()=>`sec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`;
   function init(model){
     if(model.storefront?.sections?.length)return false;
     model.storefront={announcement:{enabled:true,text:'Uma casa cheia de possibilidades.',highlight:'Preços de outlet, todos os dias.'},sections:[
@@ -45,6 +46,7 @@ const storefront=(()=>{
   }
   function renderSection(s,preview=false){
     if(!s.enabled)return '';
+    if(s.type==='collection-list')return renderCollectionList(s);
     if(s.type==='banner'){
       const image=photo(s.image),showText=s.showText===true;
       if(!image&&!showText)return '';
@@ -57,13 +59,31 @@ const storefront=(()=>{
     if(s.type==='text')return `<section class="storefront-text"><span class="eyebrow">${esc(s.eyebrow||'')}</span><h2>${esc(s.title||'Uma mensagem da loja')}</h2><p>${esc(s.body||'')}</p>${cta(s,preview)}</section>`;
     return '';
   }
+  const listColor=(value,fallback)=>/^#[a-f0-9]{6}$/i.test(String(value||''))?value:fallback;
+  function collectionListImage(item){return photo(item.image)||photo(collectionProducts(item.category,true).flatMap(productImages).find(value=>photo(value)))||'assets/product-placeholder.svg'}
+  function renderCollectionList(s){
+    const items=(Array.isArray(s.items)?s.items:[]).filter(item=>visibleCollections().includes(item.category));
+    if(!items.length)return editing()?'<div class="empty">Adicione uma coleção ativa a esta lista para visualizá-la.</div>':'';
+    const shape=['round','square','landscape','portrait'].includes(s.shape)?s.shape:'square';
+    const columns=Math.max(2,Math.min(6,Number(s.columns)||6)),mobileColumns=Number(s.mobileColumns)===1?1:2;
+    const style=`--list-bg:${listColor(s.background,'#ffffff')};--list-color:${listColor(s.textColor,'#1c2228')};--tile-bg:${listColor(s.cardBackground,'#f5f5f3')};--tile-color:${listColor(s.cardTextColor,'#1c2228')};--list-columns:${columns};--list-mobile-columns:${mobileColumns};--list-padding:${Math.max(0,Math.min(96,Number(s.padding)||40))}px`;
+    return `<section class="storefront-collection-list list-align-${s.titleAlign==='center'?'center':'left'}" style="${style}">${s.showHeading!==false?`<h2 class="collection-list-heading heading-${['small','large'].includes(s.headingSize)?s.headingSize:'medium'}">${esc(s.title||'Explore as coleções')}</h2>`:''}<ul class="collection-list-grid ${s.mobileCarousel?'is-mobile-carousel':''}">${items.map(item=>{
+      const title=item.title||item.category,count=s.showCounts?collectionProducts(item.category,true).length:0;
+      return `<li><a class="collection-tile shape-${shape} ${s.showTitles===false?'without-title':''}" href="/loja/catalogo?colecao=${encodeURIComponent(item.category)}" aria-label="Ver coleção ${esc(title)}"><div class="collection-tile-media"><img src="${esc(collectionListImage(item))}" alt="${esc(item.imageAlt||title)}" loading="lazy" style="object-fit:${s.imageFit==='contain'?'contain':'cover'}"></div>${s.showTitles!==false||s.showCounts?`<div class="collection-tile-caption">${s.showTitles!==false?`<h3>${esc(title)} ${s.showArrows!==false?icon('chevron'):''}</h3>`:''}${s.showCounts?`<small>${count} ${count===1?'produto':'produtos'}</small>`:''}</div>`:''}</a></li>`;
+    }).join('')}</ul></section>`;
+  }
   function storeHome(preview=false){const visible=home().sections.map(s=>renderSection(s,preview)).filter(Boolean);return `<div class="store-content storefront-home">${visible.map(html=>`<div class="home-section">${html}</div>`).join('')||'<div class="empty">A página inicial não tem seções visíveis.</div>'}</div>`}
-  function sectionRow(s,i){return `<div class="builder-section-row ${selected===s.id?'active':''} ${s.enabled?'':'is-hidden'}"><button class="builder-section-select" onclick="storefront.select('${s.id}')"><span class="builder-section-icon">${icon(({banner:'image',image:'image',video:'eye',collection:'layers',text:'page',benefits:'shield'})[s.type])}</span><span><strong>${esc(s.title||labels[s.type])}</strong><small>${labels[s.type]}${s.enabled?'':' · Oculta'}</small></span></button><div class="builder-section-actions"><button title="Subir" aria-label="Subir ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',-1)" ${i===0?'disabled':''}>↑</button><button title="Descer" aria-label="Descer ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',1)" ${i===home().sections.length-1?'disabled':''}>↓</button></div></div>`}
+  function sectionRow(s,i){return `<div class="builder-section-row ${selected===s.id?'active':''} ${s.enabled?'':'is-hidden'}"><button class="builder-section-select" onclick="storefront.select('${s.id}')"><span class="builder-section-icon">${icon(({banner:'image',image:'image',video:'eye',collection:'layers','collection-list':'layers',text:'page',benefits:'shield'})[s.type])}</span><span><strong>${esc(s.title||labels[s.type])}</strong><small>${labels[s.type]}${s.enabled?'':' · Oculta'}</small></span></button><div class="builder-section-actions"><button title="Subir" aria-label="Subir ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',-1)" ${i===0?'disabled':''}>↑</button><button title="Descer" aria-label="Descer ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',1)" ${i===home().sections.length-1?'disabled':''}>↓</button></div></div>`}
   const input=(label,key,value,type='text',extra='')=>`<label class="field">${label}<input name="${key}" type="${type}" value="${esc(value||'')}" ${extra} oninput="storefront.change('${key}',this.value)"></label>`;
   const textarea=(label,key,value)=>`<label class="field">${label}<textarea name="${key}" oninput="storefront.change('${key}',this.value)">${esc(value||'')}</textarea></label>`;
   const choose=(label,key,value,options)=>`<label class="field">${label}<select name="${key}" onchange="storefront.change('${key}',this.value)">${options.map(([v,text])=>`<option value="${esc(v)}" ${value===v?'selected':''}>${esc(text)}</option>`).join('')}</select></label>`;
   const imageControls=(s,key='image')=>`${input('URL da imagem',key,String(s[key]||'').startsWith('data:image/')?'':s[key],'url','placeholder="https://..."')}<label class="field">Ou envie uma imagem<input type="file" accept="image/png,image/jpeg,image/webp" onchange="storefront.uploadImage(this,'${key}')"><small>JPG, PNG ou WebP · até 2 MB</small></label>${s[key]?`<div class="builder-image-preview"><img src="${esc(photo(s[key]))}" alt="Prévia da imagem"><button class="btn small" onclick="storefront.change('${key}','');storefront.render()">Remover imagem</button></div>`:''}`;
+  function collectionListControls(s){
+    const check=(label,key,defaultValue=true)=>`<label class="builder-switch"><input type="checkbox" ${(s[key]??defaultValue)?'checked':''} onchange="storefront.change('${key}',this.checked)"><span>${label}</span></label>`;
+    return `${input('Título da seção','title',s.title,'text','maxlength="200"')}${check('Mostrar título da seção','showHeading')}${choose('Tamanho do título','headingSize',s.headingSize||'medium',[['small','Pequeno'],['medium','Médio'],['large','Grande']])}${choose('Alinhamento dos títulos','titleAlign',s.titleAlign||'left',[['left','À esquerda'],['center','Centralizado']])}<div class="builder-list-divider"><h3>Apresentação</h3></div>${choose('Formato das imagens','shape',s.shape||'square',[['square','Quadradas'],['round','Redondas'],['landscape','Retangulares · horizontal'],['portrait','Retangulares · vertical']])}${choose('Enquadramento das imagens','imageFit',s.imageFit||'cover',[['cover','Preencher e recortar'],['contain','Mostrar a imagem inteira']])}${check('Mostrar nomes das coleções','showTitles')}${check('Mostrar setas nos cartões','showArrows')}${check('Mostrar quantidade de produtos','showCounts',false)}<div class="builder-list-columns">${choose('Colunas no computador','columns',String(s.columns||6),[2,3,4,5,6].map(n=>[String(n),String(n)]))}${choose('Colunas no celular','mobileColumns',String(s.mobileColumns||2),[['1','1'],['2','2']])}</div>${check('Carrossel no celular','mobileCarousel',false)}${choose('Espaçamento vertical','padding',String(s.padding??40),[['24','Compacto'],['40','Confortável'],['64','Amplo']])}<div class="builder-list-divider"><h3>Cores</h3></div><div class="builder-list-colors">${input('Fundo da seção','background',s.background||'#ffffff','color')}${input('Texto da seção','textColor',s.textColor||'#1c2228','color')}${input(s.shape==='round'?'Fundo das imagens':'Fundo dos cartões','cardBackground',s.cardBackground||'#f5f5f3','color')}${s.shape==='round'?'':input('Cor dos nomes','cardTextColor',s.cardTextColor||'#1c2228','color')}</div><div class="builder-list-divider"><h3>Coleções da lista <span>${(s.items||[]).length}/40</span></h3><p>Use as setas para mudar a ordem. Abra uma coleção para trocar a imagem ou o nome exibido.</p></div><div class="builder-list-items">${(s.items||[]).map((item,i)=>`<details class="builder-list-item" ${openedCollectionItem===item.id?'open':''} ontoggle="storefront.setCollectionItemOpen('${item.id}',this.open)"><summary><img src="${esc(collectionListImage(item))}" alt=""><span><strong>${esc(item.title||item.category||'Selecione a coleção')}</strong><small>${esc(item.category)}${collectionConfig(item.category).active===false?' · Desativada na loja':''}</small></span>${icon('down')}</summary><div class="builder-list-item-fields"><div class="builder-list-item-actions"><button class="btn small" aria-label="Subir coleção ${i+1}" onclick="storefront.moveCollectionItem(${i},-1)" ${i===0?'disabled':''}>↑</button><button class="btn small" aria-label="Descer coleção ${i+1}" onclick="storefront.moveCollectionItem(${i},1)" ${i===(s.items||[]).length-1?'disabled':''}>↓</button><button class="btn small danger" onclick="storefront.removeCollectionItem(${i})">${icon('trash')}Remover da lista</button></div>${choose('Coleção',`items.${i}.category`,item.category,db.collections.map(name=>[name,name]))}${input('Nome na lista (opcional)',`items.${i}.title`,item.title,'text',`maxlength="120" placeholder="${esc(item.category)}"`)}<label class="field">Imagem desta coleção<input type="file" accept="image/png,image/jpeg,image/webp" onchange="storefront.uploadImage(this,'items.${i}.image')"><small>JPG, PNG ou WebP · até 2 MB. Sem imagem própria, usamos uma foto de produto desta coleção.</small></label>${item.image?`<div class="builder-image-preview"><img src="${esc(photo(item.image))}" alt="Prévia da imagem"><button class="btn small" onclick="storefront.change('items.${i}.image','');storefront.render()">Usar foto automática</button></div>`:''}${input('Descrição da imagem (opcional)',`items.${i}.imageAlt`,item.imageAlt,'text','maxlength="200"')}</div></details>`).join('')||'<p class="builder-hint">Nenhuma coleção adicionada. Escolha as coleções que deseja apresentar.</p>'}</div><button class="btn builder-list-add" onclick="storefront.addCollectionItem()" ${(s.items||[]).length>=40?'disabled':''}>${icon('plus')}Adicionar coleção</button><p class="builder-hint">Coleções desativadas ficam ocultas na loja. Estas escolhas afetam apenas esta seção.</p>`;
+  }
   function controls(s){
+    if(s.type==='collection-list')return collectionListControls(s);
     if(s.type==='banner')return `${imageControls(s)}${input('Descrição da imagem','imageAlt',s.imageAlt)}<p class="builder-hint">A imagem mantém sua proporção original, sem corte ou altura fixa.</p><label class="builder-switch"><input type="checkbox" ${s.showText===true?'checked':''} onchange="storefront.change('showText',this.checked);storefront.render()"><span>Mostrar textos e botão sobre a imagem</span></label>${s.showText===true?`${input('Texto pequeno acima do título','eyebrow',s.eyebrow)}${input('Título','title',s.title)}${textarea('Descrição','subtitle',s.subtitle)}${choose('Alinhamento do texto','align',s.align,[['left','À esquerda'],['right','À direita']])}${input('Texto do botão','buttonLabel',s.buttonLabel)}${input('Link do botão','buttonLink',s.buttonLink,'text','placeholder="/loja/catalogo"')}`:''}`;
     if(s.type==='collection')return `${input('Texto pequeno acima do título','eyebrow',s.eyebrow)}${input('Título','title',s.title)}${choose('Coleção','category',s.category,[['Todos','Todos os produtos'],...db.collections.map(c=>[c,c])])}${input('Número de produtos','limit',s.limit,'number','min="1" max="24"')}`;
     if(s.type==='image')return `${input('Texto pequeno acima do título','eyebrow',s.eyebrow)}${input('Título','title',s.title)}${textarea('Texto','body',s.body)}${imageControls(s)}${input('Descrição da imagem','imageAlt',s.imageAlt)}${choose('Posição da imagem','layout',s.layout,[['image-left','À esquerda'],['image-right','À direita']])}${input('Texto do botão','buttonLabel',s.buttonLabel)}${input('Link do botão','buttonLink',s.buttonLink,'text','placeholder="/loja/catalogo"')}`;
@@ -122,10 +142,11 @@ const storefront=(()=>{
   function change(key,value){
     if(!canConfigureSite()||saving)return;
     const s=section();if(!s)return;
-    if(key.startsWith('items.')){const [,index,field]=key.split('.');if(!s.items?.[Number(index)]||!['title','body','icon'].includes(field))return;s.items[Number(index)][field]=value}
+    if(key.startsWith('items.')){const [,index,field]=key.split('.');if(!s.items?.[Number(index)]||!(s.type==='collection-list'?['category','title','image','imageAlt']:['title','body','icon']).includes(field))return;if(s.type==='collection-list'&&field==='category'&&(!db.collections.includes(value)||s.items.some((item,i)=>i!==Number(index)&&item.category===value))){toast('Escolha uma coleção que ainda não está nesta lista.');render();return}s.items[Number(index)][field]=value}
+    else if(s.type==='collection-list'&&['shape','imageFit','columns','mobileColumns','showHeading','showTitles','showArrows','showCounts','background','textColor','cardBackground','cardTextColor','titleAlign','headingSize','mobileCarousel','padding'].includes(key)){s[key]=['columns','mobileColumns','padding'].includes(key)?Number(value):value;}
     else if(['eyebrow','title','subtitle','body','image','imageAlt','url','align','layout','buttonLabel','buttonLink','category','limit','showText'].includes(key))s[key]=key==='limit'?Math.max(1,Math.min(24,Number(value)||1)):key==='showText'?Boolean(value):value;
     else return;
-    refresh();
+    if(s.type==='collection-list'&&key==='shape')render();else refresh();
   }
   function changePage(key,value){
     if(!canConfigureSite()||saving||!['title','intro','note','showDescription','galleryFit','columns','showFilters'].includes(key))return;
@@ -134,25 +155,37 @@ const storefront=(()=>{
     if(['product','collection'].includes(scope))for(const name of Object.keys(model.pageSettings)){if(name.startsWith(scope+':')||(scope==='collection'&&name==='catalog'))delete model.pageSettings[name];}
     model.pageSettings[scope]||={};model.pageSettings[scope][key]=value;refresh();
   }
+  function setCollectionItemOpen(id,open){if(open)openedCollectionItem=id;else if(openedCollectionItem===id)openedCollectionItem='';}
+  function addCollectionItem(){
+    if(!canConfigureSite()||saving||uploading)return;const s=section();if(s?.type!=='collection-list')return;s.items||=[];
+    if(s.items.length>=40)return toast('O limite é de 40 coleções por lista.');
+    const category=[...visibleCollections(),...db.collections].find(name=>!s.items.some(item=>item.category===name));
+    if(!category)return toast('Todas as coleções já estão na lista. Crie outra em Coleções para adicioná-la.');
+    const item={id:newId(),category,title:'',image:'',imageAlt:''};s.items.push(item);openedCollectionItem=item.id;render();
+  }
+  function moveCollectionItem(index,step){if(!canConfigureSite()||saving||uploading)return;const items=section()?.type==='collection-list'?section().items:[],next=index+step;if(!Number.isInteger(index)||!items?.[index]||next<0||next>=items.length)return;[items[index],items[next]]=[items[next],items[index]];render();}
+  function removeCollectionItem(index){if(!canConfigureSite()||saving||uploading)return;const s=section();if(s?.type!=='collection-list'||!Number.isInteger(index)||!s.items?.[index])return;s.items.splice(index,1);render();}
   function changeAnnouncement(key,value){if(!canConfigureSite()||saving||!['enabled','text','highlight'].includes(key))return;home().announcement[key]=value;if(key==='enabled')render();else refresh()}
   function toggle(id,enabled){if(!canConfigureSite()||saving)return;const s=home().sections.find(s=>s.id===id);if(!s)return;s.enabled=enabled;render()}
   function move(id,step){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id),j=i+step;if(i<0||j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];render()}
-  function addModal(){modal('Adicionar seção',`<p>Escolha o conteúdo para a página inicial. A nova seção começa oculta.</p><div class="builder-add-grid">${Object.entries(labels).map(([type,label])=>`<button onclick="storefront.add('${type}')">${icon(({banner:'image',image:'image',video:'eye',collection:'layers',text:'page',benefits:'shield'})[type])}<strong>${label}</strong></button>`).join('')}</div>`)}
+  function addModal(){modal('Adicionar seção',`<p>Escolha o conteúdo para a página inicial. A nova seção começa oculta.</p><div class="builder-add-grid">${Object.entries(labels).map(([type,label])=>`<button onclick="storefront.add('${type}')">${icon(({banner:'image',image:'image',video:'eye',collection:'layers','collection-list':'layers',text:'page',benefits:'shield'})[type])}<strong>${label}</strong></button>`).join('')}</div>`)}
   function add(type){
     if(!canConfigureSite()||saving||!labels[type])return;
     if(home().sections.length>=80)return toast('O limite é de 80 seções.');
     const base={id:newId(),type,enabled:false};
     const presets={banner:{showText:false,eyebrow:'',title:'',subtitle:'',image:'',imageAlt:'',buttonLabel:'',buttonLink:'/loja/catalogo',align:'left'},collection:{eyebrow:'EXPLORE A LOJA',title:'Nossa seleção',category:'Todos',limit:4},image:{eyebrow:'FORTE OUTLET',title:'Sua casa merece esse cuidado.',body:'',image:'',imageAlt:'',layout:'image-left',buttonLabel:'',buttonLink:'/loja/catalogo'},video:{eyebrow:'INSPIRE-SE',title:'Veja de perto',body:'',url:''},text:{eyebrow:'NOSSA HISTÓRIA',title:'Sua casa merece o melhor.',body:'',buttonLabel:'',buttonLink:'/loja/catalogo'},benefits:{items:structuredClone(defaultBenefits)}};
-    Object.assign(base,presets[type]);home().sections.push(base);selected=base.id;closeModal();render();toast('Seção adicionada ao rascunho.');
+    presets['collection-list']={title:'O que você procura?',showHeading:true,headingSize:'medium',titleAlign:'left',shape:'square',imageFit:'cover',columns:6,mobileColumns:2,mobileCarousel:false,padding:40,showTitles:true,showArrows:true,showCounts:false,background:'#ffffff',textColor:'#1c2228',cardBackground:'#f5f5f3',cardTextColor:'#1c2228',items:visibleCollections().slice(0,6).map(category=>({id:newId(),category,title:'',image:'',imageAlt:''}))};
+    Object.assign(base,presets[type]);home().sections.push(base);selected=base.id;closeModal();render();toast('Seção adicionada ao rascunho.');return base.id;
   }
   function duplicate(id){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0||list.length>=80)return;const copy=structuredClone(list[i]);copy.id=newId();copy.enabled=false;list.splice(i+1,0,copy);selected=copy.id;render()}
   function removeModal(id){const s=home().sections.find(s=>s.id===id);if(!s)return;modal('Excluir seção',`<p>Remover <strong>${esc(s.title||labels[s.type])}</strong> do rascunho?</p><div class="form-actions"><button class="btn" onclick="closeModal()">Manter seção</button><button class="btn danger" onclick="storefront.remove('${id}')">Remover do rascunho</button></div>`)}
   function remove(id){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0)return;if(list.length===1)return toast('Oculte a última seção ou adicione outra antes de excluir.');list.splice(i,1);selected=list[Math.min(i,list.length-1)]?.id||'';closeModal();render()}
   async function uploadImage(input,key){
     const s=section(),file=input.files?.[0];if(!canConfigureSite()||saving||uploading||!s||!file)return;
+    const match=/^items\.(\d+)\.image$/.exec(key);const target=match&&s.type==='collection-list'?s.items?.[Number(match[1])]:key==='image'?s:null;if(!target)return;
     if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>2*1024*1024)return toast('Envie JPG, PNG ou WebP de até 2 MB.');
     uploading=true;input.disabled=true;refresh();
-    try{s[key]=await uploadProductPhoto(file,'storefront');toast('Imagem adicionada ao rascunho. Salve as mudanças para publicá-la.')}catch(error){toast(error.message)}finally{uploading=false;input.disabled=false;render()}
+    try{target.image=await uploadProductPhoto(file,'storefront');toast('Imagem adicionada ao rascunho. Salve as mudanças para publicá-la.')}catch(error){toast(error.message)}finally{uploading=false;input.disabled=false;render()}
   }
   function setPreview(size){previewSize=size==='mobile'?'mobile':'desktop';document.querySelectorAll('[data-device]').forEach(b=>b.classList.toggle('active',b.dataset.device===previewSize));sizeFrame()}
   function sizeFrame(){
@@ -207,5 +240,5 @@ const storefront=(()=>{
     }
   });
   window.addEventListener('beforeunload',event=>{if(dirty()){event.preventDefault();event.returnValue=''}});
-  return {init,announcement,storeHome,editorPage,change,changePage,changeAnnouncement,toggle,move,addModal,add,duplicate,removeModal,remove,select,uploadImage,setPreview,render,mountPreview,navigate,setIdentity,publish,cancelChanges,dirty,pageKey};
+  return {init,announcement,storeHome,editorPage,change,changePage,changeAnnouncement,toggle,move,addModal,add,duplicate,removeModal,remove,select,uploadImage,setPreview,render,mountPreview,navigate,setIdentity,publish,cancelChanges,dirty,pageKey,setCollectionItemOpen,addCollectionItem,moveCollectionItem,removeCollectionItem};
 })();

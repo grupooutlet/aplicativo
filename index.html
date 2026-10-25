@@ -298,6 +298,20 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
   .builder-preview-toolbar{flex-wrap:wrap}
 }
 
+/* Collection navigation cards share the same renderer in the shop and editor iframe. */
+.storefront-collection-list{background:var(--list-bg,#fff);color:var(--list-color,#1c2228);padding:var(--list-padding,40px) clamp(16px,3vw,40px);border-radius:12px}
+.collection-list-heading{margin:0 0 28px;font-size:30px;line-height:1.3;letter-spacing:-.5px;color:inherit}.collection-list-heading.heading-small{font-size:24px}.collection-list-heading.heading-large{font-size:36px}.list-align-center .collection-list-heading{text-align:center}
+.collection-list-grid{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(var(--list-columns,6),minmax(0,1fr));gap:16px}.collection-list-grid>li{display:flex;min-width:0}
+.collection-tile{display:flex;flex:1;flex-direction:column;min-width:0;overflow:hidden;border-radius:10px;background:var(--tile-bg,#f5f5f3);color:var(--tile-color,#1c2228);text-decoration:none;transition:transform .18s ease,box-shadow .18s ease}.collection-tile:hover{transform:translateY(-3px);box-shadow:0 8px 22px #00000012}.collection-tile:focus-visible{outline:3px solid #c7a431;outline-offset:4px}
+.collection-tile-media{aspect-ratio:1;flex-shrink:0;overflow:hidden;background:var(--tile-bg,#f5f5f3)}.collection-tile-media img{display:block;width:100%;height:100%;object-fit:cover}.shape-landscape .collection-tile-media{aspect-ratio:4/3}.shape-portrait .collection-tile-media{aspect-ratio:3/4}.collection-tile.shape-round{background:transparent;border-radius:0;overflow:visible;box-shadow:none}.shape-round .collection-tile-media{border-radius:50%;overflow:hidden}.shape-round .collection-tile-caption{padding:16px 3px}.shape-round:hover{box-shadow:none}
+.collection-tile-caption{padding:17px 15px;flex:1;display:flex;flex-direction:column;gap:7px}.collection-tile-caption h3{font-size:16px;font-weight:650;line-height:1.5;margin:0;overflow-wrap:anywhere;color:inherit}.collection-tile-caption .icon{width:14px;height:14px;display:inline;vertical-align:-2px;margin-left:3px}.collection-tile-caption small{font-size:12px;color:inherit;opacity:.75;line-height:1.5}.list-align-center .collection-tile-caption{text-align:center}.without-title .collection-tile-media{border-radius:inherit}.shape-round.without-title .collection-tile-media{border-radius:50%}
+.builder-list-columns,.builder-list-colors{display:grid;grid-template-columns:1fr 1fr;gap:13px}.builder-list-colors input[type=color]{height:42px;padding:4px;cursor:pointer;width:100%}.builder-list-divider{border-top:1px solid var(--line);padding-top:20px;margin-top:3px}.builder-list-divider h3{font-size:14px;display:flex;justify-content:space-between;gap:10px}.builder-list-divider h3 span{font-weight:400;color:var(--muted);font-size:12px}.builder-list-divider p{font-size:12px;color:var(--muted);line-height:1.7;margin-top:8px}.builder-list-items{display:grid;gap:12px;min-width:0}.builder-list-item{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}.builder-list-item summary{padding:12px;display:flex;gap:10px;align-items:center;cursor:pointer;list-style:none;background:#fafaf8}.builder-list-item summary::-webkit-details-marker{display:none}.builder-list-item summary>img{width:44px;height:44px;object-fit:cover;border-radius:6px;flex:none}.builder-list-item summary>span{flex:1;min-width:0}.builder-list-item summary strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}.builder-list-item summary small{display:block;font-size:11px;margin-top:4px;color:var(--muted);overflow-wrap:anywhere}.builder-list-item summary>.icon{width:15px;height:15px;flex:none}.builder-list-item[open] summary>.icon{transform:rotate(180deg)}.builder-list-item-fields{padding:15px;display:grid;gap:15px;border-top:1px solid var(--line)}.builder-list-item-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.builder-list-item-actions .danger{margin-left:auto}.builder-list-item-actions .btn{font-size:11px;padding:7px;min-height:30px}.builder-list-add{justify-content:center;width:100%}
+@media(max-width:1000px) and (min-width:651px){.collection-list-grid{gap:12px}.collection-tile-caption{padding:13px 10px}.collection-tile-caption h3{font-size:14px}}
+@media(max-width:650px){.storefront-collection-list{padding:min(var(--list-padding,40px),36px) 16px}.collection-list-grid{grid-template-columns:repeat(var(--list-mobile-columns,2),minmax(0,1fr));gap:14px}.collection-list-heading,.collection-list-heading.heading-large{font-size:26px;margin-bottom:23px}.collection-list-heading.heading-small{font-size:22px}.collection-tile-caption{padding:14px 12px}.collection-tile-caption h3{font-size:15px}.collection-list-grid.is-mobile-carousel{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:calc((100% - 14px)/var(--list-mobile-columns,2));overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 3px 17px;margin:-4px -3px -17px}.collection-list-grid.is-mobile-carousel>li{scroll-snap-align:start}.builder-list-columns,.builder-list-colors{gap:10px}}
+@media(prefers-reduced-motion:reduce){.collection-tile{transition:none}.collection-tile:hover{transform:none}}
+
+.shape-round .collection-tile-caption{color:var(--list-color,#1c2228)}
+
 /* Catalog tools use the same quiet surfaces, yellow accent and spacing as the panel. */
 .collection-order-control{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}.collection-order-control select{min-width:240px}.collection-order-help{padding:0 24px 18px;color:var(--muted);font-size:12px;line-height:1.7}.collection-order-toolbar{flex-wrap:wrap;gap:16px}.collection-product-item[draggable=false]>.drag-handle{cursor:default;opacity:.3}.collection-product-item[draggable=false]>.drag-handle .icon{width:15px;height:15px}
 .menus-save-bar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 20px;margin-bottom:24px;border:1px solid var(--line);background:#fff;border-radius:10px;box-shadow:0 4px 16px #1c222807}.menu-placements{margin-bottom:24px}.menu-placement-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:0 24px 24px}.menus-table .text-link{font-size:14px;font-weight:600}.menu-editor-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:24px;align-items:start}.menu-editor-layout h2{font-size:16px}.menu-editor-layout .field{margin-top:20px}.menu-editor-layout .check-row{margin:18px 0}.menu-editor-layout p.subtle{line-height:1.8}.menu-items-card .card-header{align-items:flex-start;gap:16px}.menu-items-card .card-header .btn{white-space:nowrap}.menu-items-tree{padding:0 18px 18px}.menu-item-row{display:flex;align-items:center;gap:12px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:9px;margin-bottom:10px}.menu-item-copy{flex:1;min-width:0}.menu-item-copy strong{display:block;font-size:13px;overflow-wrap:anywhere}.menu-item-copy small{display:block;margin-top:6px;color:var(--muted);font-size:11px;line-height:1.6;overflow-wrap:anywhere}.menu-item-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:125px}.menu-item-actions .btn{padding:6px;min-height:30px;width:32px}.menu-children{margin-left:26px;padding-left:16px;border-left:2px solid #eee9d9}.menu-item-row .drag-handle{font-size:23px}.menu-link-hint{margin:16px 0;line-height:1.7}.menu-positions .check-row{font-size:12px}.store-nav>.store-menu-branch{position:relative;flex:none}.store-menu-branch summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:inherit}.store-menu-branch summary::-webkit-details-marker{display:none}.store-menu-branch summary>.icon{width:13px;height:13px}.store-submenu{display:flex;flex-direction:column;gap:14px;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fff;box-shadow:0 10px 25px #1c222814}.store-nav .store-submenu{position:absolute;z-index:40;top:calc(100% + 15px);left:0;min-width:220px;max-width:320px}.store-nav .store-submenu .store-submenu{position:static;box-shadow:none;min-width:0;border:none;border-left:2px solid #eee9d9;margin-top:12px;padding:4px 0 4px 14px}.store-submenu a{white-space:normal;line-height:1.6}.store-menu-overview{font-weight:600}.store-footer-menu{display:flex;flex-direction:column;align-items:flex-start;gap:10px}.store-footer-menu>strong{margin-bottom:4px}.store-footer-menu a{font-size:12px;line-height:1.8}.store-footer-menu summary{font-size:12px}.store-footer-menu .store-submenu{position:static;box-shadow:none;background:transparent;border:none;border-left:1px solid #ddd;padding:8px 0 0 14px;margin-top:8px}.store-mobile-menu .store-menu-branch{width:100%}.store-mobile-menu .store-menu-branch summary{padding:12px 0;justify-content:space-between}.store-mobile-menu .store-submenu{position:static;box-shadow:none;border:none;border-left:2px solid #eee9d9;border-radius:0;padding:0 0 0 16px;gap:0}.store-mobile-menu .store-submenu a{padding:12px 0;display:block}
@@ -339,7 +353,7 @@ dialog.catalog-product-dialog{width:min(1120px,calc(100% - 32px))}
   <dialog id="modal"></dialog>
   <div id="toast" role="status"></div>
   <script>const storefront=(()=>{
-  const labels={banner:'Banner',collection:'Coleção de produtos',image:'Imagem com texto',video:'Vídeo',text:'Texto',benefits:'Diferenciais da loja'};
+  const labels={banner:'Banner',collection:'Coleção de produtos','collection-list':'Lista de coleções',image:'Imagem com texto',video:'Vídeo',text:'Texto',benefits:'Diferenciais da loja'};
   const defaultBenefits=[
     {icon:'truck',title:'Entrega com cuidado',body:'Consulte sua região'},
     {icon:'wallet',title:'Compra do seu jeito',body:'Combine o pagamento com a loja'},
@@ -348,6 +362,7 @@ dialog.catalog-product-dialog{width:min(1120px,calc(100% - 32px))}
   ];
   let selected='home-hero',previewSize='desktop',draft=null,baseline=null,saving=false,uploading=false;
   let previewRoute='/loja',previewCategory='Todos',previewView='home',previewIdentity='current';
+  let openedCollectionItem='';
   const channel=typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2);
   const editing=()=>routePath().startsWith('/app/store-editor');
   function ensureDraft(){
@@ -360,7 +375,7 @@ dialog.catalog-product-dialog{width:min(1120px,calc(100% - 32px))}
   const photo=(value)=>{const url=String(value||'').trim();return /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(url)||/^https?:\/\//i.test(url)?url:''};
   const shopLink=(value)=>{const url=String(value||'').trim();return /^\/loja(?:\/|$)/.test(url)||/^https:\/\//i.test(url)?url:'/loja/catalogo'};
   const cta=(s,preview)=>!s.buttonLabel?'':preview?`<span class="btn dark">${esc(s.buttonLabel)}</span>`:`<a class="btn dark" href="${esc(shopLink(s.buttonLink))}" ${/^https:\/\//i.test(s.buttonLink||'')?'target="_blank" rel="noopener"':''}>${esc(s.buttonLabel)}</a>`;
-  const newId=()=>`sec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,5)}`;
+  const newId=()=>`sec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`;
   function init(model){
     if(model.storefront?.sections?.length)return false;
     model.storefront={announcement:{enabled:true,text:'Uma casa cheia de possibilidades.',highlight:'Preços de outlet, todos os dias.'},sections:[
@@ -385,6 +400,7 @@ dialog.catalog-product-dialog{width:min(1120px,calc(100% - 32px))}
   }
   function renderSection(s,preview=false){
     if(!s.enabled)return '';
+    if(s.type==='collection-list')return renderCollectionList(s);
     if(s.type==='banner'){
       const image=photo(s.image),showText=s.showText===true;
       if(!image&&!showText)return '';
@@ -397,13 +413,31 @@ dialog.catalog-product-dialog{width:min(1120px,calc(100% - 32px))}
     if(s.type==='text')return `<section class="storefront-text"><span class="eyebrow">${esc(s.eyebrow||'')}</span><h2>${esc(s.title||'Uma mensagem da loja')}</h2><p>${esc(s.body||'')}</p>${cta(s,preview)}</section>`;
     return '';
   }
+  const listColor=(value,fallback)=>/^#[a-f0-9]{6}$/i.test(String(value||''))?value:fallback;
+  function collectionListImage(item){return photo(item.image)||photo(collectionProducts(item.category,true).flatMap(productImages).find(value=>photo(value)))||'assets/product-placeholder.svg'}
+  function renderCollectionList(s){
+    const items=(Array.isArray(s.items)?s.items:[]).filter(item=>visibleCollections().includes(item.category));
+    if(!items.length)return editing()?'<div class="empty">Adicione uma coleção ativa a esta lista para visualizá-la.</div>':'';
+    const shape=['round','square','landscape','portrait'].includes(s.shape)?s.shape:'square';
+    const columns=Math.max(2,Math.min(6,Number(s.columns)||6)),mobileColumns=Number(s.mobileColumns)===1?1:2;
+    const style=`--list-bg:${listColor(s.background,'#ffffff')};--list-color:${listColor(s.textColor,'#1c2228')};--tile-bg:${listColor(s.cardBackground,'#f5f5f3')};--tile-color:${listColor(s.cardTextColor,'#1c2228')};--list-columns:${columns};--list-mobile-columns:${mobileColumns};--list-padding:${Math.max(0,Math.min(96,Number(s.padding)||40))}px`;
+    return `<section class="storefront-collection-list list-align-${s.titleAlign==='center'?'center':'left'}" style="${style}">${s.showHeading!==false?`<h2 class="collection-list-heading heading-${['small','large'].includes(s.headingSize)?s.headingSize:'medium'}">${esc(s.title||'Explore as coleções')}</h2>`:''}<ul class="collection-list-grid ${s.mobileCarousel?'is-mobile-carousel':''}">${items.map(item=>{
+      const title=item.title||item.category,count=s.showCounts?collectionProducts(item.category,true).length:0;
+      return `<li><a class="collection-tile shape-${shape} ${s.showTitles===false?'without-title':''}" href="/loja/catalogo?colecao=${encodeURIComponent(item.category)}" aria-label="Ver coleção ${esc(title)}"><div class="collection-tile-media"><img src="${esc(collectionListImage(item))}" alt="${esc(item.imageAlt||title)}" loading="lazy" style="object-fit:${s.imageFit==='contain'?'contain':'cover'}"></div>${s.showTitles!==false||s.showCounts?`<div class="collection-tile-caption">${s.showTitles!==false?`<h3>${esc(title)} ${s.showArrows!==false?icon('chevron'):''}</h3>`:''}${s.showCounts?`<small>${count} ${count===1?'produto':'produtos'}</small>`:''}</div>`:''}</a></li>`;
+    }).join('')}</ul></section>`;
+  }
   function storeHome(preview=false){const visible=home().sections.map(s=>renderSection(s,preview)).filter(Boolean);return `<div class="store-content storefront-home">${visible.map(html=>`<div class="home-section">${html}</div>`).join('')||'<div class="empty">A página inicial não tem seções visíveis.</div>'}</div>`}
-  function sectionRow(s,i){return `<div class="builder-section-row ${selected===s.id?'active':''} ${s.enabled?'':'is-hidden'}"><button class="builder-section-select" onclick="storefront.select('${s.id}')"><span class="builder-section-icon">${icon(({banner:'image',image:'image',video:'eye',collection:'layers',text:'page',benefits:'shield'})[s.type])}</span><span><strong>${esc(s.title||labels[s.type])}</strong><small>${labels[s.type]}${s.enabled?'':' · Oculta'}</small></span></button><div class="builder-section-actions"><button title="Subir" aria-label="Subir ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',-1)" ${i===0?'disabled':''}>↑</button><button title="Descer" aria-label="Descer ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',1)" ${i===home().sections.length-1?'disabled':''}>↓</button></div></div>`}
+  function sectionRow(s,i){return `<div class="builder-section-row ${selected===s.id?'active':''} ${s.enabled?'':'is-hidden'}"><button class="builder-section-select" onclick="storefront.select('${s.id}')"><span class="builder-section-icon">${icon(({banner:'image',image:'image',video:'eye',collection:'layers','collection-list':'layers',text:'page',benefits:'shield'})[s.type])}</span><span><strong>${esc(s.title||labels[s.type])}</strong><small>${labels[s.type]}${s.enabled?'':' · Oculta'}</small></span></button><div class="builder-section-actions"><button title="Subir" aria-label="Subir ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',-1)" ${i===0?'disabled':''}>↑</button><button title="Descer" aria-label="Descer ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',1)" ${i===home().sections.length-1?'disabled':''}>↓</button></div></div>`}
   const input=(label,key,value,type='text',extra='')=>`<label class="field">${label}<input name="${key}" type="${type}" value="${esc(value||'')}" ${extra} oninput="storefront.change('${key}',this.value)"></label>`;
   const textarea=(label,key,value)=>`<label class="field">${label}<textarea name="${key}" oninput="storefront.change('${key}',this.value)">${esc(value||'')}</textarea></label>`;
   const choose=(label,key,value,options)=>`<label class="field">${label}<select name="${key}" onchange="storefront.change('${key}',this.value)">${options.map(([v,text])=>`<option value="${esc(v)}" ${value===v?'selected':''}>${esc(text)}</option>`).join('')}</select></label>`;
   const imageControls=(s,key='image')=>`${input('URL da imagem',key,String(s[key]||'').startsWith('data:image/')?'':s[key],'url','placeholder="https://..."')}<label class="field">Ou envie uma imagem<input type="file" accept="image/png,image/jpeg,image/webp" onchange="storefront.uploadImage(this,'${key}')"><small>JPG, PNG ou WebP · até 2 MB</small></label>${s[key]?`<div class="builder-image-preview"><img src="${esc(photo(s[key]))}" alt="Prévia da imagem"><button class="btn small" onclick="storefront.change('${key}','');storefront.render()">Remover imagem</button></div>`:''}`;
+  function collectionListControls(s){
+    const check=(label,key,defaultValue=true)=>`<label class="builder-switch"><input type="checkbox" ${(s[key]??defaultValue)?'checked':''} onchange="storefront.change('${key}',this.checked)"><span>${label}</span></label>`;
+    return `${input('Título da seção','title',s.title,'text','maxlength="200"')}${check('Mostrar título da seção','showHeading')}${choose('Tamanho do título','headingSize',s.headingSize||'medium',[['small','Pequeno'],['medium','Médio'],['large','Grande']])}${choose('Alinhamento dos títulos','titleAlign',s.titleAlign||'left',[['left','À esquerda'],['center','Centralizado']])}<div class="builder-list-divider"><h3>Apresentação</h3></div>${choose('Formato das imagens','shape',s.shape||'square',[['square','Quadradas'],['round','Redondas'],['landscape','Retangulares · horizontal'],['portrait','Retangulares · vertical']])}${choose('Enquadramento das imagens','imageFit',s.imageFit||'cover',[['cover','Preencher e recortar'],['contain','Mostrar a imagem inteira']])}${check('Mostrar nomes das coleções','showTitles')}${check('Mostrar setas nos cartões','showArrows')}${check('Mostrar quantidade de produtos','showCounts',false)}<div class="builder-list-columns">${choose('Colunas no computador','columns',String(s.columns||6),[2,3,4,5,6].map(n=>[String(n),String(n)]))}${choose('Colunas no celular','mobileColumns',String(s.mobileColumns||2),[['1','1'],['2','2']])}</div>${check('Carrossel no celular','mobileCarousel',false)}${choose('Espaçamento vertical','padding',String(s.padding??40),[['24','Compacto'],['40','Confortável'],['64','Amplo']])}<div class="builder-list-divider"><h3>Cores</h3></div><div class="builder-list-colors">${input('Fundo da seção','background',s.background||'#ffffff','color')}${input('Texto da seção','textColor',s.textColor||'#1c2228','color')}${input(s.shape==='round'?'Fundo das imagens':'Fundo dos cartões','cardBackground',s.cardBackground||'#f5f5f3','color')}${s.shape==='round'?'':input('Cor dos nomes','cardTextColor',s.cardTextColor||'#1c2228','color')}</div><div class="builder-list-divider"><h3>Coleções da lista <span>${(s.items||[]).length}/40</span></h3><p>Use as setas para mudar a ordem. Abra uma coleção para trocar a imagem ou o nome exibido.</p></div><div class="builder-list-items">${(s.items||[]).map((item,i)=>`<details class="builder-list-item" ${openedCollectionItem===item.id?'open':''} ontoggle="storefront.setCollectionItemOpen('${item.id}',this.open)"><summary><img src="${esc(collectionListImage(item))}" alt=""><span><strong>${esc(item.title||item.category||'Selecione a coleção')}</strong><small>${esc(item.category)}${collectionConfig(item.category).active===false?' · Desativada na loja':''}</small></span>${icon('down')}</summary><div class="builder-list-item-fields"><div class="builder-list-item-actions"><button class="btn small" aria-label="Subir coleção ${i+1}" onclick="storefront.moveCollectionItem(${i},-1)" ${i===0?'disabled':''}>↑</button><button class="btn small" aria-label="Descer coleção ${i+1}" onclick="storefront.moveCollectionItem(${i},1)" ${i===(s.items||[]).length-1?'disabled':''}>↓</button><button class="btn small danger" onclick="storefront.removeCollectionItem(${i})">${icon('trash')}Remover da lista</button></div>${choose('Coleção',`items.${i}.category`,item.category,db.collections.map(name=>[name,name]))}${input('Nome na lista (opcional)',`items.${i}.title`,item.title,'text',`maxlength="120" placeholder="${esc(item.category)}"`)}<label class="field">Imagem desta coleção<input type="file" accept="image/png,image/jpeg,image/webp" onchange="storefront.uploadImage(this,'items.${i}.image')"><small>JPG, PNG ou WebP · até 2 MB. Sem imagem própria, usamos uma foto de produto desta coleção.</small></label>${item.image?`<div class="builder-image-preview"><img src="${esc(photo(item.image))}" alt="Prévia da imagem"><button class="btn small" onclick="storefront.change('items.${i}.image','');storefront.render()">Usar foto automática</button></div>`:''}${input('Descrição da imagem (opcional)',`items.${i}.imageAlt`,item.imageAlt,'text','maxlength="200"')}</div></details>`).join('')||'<p class="builder-hint">Nenhuma coleção adicionada. Escolha as coleções que deseja apresentar.</p>'}</div><button class="btn builder-list-add" onclick="storefront.addCollectionItem()" ${(s.items||[]).length>=40?'disabled':''}>${icon('plus')}Adicionar coleção</button><p class="builder-hint">Coleções desativadas ficam ocultas na loja. Estas escolhas afetam apenas esta seção.</p>`;
+  }
   function controls(s){
+    if(s.type==='collection-list')return collectionListControls(s);
     if(s.type==='banner')return `${imageControls(s)}${input('Descrição da imagem','imageAlt',s.imageAlt)}<p class="builder-hint">A imagem mantém sua proporção original, sem corte ou altura fixa.</p><label class="builder-switch"><input type="checkbox" ${s.showText===true?'checked':''} onchange="storefront.change('showText',this.checked);storefront.render()"><span>Mostrar textos e botão sobre a imagem</span></label>${s.showText===true?`${input('Texto pequeno acima do título','eyebrow',s.eyebrow)}${input('Título','title',s.title)}${textarea('Descrição','subtitle',s.subtitle)}${choose('Alinhamento do texto','align',s.align,[['left','À esquerda'],['right','À direita']])}${input('Texto do botão','buttonLabel',s.buttonLabel)}${input('Link do botão','buttonLink',s.buttonLink,'text','placeholder="/loja/catalogo"')}`:''}`;
     if(s.type==='collection')return `${input('Texto pequeno acima do título','eyebrow',s.eyebrow)}${input('Título','title',s.title)}${choose('Coleção','category',s.category,[['Todos','Todos os produtos'],...db.collections.map(c=>[c,c])])}${input('Número de produtos','limit',s.limit,'number','min="1" max="24"')}`;
     if(s.type==='image')return `${input('Texto pequeno acima do título','eyebrow',s.eyebrow)}${input('Título','title',s.title)}${textarea('Texto','body',s.body)}${imageControls(s)}${input('Descrição da imagem','imageAlt',s.imageAlt)}${choose('Posição da imagem','layout',s.layout,[['image-left','À esquerda'],['image-right','À direita']])}${input('Texto do botão','buttonLabel',s.buttonLabel)}${input('Link do botão','buttonLink',s.buttonLink,'text','placeholder="/loja/catalogo"')}`;
@@ -462,10 +496,11 @@ dialog.catalog-product-dialog{width:min(1120px,calc(100% - 32px))}
   function change(key,value){
     if(!canConfigureSite()||saving)return;
     const s=section();if(!s)return;
-    if(key.startsWith('items.')){const [,index,field]=key.split('.');if(!s.items?.[Number(index)]||!['title','body','icon'].includes(field))return;s.items[Number(index)][field]=value}
+    if(key.startsWith('items.')){const [,index,field]=key.split('.');if(!s.items?.[Number(index)]||!(s.type==='collection-list'?['category','title','image','imageAlt']:['title','body','icon']).includes(field))return;if(s.type==='collection-list'&&field==='category'&&(!db.collections.includes(value)||s.items.some((item,i)=>i!==Number(index)&&item.category===value))){toast('Escolha uma coleção que ainda não está nesta lista.');render();return}s.items[Number(index)][field]=value}
+    else if(s.type==='collection-list'&&['shape','imageFit','columns','mobileColumns','showHeading','showTitles','showArrows','showCounts','background','textColor','cardBackground','cardTextColor','titleAlign','headingSize','mobileCarousel','padding'].includes(key)){s[key]=['columns','mobileColumns','padding'].includes(key)?Number(value):value;}
     else if(['eyebrow','title','subtitle','body','image','imageAlt','url','align','layout','buttonLabel','buttonLink','category','limit','showText'].includes(key))s[key]=key==='limit'?Math.max(1,Math.min(24,Number(value)||1)):key==='showText'?Boolean(value):value;
     else return;
-    refresh();
+    if(s.type==='collection-list'&&key==='shape')render();else refresh();
   }
   function changePage(key,value){
     if(!canConfigureSite()||saving||!['title','intro','note','showDescription','galleryFit','columns','showFilters'].includes(key))return;
@@ -474,25 +509,37 @@ dialog.catalog-product-dialog{width:min(1120px,calc(100% - 32px))}
     if(['product','collection'].includes(scope))for(const name of Object.keys(model.pageSettings)){if(name.startsWith(scope+':')||(scope==='collection'&&name==='catalog'))delete model.pageSettings[name];}
     model.pageSettings[scope]||={};model.pageSettings[scope][key]=value;refresh();
   }
+  function setCollectionItemOpen(id,open){if(open)openedCollectionItem=id;else if(openedCollectionItem===id)openedCollectionItem='';}
+  function addCollectionItem(){
+    if(!canConfigureSite()||saving||uploading)return;const s=section();if(s?.type!=='collection-list')return;s.items||=[];
+    if(s.items.length>=40)return toast('O limite é de 40 coleções por lista.');
+    const category=[...visibleCollections(),...db.collections].find(name=>!s.items.some(item=>item.category===name));
+    if(!category)return toast('Todas as coleções já estão na lista. Crie outra em Coleções para adicioná-la.');
+    const item={id:newId(),category,title:'',image:'',imageAlt:''};s.items.push(item);openedCollectionItem=item.id;render();
+  }
+  function moveCollectionItem(index,step){if(!canConfigureSite()||saving||uploading)return;const items=section()?.type==='collection-list'?section().items:[],next=index+step;if(!Number.isInteger(index)||!items?.[index]||next<0||next>=items.length)return;[items[index],items[next]]=[items[next],items[index]];render();}
+  function removeCollectionItem(index){if(!canConfigureSite()||saving||uploading)return;const s=section();if(s?.type!=='collection-list'||!Number.isInteger(index)||!s.items?.[index])return;s.items.splice(index,1);render();}
   function changeAnnouncement(key,value){if(!canConfigureSite()||saving||!['enabled','text','highlight'].includes(key))return;home().announcement[key]=value;if(key==='enabled')render();else refresh()}
   function toggle(id,enabled){if(!canConfigureSite()||saving)return;const s=home().sections.find(s=>s.id===id);if(!s)return;s.enabled=enabled;render()}
   function move(id,step){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id),j=i+step;if(i<0||j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];render()}
-  function addModal(){modal('Adicionar seção',`<p>Escolha o conteúdo para a página inicial. A nova seção começa oculta.</p><div class="builder-add-grid">${Object.entries(labels).map(([type,label])=>`<button onclick="storefront.add('${type}')">${icon(({banner:'image',image:'image',video:'eye',collection:'layers',text:'page',benefits:'shield'})[type])}<strong>${label}</strong></button>`).join('')}</div>`)}
+  function addModal(){modal('Adicionar seção',`<p>Escolha o conteúdo para a página inicial. A nova seção começa oculta.</p><div class="builder-add-grid">${Object.entries(labels).map(([type,label])=>`<button onclick="storefront.add('${type}')">${icon(({banner:'image',image:'image',video:'eye',collection:'layers','collection-list':'layers',text:'page',benefits:'shield'})[type])}<strong>${label}</strong></button>`).join('')}</div>`)}
   function add(type){
     if(!canConfigureSite()||saving||!labels[type])return;
     if(home().sections.length>=80)return toast('O limite é de 80 seções.');
     const base={id:newId(),type,enabled:false};
     const presets={banner:{showText:false,eyebrow:'',title:'',subtitle:'',image:'',imageAlt:'',buttonLabel:'',buttonLink:'/loja/catalogo',align:'left'},collection:{eyebrow:'EXPLORE A LOJA',title:'Nossa seleção',category:'Todos',limit:4},image:{eyebrow:'FORTE OUTLET',title:'Sua casa merece esse cuidado.',body:'',image:'',imageAlt:'',layout:'image-left',buttonLabel:'',buttonLink:'/loja/catalogo'},video:{eyebrow:'INSPIRE-SE',title:'Veja de perto',body:'',url:''},text:{eyebrow:'NOSSA HISTÓRIA',title:'Sua casa merece o melhor.',body:'',buttonLabel:'',buttonLink:'/loja/catalogo'},benefits:{items:structuredClone(defaultBenefits)}};
-    Object.assign(base,presets[type]);home().sections.push(base);selected=base.id;closeModal();render();toast('Seção adicionada ao rascunho.');
+    presets['collection-list']={title:'O que você procura?',showHeading:true,headingSize:'medium',titleAlign:'left',shape:'square',imageFit:'cover',columns:6,mobileColumns:2,mobileCarousel:false,padding:40,showTitles:true,showArrows:true,showCounts:false,background:'#ffffff',textColor:'#1c2228',cardBackground:'#f5f5f3',cardTextColor:'#1c2228',items:visibleCollections().slice(0,6).map(category=>({id:newId(),category,title:'',image:'',imageAlt:''}))};
+    Object.assign(base,presets[type]);home().sections.push(base);selected=base.id;closeModal();render();toast('Seção adicionada ao rascunho.');return base.id;
   }
   function duplicate(id){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0||list.length>=80)return;const copy=structuredClone(list[i]);copy.id=newId();copy.enabled=false;list.splice(i+1,0,copy);selected=copy.id;render()}
   function removeModal(id){const s=home().sections.find(s=>s.id===id);if(!s)return;modal('Excluir seção',`<p>Remover <strong>${esc(s.title||labels[s.type])}</strong> do rascunho?</p><div class="form-actions"><button class="btn" onclick="closeModal()">Manter seção</button><button class="btn danger" onclick="storefront.remove('${id}')">Remover do rascunho</button></div>`)}
   function remove(id){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0)return;if(list.length===1)return toast('Oculte a última seção ou adicione outra antes de excluir.');list.splice(i,1);selected=list[Math.min(i,list.length-1)]?.id||'';closeModal();render()}
   async function uploadImage(input,key){
     const s=section(),file=input.files?.[0];if(!canConfigureSite()||saving||uploading||!s||!file)return;
+    const match=/^items\.(\d+)\.image$/.exec(key);const target=match&&s.type==='collection-list'?s.items?.[Number(match[1])]:key==='image'?s:null;if(!target)return;
     if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>2*1024*1024)return toast('Envie JPG, PNG ou WebP de até 2 MB.');
     uploading=true;input.disabled=true;refresh();
-    try{s[key]=await uploadProductPhoto(file,'storefront');toast('Imagem adicionada ao rascunho. Salve as mudanças para publicá-la.')}catch(error){toast(error.message)}finally{uploading=false;input.disabled=false;render()}
+    try{target.image=await uploadProductPhoto(file,'storefront');toast('Imagem adicionada ao rascunho. Salve as mudanças para publicá-la.')}catch(error){toast(error.message)}finally{uploading=false;input.disabled=false;render()}
   }
   function setPreview(size){previewSize=size==='mobile'?'mobile':'desktop';document.querySelectorAll('[data-device]').forEach(b=>b.classList.toggle('active',b.dataset.device===previewSize));sizeFrame()}
   function sizeFrame(){
@@ -547,7 +594,7 @@ dialog.catalog-product-dialog{width:min(1120px,calc(100% - 32px))}
     }
   });
   window.addEventListener('beforeunload',event=>{if(dirty()){event.preventDefault();event.returnValue=''}});
-  return {init,announcement,storeHome,editorPage,change,changePage,changeAnnouncement,toggle,move,addModal,add,duplicate,removeModal,remove,select,uploadImage,setPreview,render,mountPreview,navigate,setIdentity,publish,cancelChanges,dirty,pageKey};
+  return {init,announcement,storeHome,editorPage,change,changePage,changeAnnouncement,toggle,move,addModal,add,duplicate,removeModal,remove,select,uploadImage,setPreview,render,mountPreview,navigate,setIdentity,publish,cancelChanges,dirty,pageKey,setCollectionItemOpen,addCollectionItem,moveCollectionItem,removeCollectionItem};
 })();
 </script>
   <script>const $=s=>document.querySelector(s);
@@ -3590,6 +3637,12 @@ function collectionProducts(name, activeOnly = false) {
 function assignProductCollections(product, names) { product.categories=[...new Set(names)]; product.category=product.categories[0] || ''; }
 let catalogSelection = new Set(), collectionSearch = '', collectionSortDraft = null;
 let catalogWriteBusy = false;
+function remapCollectionListSections(model,previous,name=null){
+  for(const section of model.storefront?.sections||[]){
+    if(section.type!=='collection-list')continue;
+    section.items=(section.items||[]).flatMap(item=>item.category!==previous?[item]:name?[{...item,category:name}]:[]);
+  }
+}
 function applyCollectionEdit(model,previous,name,active,sort,ids=null) {
   model.collectionSettings||={};
   const config={...(model.collectionSettings[previous]||{}),active,sort};
@@ -3601,6 +3654,7 @@ function applyCollectionEdit(model,previous,name,active,sort,ids=null) {
       delete model.collectionSettings[previous];
       for(const product of model.products)if(product.category===previous||productInCollection(product,previous)){product.categories=productCollections(product).map(c=>c===previous?name:c);if(product.category===previous)product.category=name;}
       for(const section of model.storefront?.sections||[])if(section.type==='collection'&&section.category===previous)section.category=name;
+      remapCollectionListSections(model,previous,name);
       if(model.storefront?.pageSettings?.['collection:'+previous]){model.storefront.pageSettings['collection:'+name]=model.storefront.pageSettings['collection:'+previous];delete model.storefront.pageSettings['collection:'+previous];}
       if(model.navigation)for(const menu of model.navigation.menus)remapMenuCollection(menu.items,previous,name);
     }
@@ -3738,8 +3792,8 @@ function collectionModal(index=-1) {
 function deleteCollectionModal(index) {
   if(!canConfigureSite())return;
   const name=db.collections[index];if(!name)return;
-  const linkedSections=(db.storefront?.sections||[]).some(section=>section.type==='collection'&&section.category===name);
-  modal('Excluir coleção',`<form onsubmit="event.preventDefault();deleteCollection(this)"><input type="hidden" name="collectionName" value="${esc(name)}"><p>Excluir a coleção <strong>${esc(name)}</strong>?</p><p>Os produtos serão mantidos no catálogo e nas outras coleções. Apenas esta coleção será excluída.</p>${linkedSections?'<p>As seções da página inicial vinculadas a ela serão desativadas.</p>':''}<div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button type="submit" class="btn danger">Excluir coleção</button></div></form>`);
+  const linkedSections=(db.storefront?.sections||[]).some(section=>section.type==='collection'&&section.category===name||section.type==='collection-list'&&section.items?.some(item=>item.category===name));
+  modal('Excluir coleção',`<form onsubmit="event.preventDefault();deleteCollection(this)"><input type="hidden" name="collectionName" value="${esc(name)}"><p>Excluir a coleção <strong>${esc(name)}</strong>?</p><p>Os produtos serão mantidos no catálogo e nas outras coleções. Apenas esta coleção será excluída.</p>${linkedSections?'<p>Ela será removida das listas de coleções. As seções da página inicial com produtos vinculados a ela serão desativadas.</p>':''}<div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button type="submit" class="btn danger">Excluir coleção</button></div></form>`);
 }
 async function deleteCollection(form) {
   if(!canConfigureSite())return;
@@ -3752,6 +3806,7 @@ async function deleteCollection(form) {
       if(next.collectionSettings)delete next.collectionSettings[name];
       if(next.storefront?.pageSettings)delete next.storefront.pageSettings['collection:'+name];
       for(const section of next.storefront?.sections||[])if(section.type==='collection'&&section.category===name){section.enabled=false;section.category='Todos';}
+      remapCollectionListSections(next,name);
     });
     if(collectionSortDraft?.name===name)collectionSortDraft=null;
     if(catalogCategory===name)catalogCategory='Todos';

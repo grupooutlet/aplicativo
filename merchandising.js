@@ -18,6 +18,12 @@ function collectionProducts(name, activeOnly = false) {
 function assignProductCollections(product, names) { product.categories=[...new Set(names)]; product.category=product.categories[0] || ''; }
 let catalogSelection = new Set(), collectionSearch = '', collectionSortDraft = null;
 let catalogWriteBusy = false;
+function remapCollectionListSections(model,previous,name=null){
+  for(const section of model.storefront?.sections||[]){
+    if(section.type!=='collection-list')continue;
+    section.items=(section.items||[]).flatMap(item=>item.category!==previous?[item]:name?[{...item,category:name}]:[]);
+  }
+}
 function applyCollectionEdit(model,previous,name,active,sort,ids=null) {
   model.collectionSettings||={};
   const config={...(model.collectionSettings[previous]||{}),active,sort};
@@ -29,6 +35,7 @@ function applyCollectionEdit(model,previous,name,active,sort,ids=null) {
       delete model.collectionSettings[previous];
       for(const product of model.products)if(product.category===previous||productInCollection(product,previous)){product.categories=productCollections(product).map(c=>c===previous?name:c);if(product.category===previous)product.category=name;}
       for(const section of model.storefront?.sections||[])if(section.type==='collection'&&section.category===previous)section.category=name;
+      remapCollectionListSections(model,previous,name);
       if(model.storefront?.pageSettings?.['collection:'+previous]){model.storefront.pageSettings['collection:'+name]=model.storefront.pageSettings['collection:'+previous];delete model.storefront.pageSettings['collection:'+previous];}
       if(model.navigation)for(const menu of model.navigation.menus)remapMenuCollection(menu.items,previous,name);
     }
@@ -166,8 +173,8 @@ function collectionModal(index=-1) {
 function deleteCollectionModal(index) {
   if(!canConfigureSite())return;
   const name=db.collections[index];if(!name)return;
-  const linkedSections=(db.storefront?.sections||[]).some(section=>section.type==='collection'&&section.category===name);
-  modal('Excluir coleção',`<form onsubmit="event.preventDefault();deleteCollection(this)"><input type="hidden" name="collectionName" value="${esc(name)}"><p>Excluir a coleção <strong>${esc(name)}</strong>?</p><p>Os produtos serão mantidos no catálogo e nas outras coleções. Apenas esta coleção será excluída.</p>${linkedSections?'<p>As seções da página inicial vinculadas a ela serão desativadas.</p>':''}<div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button type="submit" class="btn danger">Excluir coleção</button></div></form>`);
+  const linkedSections=(db.storefront?.sections||[]).some(section=>section.type==='collection'&&section.category===name||section.type==='collection-list'&&section.items?.some(item=>item.category===name));
+  modal('Excluir coleção',`<form onsubmit="event.preventDefault();deleteCollection(this)"><input type="hidden" name="collectionName" value="${esc(name)}"><p>Excluir a coleção <strong>${esc(name)}</strong>?</p><p>Os produtos serão mantidos no catálogo e nas outras coleções. Apenas esta coleção será excluída.</p>${linkedSections?'<p>Ela será removida das listas de coleções. As seções da página inicial com produtos vinculados a ela serão desativadas.</p>':''}<div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button type="submit" class="btn danger">Excluir coleção</button></div></form>`);
 }
 async function deleteCollection(form) {
   if(!canConfigureSite())return;
@@ -180,6 +187,7 @@ async function deleteCollection(form) {
       if(next.collectionSettings)delete next.collectionSettings[name];
       if(next.storefront?.pageSettings)delete next.storefront.pageSettings['collection:'+name];
       for(const section of next.storefront?.sections||[])if(section.type==='collection'&&section.category===name){section.enabled=false;section.category='Todos';}
+      remapCollectionListSections(next,name);
     });
     if(collectionSortDraft?.name===name)collectionSortDraft=null;
     if(catalogCategory===name)catalogCategory='Todos';
