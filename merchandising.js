@@ -89,7 +89,8 @@ function updateCatalogSelectionBar() {
   const all=$('#catalog-select-all'),products=filteredCatalogProducts();
   if(all){all.checked=products.length>0&&products.every(p=>catalogSelection.has(p.id));all.indeterminate=!all.checked&&products.some(p=>catalogSelection.has(p.id));}
 }
-function catalogBulkBar() { return catalogSelection.size?`<strong>${catalogSelection.size} selecionado${catalogSelection.size===1?'':'s'}</strong><div class="actions"><button class="btn small" onclick="bulkCatalogModal('collections')">${icon('layers')}Adicionar a coleções</button><button class="btn small" onclick="bulkCatalogModal('draft')">Tornar rascunho</button><button class="btn small" onclick="bulkCatalogModal('active')">Ativar</button><button class="btn small danger" onclick="bulkCatalogModal('delete')">${icon('trash')}Excluir</button><button class="text-link" onclick="catalogSelection.clear();render()">Limpar seleção</button></div>`:''; }
+function catalogBulkBar() { return catalogSelection.size?`<strong>${catalogSelection.size} selecionado${catalogSelection.size===1?'':'s'}</strong><div class="actions"><button class="btn small primary" onclick="openBulkEditor()">${icon('edit')}Editar em massa</button><details class="catalog-bulk-menu"><summary class="btn small">${icon('layers')}Coleções ${icon('down')}</summary><div><button onclick="bulkCatalogModal('collections')">Adicionar a coleções</button><button onclick="bulkCatalogModal('removeCollections')">Remover de coleções</button></div></details><button class="btn small" onclick="openBulkEditor('variations')">Variações</button><button class="btn small" onclick="bulkCatalogModal('draft')">Tornar rascunho</button><button class="btn small" onclick="bulkCatalogModal('active')">Ativar</button><button class="btn small danger" onclick="bulkCatalogModal('delete')">${icon('trash')}Excluir</button><button class="text-link" onclick="catalogSelection.clear();render()">Limpar seleção</button></div>`:''; }
+
 productsPage = () => {
   const products=filteredCatalogProducts(),manage=canManage();
   return heading('Produtos','Organize seu catálogo e mantenha sua loja sempre atualizada.',manage?button('Adicionar produto','onclick="productModal()"','primary','plus'):'')+
@@ -99,20 +100,24 @@ productsPage = () => {
 function collectionCheckboxes(names=[],fieldName='categories') { return `<div class="collection-checkboxes">${db.collections.map(name=>`<label><input type="checkbox" name="${fieldName}" value="${esc(name)}" ${names.includes(name)?'checked':''}><span>${esc(name)}${collectionConfig(name).active===false?'<small>Desativada</small>':''}</span></label>`).join('')||'<p class="subtle">Cadastre uma coleção na seção Coleções.</p>'}</div>`; }
 function bulkCatalogModal(action, ids=[...catalogSelection]) {
   if(!canManage()||!ids.length)return;
-  const labels={collections:'Adicionar a coleções',draft:'Tornar rascunho',active:'Ativar produtos',delete:'Excluir produtos'};
-  modal(labels[action],`<form onsubmit="event.preventDefault();applyBulkCatalog(this,'${action}',${JSON.stringify(ids)})"><p>${action==='delete'?'Excluir':'Alterar'} <strong>${ids.length} produto${ids.length===1?'':'s'}</strong>${action==='delete'?'? A exclusão não poderá ser desfeita pelo painel.':'.'}</p>${action==='collections'?collectionCheckboxes([], 'bulkCollections'):''}<div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn ${action==='delete'?'danger':'primary'}">${action==='delete'?'Excluir produtos':'Confirmar alteração'}</button></div></form>`);
+  const labels={collections:'Adicionar a coleções',removeCollections:'Remover de coleções',draft:'Tornar rascunho',active:'Ativar produtos',delete:'Excluir produtos'};
+  modal(labels[action],`<form onsubmit="event.preventDefault();applyBulkCatalog(this,'${action}',${JSON.stringify(ids)})"><p>${action==='delete'?'Excluir':'Alterar'} <strong>${ids.length} produto${ids.length===1?'':'s'}</strong>${action==='delete'?'? A exclusão não poderá ser desfeita pelo painel.':'.'}</p>${['collections','removeCollections'].includes(action)?`<p class="subtle">${action==='removeCollections'?'Somente as coleções marcadas serão removidas. As demais serão mantidas.':'As coleções atuais serão mantidas.'}</p>${collectionCheckboxes([], 'bulkCollections')}`:''}<div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn ${action==='delete'?'danger':'primary'}">${action==='delete'?'Excluir produtos':'Confirmar alteração'}</button></div></form>`);
 }
 async function applyBulkCatalog(form,action,ids) {
+  if(!canManage()||!['collections','removeCollections','draft','active','delete'].includes(action))return;
   const submit=form.querySelector('button:not([type])');submit.disabled=true;
   try {
-    const names=new FormData(form).getAll('bulkCollections');if(action==='collections'&&!names.length)throw new Error('Selecione pelo menos uma coleção.');
+    const names=new FormData(form).getAll('bulkCollections');if(['collections','removeCollections'].includes(action)&&!names.length)throw new Error('Selecione pelo menos uma coleção.');
     await commitCatalogChanges(next=>{
+      if(ids.some(id=>!next.products.some(p=>p.id===id)))throw Error('Um produto selecionado foi removido. Atualize a lista.');
+      if(names.some(name=>!next.collections.includes(name)))throw Error('Uma coleção selecionada não existe mais.');
       if(action==='delete'){
         next.products=next.products.filter(p=>!ids.includes(p.id));
         next.orderBumps=(next.orderBumps||[]).filter(b=>b.kind!=='product'||!ids.includes(b.productId)).map(b=>({...b,targetProductIds:b.targetProductIds.filter(id=>!ids.includes(id))})).map(b=>({...b,active:b.active&&(b.allProducts||b.targetProductIds.length>0)}));
         for(const cfg of Object.values(next.collectionSettings||{}))if(cfg.productIds)cfg.productIds=cfg.productIds.filter(id=>!ids.includes(id));
       } else for(const p of next.products.filter(p=>ids.includes(p.id))) {
         if(action==='collections')assignProductCollections(p,[...productCollections(p),...names]);
+        else if(action==='removeCollections')assignProductCollections(p,productCollections(p).filter(name=>!names.includes(name)));
         else p.active=action==='active';
       }
     });
@@ -122,7 +127,7 @@ async function applyBulkCatalog(form,action,ids) {
 deleteProduct = id => bulkCatalogModal('delete',[id]);
 
 const modalBeforeCatalog = modal;
-modal = (title,html) => { $('#modal').classList.remove('catalog-product-dialog','catalog-offer-dialog');modalBeforeCatalog(title,html); };
+modal = (title,html) => { $('#modal').classList.remove('catalog-product-dialog','catalog-offer-dialog','catalog-bulk-dialog');modalBeforeCatalog(title,html); };
 productModal = id => {
   if(!canManage())return;
   const p=db.products.find(item=>item.id===id)||{name:'',description:'',sku:'',price:'',promoPrice:'',cost:0,stock:0,min:3,active:false,categories:[]};
@@ -402,3 +407,169 @@ catalogPage=()=>{
 function storeCollectionLinks() {return `<a href="/loja/catalogo" onclick="catalogCategory='Todos';catalogQuery=''">Todos os móveis</a>${visibleCollections().map(name=>`<a href="/loja/catalogo" onclick="catalogCategory=decodeURIComponent('${encodeURIComponent(name).replace(/'/g,'%27')}');catalogQuery=''">${esc(name)}</a>`).join('')}`;}
 const headerBeforeCollections = storeHeader;
 storeHeader=()=>headerBeforeCollections().replace(/<nav class="store-nav">[\s\S]*?<\/nav>/,'<nav class="store-nav">'+storeCollectionLinks()+'</nav>');
+
+// Bulk product drafts are isolated until the reviewed transaction is saved.
+let bulkEditor=null;
+const bulkProductCount=count=>count+' produto'+(count===1?'':'s');
+const bulkFieldLabels={name:'Nome',price:'Preço de venda',promoPrice:'Preço promocional',cost:'Custo',stock:'Estoque',min:'Estoque mínimo',active:'Status',categories:'Coleções',variations:'Variações'};
+function bulkComparable(product){
+  const numeric=key=>product[key]===''?'':Number(product[key]??0);
+  return {name:String(product.name||'').trim(),price:numeric('price'),promoPrice:product.promoPrice===''||product.promoPrice==null?null:Number(product.promoPrice),cost:numeric('cost'),stock:numeric('stock'),min:numeric('min'),active:product.active===true,categories:productCollections(product),variations:productVariations(product)};
+}
+function bulkEditorChanges(){
+  if(!bulkEditor)return [];
+  return bulkEditor.drafts.flatMap(product=>{
+    const before=bulkComparable(bulkEditor.originals.find(p=>p.id===product.id)),after=bulkComparable(product);
+    const fields=Object.keys(bulkFieldLabels).filter(key=>JSON.stringify(before[key])!==JSON.stringify(after[key]));
+    return fields.length?[{id:product.id,name:product.name,before,after,fields}]:[];
+  });
+}
+function openBulkEditor(tab='data'){
+  if(!canManage()||catalogWriteBusy)return;
+  const ids=[...catalogSelection],products=ids.map(id=>db.products.find(p=>p.id===id));
+  if(!ids.length)return toast('Selecione pelo menos um produto.');
+  if(products.some(p=>!p))return toast('A seleção mudou. Atualize a lista de produtos.');
+  bulkEditor={originals:structuredClone(products),drafts:structuredClone(products),tab:['data','collections','variations'].includes(tab)?tab:'data',busy:false,discard:false,attributeAdditions:[],catalogBaseline:JSON.stringify(db.attributeCatalog??null)};
+  renderBulkEditor();
+}
+function bulkSetField(id,key,value){
+  if(!canManage()||!bulkEditor||bulkEditor.busy||!['name','price','promoPrice','cost','stock','min','active'].includes(key))return;
+  const product=bulkEditor.drafts.find(p=>p.id===id);if(!product)return;
+  product[key]=key==='active'?value==='true':value;
+  const count=document.querySelector('#bulk-change-count');if(count)count.textContent=bulkProductCount(bulkEditorChanges().length)+' com alterações';
+  const review=document.querySelector('#bulk-review-button');if(review)review.disabled=!bulkEditorChanges().length;
+}
+function bulkValidateChanges(){
+  const changes=bulkEditorChanges();if(!changes.length)throw Error('Nenhuma alteração para salvar.');
+  for(const change of changes){
+    const p=change.after,label=String(p.name||change.id).slice(0,80);
+    if(!p.name||p.name.length>250)throw Error(label+': informe um nome de até 250 caracteres.');
+    if(!Number.isFinite(p.price)||p.price<=0||p.price>999999999.99||p.price==='')throw Error(label+': confira o preço de venda.');
+    if(p.promoPrice!==null&&(!Number.isFinite(p.promoPrice)||p.promoPrice<=0||p.promoPrice>=p.price))throw Error(label+': a promoção deve ser maior que zero e menor que o preço de venda.');
+    if(['price','promoPrice','cost'].some(key=>p[key]!==null&&Number.isFinite(p[key])&&Math.abs(p[key]*100-Math.round(p[key]*100))>.000001))throw Error(label+': use no máximo duas casas decimais nos valores.');
+    if(p.cost===''||!Number.isFinite(p.cost)||p.cost<0)throw Error(label+': confira o custo.');
+    if(!Number.isInteger(p.stock)||!Number.isInteger(p.min)||p.stock<0||p.min<0||p.stock>2147483647||p.min>2147483647)throw Error(label+': use quantidades inteiras e não negativas.');
+    if(p.stock<reserved(change.id))throw Error(label+': o estoque não pode ser menor que as '+reserved(change.id)+' unidades reservadas.');
+    if(p.categories.some(name=>!db.collections.includes(name)))throw Error(label+': uma coleção foi removida. Reabra o editor.');
+    validateBulkVariations(p.variations,label);
+    const source=bulkEditor.drafts.find(item=>item.id===change.id);
+    if(p.active&&!productImages(source).length)throw Error(label+': adicione uma foto antes de ativar o produto.');
+  }
+  return changes;
+}
+function validateBulkVariations(variations,label='Produto'){
+  if(variations.length>5)throw Error(label+': cada produto aceita no máximo cinco atributos.');
+  const keys=new Set();
+  for(const option of variations){
+    const name=String(option.name||'').trim(),key=attributeKey(name);
+    if(!name||name.length>40||keys.has(key)||!Array.isArray(option.values)||!option.values.length||option.values.length>30||option.values.some(v=>typeof v!=='string'||!v.trim()||v.length>80)||new Set(option.values.map(attributeKey)).size!==option.values.length)throw Error(label+': confira os atributos e suas opções.');
+    keys.add(key);
+  }
+}
+function bulkSwitchTab(tab){
+  if(!canManage()||!bulkEditor||bulkEditor.busy||!['data','collections','variations','review'].includes(tab))return;
+  try{if(tab==='review')bulkValidateChanges();bulkEditor.tab=tab;bulkEditor.discard=false;renderBulkEditor();}catch(error){toast(error.message)}
+}
+function bulkCurrentProducts(kind){
+  return `<div class="bulk-current-list">${bulkEditor.drafts.map(p=>`<article><div class="bulk-product-identity"><img src="${esc(p.image||'assets/product-placeholder.svg')}" alt=""><div><strong>${esc(p.name)}</strong><small>${esc(p.sku)}</small></div></div>${kind==='collections'?`<div class="collection-tags">${productCollections(p).map(name=>`<span>${esc(name)}</span>`).join('')||'<small>Sem coleção</small>'}</div>`:`<div class="bulk-variation-summary">${productVariations(p).map(option=>`<p><strong>${esc(option.name)}</strong> ${option.values.map(esc).join(' · ')}</p>`).join('')||'<small>Sem variações</small>'}</div>`}</article>`).join('')}</div>`;
+}
+function bulkDataTable(){
+  const number=(p,key,min,step)=>`<input type="number" aria-label="${esc(bulkFieldLabels[key])} de ${esc(p.name)}" value="${esc(p[key]??'')}" min="${min}" step="${step}" oninput="bulkSetField(${p.id},'${key}',this.value)">`;
+  return `<p class="bulk-section-help">Edite cada célula. As fotos, descrições e códigos dos produtos serão mantidos.</p><div class="bulk-table-scroll" tabindex="0" aria-label="Tabela de edição dos produtos. Role para ver todas as colunas."><table class="bulk-edit-table"><thead><tr><th>Produto</th><th>Preço de venda</th><th>Preço promocional</th><th>Custo</th><th>Estoque</th><th>Mínimo</th><th>Status</th></tr></thead><tbody>${bulkEditor.drafts.map(p=>`<tr><td><div class="bulk-product-identity"><img src="${esc(p.image||'assets/product-placeholder.svg')}" alt=""><div><input aria-label="Nome de ${esc(p.sku)}" value="${esc(p.name)}" maxlength="250" oninput="bulkSetField(${p.id},'name',this.value)"><small>${esc(p.sku)}</small></div></div></td><td>${number(p,'price',.01,.01)}</td><td>${number(p,'promoPrice',.01,.01)}</td><td>${number(p,'cost',0,.01)}</td><td>${number(p,'stock',0,1)}</td><td>${number(p,'min',0,1)}</td><td><select aria-label="Status de ${esc(p.name)}" onchange="bulkSetField(${p.id},'active',this.value)"><option value="true" ${p.active?'selected':''}>Ativo</option><option value="false" ${!p.active?'selected':''}>Rascunho</option></select></td></tr>`).join('')}</tbody></table></div>`;
+}
+function bulkCollectionPanel(){
+  return `<div class="bulk-config-layout"><form class="bulk-config-card" onsubmit="event.preventDefault();bulkApplyCollections(this)"><h3>Organizar coleções</h3><p>Aplique aos ${bulkEditor.drafts.length} produtos selecionados.</p><label class="field">Ação<select name="mode"><option value="add">Adicionar às coleções marcadas</option><option value="remove">Remover das coleções marcadas</option><option value="replace">Substituir todas pelas marcadas</option></select></label>${collectionCheckboxes([],'collections')}<button class="btn" type="submit">Aplicar ao rascunho</button><small>Substituir remove as associações anteriores. Você verá o resultado ao lado e na revisão.</small></form><section class="bulk-current"><h3>Coleções após as alterações</h3>${bulkCurrentProducts('collections')}</section></div>`;
+}
+function bulkApplyCollections(form){
+  if(!canManage()||!bulkEditor||bulkEditor.busy)return;
+  try{
+    const data=new FormData(form),mode=data.get('mode'),names=[...new Set(data.getAll('collections'))];
+    if(!['add','remove','replace'].includes(mode)||!names.length||names.some(name=>!db.collections.includes(name)))throw Error('Selecione pelo menos uma coleção válida.');
+    for(const product of bulkEditor.drafts){const current=productCollections(product);assignProductCollections(product,mode==='add'?[...current,...names]:mode==='remove'?current.filter(name=>!names.includes(name)):names.slice());}
+    renderBulkEditor();toast('Coleções aplicadas ao rascunho. Revise antes de salvar.');
+  }catch(error){toast(error.message)}
+}
+function bulkVariationChoices(form){
+  const name=form.elements.namedItem('attribute').value,option=attributeCatalog().find(item=>attributeKey(item.name)===attributeKey(name));
+  const target=form.querySelector('.bulk-attribute-options');
+  target.innerHTML=option?option.values.map(value=>`<label class="attribute-choice"><input class="attribute-choice-input" type="checkbox" name="values" value="${esc(value)}"><span>${colorDot(option.name,value)}${esc(value)}</span></label>`).join(''):'<small>Informe o nome e as opções do novo atributo abaixo.</small>';
+  const custom=form.elements.namedItem('customName');custom.disabled=Boolean(option);custom.required=!option;custom.value='';custom.closest('.field').hidden=Boolean(option);
+}
+function bulkVariationPanel(){
+  const catalog=attributeCatalog();
+  return `<div class="bulk-config-layout"><form class="bulk-config-card" onsubmit="event.preventDefault();bulkApplyVariations(this)"><h3>Editar variações</h3><p>Aplique aos ${bulkEditor.drafts.length} produtos selecionados. Os demais atributos serão mantidos.</p><label class="field">Ação<select name="mode"><option value="add">Adicionar opções ao atributo</option><option value="remove">Remover opções do atributo</option><option value="replace">Substituir opções deste atributo</option><option value="removeAttribute">Remover este atributo dos produtos</option></select></label><label class="field">Atributo<select name="attribute" onchange="bulkVariationChoices(this.form)"><option value="">Novo atributo</option>${catalog.map(option=>`<option value="${esc(option.name)}">${esc(option.name)}</option>`).join('')}</select></label><div class="bulk-attribute-options attribute-choices"><small>Informe o nome e as opções do novo atributo abaixo.</small></div><label class="field">Nome do novo atributo<input name="customName" maxlength="40" placeholder="Ex.: Cor, Tamanho, Tecido" required></label><label class="field">Opções adicionais<textarea name="customValues" maxlength="2500" placeholder="Uma opção por linha. Ex.:\nBege\nCinza"></textarea><small>Use uma linha por opção. Medidas como 1,80 m são preservadas.</small></label><button class="btn" type="submit">Aplicar ao rascunho</button><small>Ao remover todas as opções, o atributo deixa de aparecer nesses produtos. O catálogo geral de atributos é mantido.</small></form><section class="bulk-current"><h3>Variações após as alterações</h3>${bulkCurrentProducts('variations')}</section></div>`;
+}
+function bulkApplyVariations(form){
+  if(!canManage()||!bulkEditor||bulkEditor.busy)return;
+  try{
+    const data=new FormData(form),mode=data.get('mode'),catalog=attributeCatalog(),rawName=String(data.get('attribute')||data.get('customName')||'').trim();
+    const option=catalog.find(item=>attributeKey(item.name)===attributeKey(rawName)),name=option?.name||rawName;
+    let values=[...data.getAll('values'),...String(data.get('customValues')||'').split(/\r?\n/)].map(v=>String(v).trim()).filter(Boolean);
+    values=[...new Map(values.map(v=>[attributeKey(v),option?.values.find(known=>attributeKey(known)===attributeKey(v))||v])).values()];
+    if(!['add','remove','replace','removeAttribute'].includes(mode)||!name||name.length>40||mode!=='removeAttribute'&&!values.length||values.length>30||values.some(v=>v.length>80))throw Error('Confira o nome do atributo e selecione ou escreva até 30 opções.');
+    const drafts=structuredClone(bulkEditor.drafts);
+    for(const product of drafts){
+      const variations=structuredClone(productVariations(product)),index=variations.findIndex(item=>attributeKey(item.name)===attributeKey(name)),previous=variations[index];
+      if(mode==='removeAttribute'){if(index>=0)variations.splice(index,1);}
+      else {
+        const choices=mode==='add'?[...new Map([...(previous?.values||[]),...values].map(v=>[attributeKey(v),v])).values()]:mode==='remove'?(previous?.values||[]).filter(v=>!values.some(value=>attributeKey(value)===attributeKey(v))):values;
+        if(index>=0){if(choices.length)variations[index]={name:previous.name,values:choices};else variations.splice(index,1);}
+        else if(mode!=='remove')variations.push({name,values:choices});
+      }
+      validateBulkVariations(variations,product.name);product.variations=variations;
+    }
+    bulkEditor.drafts=drafts;
+    if(['add','replace'].includes(mode))bulkEditor.attributeAdditions.push({name,values});
+    renderBulkEditor();toast('Variações aplicadas ao rascunho. Revise antes de salvar.');
+  }catch(error){toast(error.message)}
+}
+function bulkDisplayValue(key,value){
+  if(['price','cost','promoPrice'].includes(key))return value===null?'Sem promoção':money(value);
+  if(key==='active')return value?'Ativo':'Rascunho';
+  if(key==='categories')return value.join(' · ')||'Sem coleção';
+  if(key==='variations')return value.map(option=>option.name+': '+option.values.join(', ')).join(' · ')||'Sem variações';
+  return String(value);
+}
+function bulkReviewPanel(){
+  const changes=bulkEditorChanges();
+  return `<div class="bulk-review-intro">${icon('check')}<div><h3>Confira antes de salvar</h3><p>${changes.length} de ${bulkEditor.drafts.length} produtos serão atualizados. Campos sem alteração serão preservados.</p></div></div><div class="bulk-review-list">${changes.map(change=>`<article><h3>${esc(change.name)}</h3>${change.fields.map(key=>`<div class="bulk-review-change"><strong>${bulkFieldLabels[key]}</strong><div><small>Atual</small><span>${esc(bulkDisplayValue(key,change.before[key]))}</span></div><div><small>Após salvar</small><span>${esc(bulkDisplayValue(key,change.after[key]))}</span></div></div>`).join('')}</article>`).join('')}</div>`;
+}
+function renderBulkEditor(){
+  if(!bulkEditor)return;
+  const count=bulkEditorChanges().length,tab=bulkEditor.tab;
+  const content=bulkEditor.discard?`<div class="bulk-discard"><h3>Descartar as alterações deste rascunho?</h3><p>Os produtos publicados serão mantidos como estão.</p><div class="actions"><button class="btn" onclick="bulkEditor.discard=false;renderBulkEditor()">Continuar editando</button><button class="btn danger" onclick="discardBulkEditor()">Descartar rascunho</button></div></div>`:tab==='data'?bulkDataTable():tab==='collections'?bulkCollectionPanel():tab==='variations'?bulkVariationPanel():bulkReviewPanel();
+  modal('Editar produtos em massa',`<div class="bulk-editor"><div class="bulk-editor-intro"><span>${bulkEditor.drafts.length} produtos selecionados</span><strong id="bulk-change-count" role="status">${bulkProductCount(count)} com alterações</strong></div><nav class="bulk-editor-tabs" aria-label="Etapas da edição em massa">${[['data','Dados dos produtos'],['collections','Coleções'],['variations','Variações'],['review','Revisão']].map(([key,label])=>`<button class="${tab===key?'active':''}" ${bulkEditor.busy?'disabled':''} aria-current="${tab===key?'step':'false'}" onclick="bulkSwitchTab('${key}')">${label}</button>`).join('')}</nav><div class="bulk-editor-notice" hidden role="status"></div><div class="bulk-editor-content">${content}</div><div class="bulk-editor-footer"><span>Alterações publicadas somente após salvar.</span><div class="actions"><button class="btn" ${bulkEditor.busy?'disabled':''} onclick="requestBulkClose()">Cancelar</button>${tab==='review'&&!bulkEditor.discard?`<button class="btn primary" ${bulkEditor.busy||!count?'disabled':''} onclick="saveBulkEditor()">${bulkEditor.busy?'Salvando…':'Salvar '+count+' produto'+(count===1?'':'s')}</button>`:`<button id="bulk-review-button" class="btn primary" ${bulkEditor.busy||!count||bulkEditor.discard?'disabled':''} onclick="bulkSwitchTab('review')">Revisar alterações</button>`}</div></div></div>`);
+  const dialog=document.querySelector('#modal');dialog.classList.add('catalog-bulk-dialog');dialog.querySelector('.close').disabled=bulkEditor.busy;
+  dialog.querySelector('.modal-body').scrollTop=0;
+}
+function requestBulkClose(){
+  if(!bulkEditor||bulkEditor.busy)return;
+  if(bulkEditorChanges().length){bulkEditor.discard=true;renderBulkEditor();}else discardBulkEditor();
+}
+function discardBulkEditor(){if(bulkEditor?.busy)return;bulkEditor=null;closeModalBeforeBulk();}
+const closeModalBeforeBulk=closeModal;
+closeModal=()=>bulkEditor&&document.querySelector('#modal')?.classList.contains('catalog-bulk-dialog')?requestBulkClose():closeModalBeforeBulk();
+const toastBeforeBulkEditor=toast;
+toast=message=>{const notice=bulkEditor&&document.querySelector('.bulk-editor-notice');if(notice){notice.hidden=false;notice.textContent=message;return;}return toastBeforeBulkEditor(message);};
+document.addEventListener('cancel',event=>{if(event.target.id==='modal'&&bulkEditor){event.preventDefault();requestBulkClose()}},true);
+window.addEventListener('beforeunload',event=>{if(bulkEditorChanges().length){event.preventDefault();event.returnValue=''}});
+async function saveBulkEditor(){
+  if(!canManage()||!bulkEditor||bulkEditor.busy||bulkEditor.tab!=='review'||bulkEditor.discard)return;
+  const editor=bulkEditor;
+  try{
+    const changes=bulkValidateChanges();editor.busy=true;renderBulkEditor();
+    await commitCatalogChanges(next=>{
+      for(const original of editor.originals){const live=next.products.find(p=>p.id===original.id);if(!live||JSON.stringify(live)!==JSON.stringify(original))throw Error('O produto “'+original.name+'” mudou em outra sessão. Cancele o rascunho e reabra o editor para revisar a versão atual.');}
+      for(const change of changes){const product=next.products.find(p=>p.id===change.id);for(const key of change.fields)if(key==='categories')assignProductCollections(product,change.after.categories);else product[key]=structuredClone(change.after[key]);}
+      const additions=editor.attributeAdditions.map(option=>({...option,values:option.values.filter(value=>changes.some(change=>change.fields.includes('variations')&&change.after.variations.some(v=>attributeKey(v.name)===attributeKey(option.name)&&v.values.some(item=>attributeKey(item)===attributeKey(value)))))})).filter(option=>option.values.length);
+      if(additions.length){
+        if(JSON.stringify(next.attributeCatalog??null)!==editor.catalogBaseline)throw Error('O catálogo de atributos mudou. Cancele o rascunho e reabra o editor.');
+        const catalog=structuredClone(attributeCatalog());
+        for(const option of additions){let entry=catalog.find(item=>attributeKey(item.name)===attributeKey(option.name));if(!entry){entry={name:option.name,values:[]};catalog.push(entry)}for(const value of option.values)if(!entry.values.some(item=>attributeKey(item)===attributeKey(value)))entry.values.push(value);}
+        if(catalog.length>30||catalog.some(option=>option.values.length>30))throw Error('O catálogo aceita até 30 atributos e 30 opções por atributo.');
+        next.attributeCatalog=catalog;
+      }
+    });
+    bulkEditor=null;catalogSelection.clear();closeModalBeforeBulk();render();toast(bulkProductCount(changes.length)+(changes.length===1?' atualizado.':' atualizados.'));
+  }catch(error){editor.busy=false;renderBulkEditor();toast(catalogSaveError(error));}
+}
