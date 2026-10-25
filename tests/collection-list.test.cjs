@@ -15,6 +15,8 @@ run(`storefront.toggle('${id}',true)`);
 let markup=run('storefront.storeHome()');
 assert.match(markup,/collection-list-grid/);assert.match(markup,/colecao=Sof%C3%A1s/);assert.match(markup,/shape-square/);
 assert.match(markup,/aria-label="Ver coleção Sofás"/);
+run("storefront.change('showArrows',true)");
+assert.doesNotMatch(run('storefront.storeHome()').match(/<section class="storefront-collection-list[\s\S]*?<\/section>/)[0],/<svg/,'Legacy arrow settings must not reintroduce arrows beside collection names');
 assert.match(markup,/IMG_3265/, 'Without a custom image use a public product photo from the linked collection');
 run("storefront.change('shape','round');storefront.change('showTitles',false);storefront.change('showHeading',false);storefront.change('background','#1c2228');storefront.change('mobileCarousel',true)");
 markup=run('storefront.storeHome()');assert.match(markup,/shape-round/);assert.match(markup,/--list-bg:#1c2228/);assert.match(markup,/is-mobile-carousel/);

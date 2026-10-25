@@ -66,17 +66,22 @@
 @media(max-width:650px){
   .storefront-home .home-section+.collection-carousel-section,
   .storefront-home .collection-carousel-section+.home-section{margin-top:16px}
-  .storefront-collection-list.has-mobile-carousel{padding-block:min(24px,calc(var(--list-padding,40px) / 2))}
+  .storefront-home{--store-page-gutter:17px;padding-inline:var(--store-page-gutter)}
+  .storefront-collection-list.has-mobile-carousel{
+    --collection-rail-inset:calc(var(--store-page-gutter,17px) + 16px);
+    margin-inline:calc(-1 * var(--store-page-gutter,17px));padding-inline:var(--collection-rail-inset);
+    padding-block:min(24px,calc(var(--list-padding,40px) / 2));border-radius:0
+  }
   .has-mobile-carousel .collection-list-heading{font-size:22px;line-height:1.3;letter-spacing:-.35px;margin-bottom:14px}
   .has-mobile-carousel .collection-list-heading.heading-small{font-size:20px}
   .has-mobile-carousel .collection-list-heading.heading-large{font-size:24px}
   .collection-list-grid.is-mobile-carousel{
     grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:clamp(80px,22vw,100px);gap:12px;
-    overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-inline:3px;
-    padding:4px 3px 8px;margin:-4px -3px -8px;scrollbar-width:thin;scrollbar-color:#8885 transparent
+    width:calc(100% + var(--collection-rail-inset) * 2);
+    overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-inline:var(--collection-rail-inset);
+    padding:4px var(--collection-rail-inset) 8px;margin:-4px calc(-1 * var(--collection-rail-inset)) -8px;scrollbar-width:none
   }
-  .collection-list-grid.is-mobile-carousel::-webkit-scrollbar{height:3px}
-  .collection-list-grid.is-mobile-carousel::-webkit-scrollbar-thumb{background:#8885;border-radius:3px}
+  .collection-list-grid.is-mobile-carousel::-webkit-scrollbar{display:none}
   .collection-list-grid.is-mobile-carousel>li{scroll-snap-align:start}
   .is-mobile-carousel .collection-tile{border-radius:8px}
   .is-mobile-carousel .collection-tile-caption{padding:8px 6px 9px;gap:4px}
@@ -85,6 +90,5 @@
     font-size:12px;line-height:1.35;min-height:2.7em;font-weight:600;
     display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden
   }
-  .is-mobile-carousel .collection-tile-caption .icon{width:11px;height:11px;margin-left:1px;vertical-align:-1px}
   .is-mobile-carousel .collection-tile-caption small{font-size:11px;line-height:1.35}
 }

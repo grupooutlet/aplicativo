@@ -9,7 +9,7 @@ Em **Loja online → Adicionar seção → Lista de coleções**, configure uma 
 - Imagens quadradas, redondas, retangulares horizontais ou verticais, com preenchimento ou foto inteira.
 - Título da seção e nomes das coleções visíveis ou ocultos, alinhamento, tamanho do título e nomes personalizados nos cartões.
 - Cores da seção, textos e cartões. No formato redondo, os nomes acompanham o texto da seção para preservar a leitura sobre o fundo escolhido.
-- Duas a seis colunas no computador; uma ou duas no celular em grade. Com carrossel no celular, os cartões usam largura compacta automática (80 a 100 px), com parte do próximo cartão visível, encaixe suave ao deslizar e espaçamentos menores. Os formatos e cores escolhidos são preservados. Espaçamento e quantidade de produtos são opcionais.
+- Duas a seis colunas no computador; uma ou duas no celular em grade. Com carrossel no celular, os cartões usam largura compacta automática (80 a 100 px), com parte do próximo cartão visível somente na borda da tela, sem barra de rolagem, encaixe suave ao deslizar e espaçamentos menores. Os nomes não exibem setas, inclusive nas listas antigas. Os formatos e cores escolhidos são preservados. Espaçamento e quantidade de produtos são opcionais.
 
 Os cartões abrem a coleção correspondente. A prévia usa o mesmo componente da loja e permite navegar para a coleção e editar seu modelo. Coleções desativadas ou removidas não geram links na loja. Renomear a coleção mantém o vínculo, a imagem própria e o nome personalizado; excluir a coleção remove seu cartão das listas sem excluir produtos.
 
