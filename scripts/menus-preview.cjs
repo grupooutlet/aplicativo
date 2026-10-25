@@ -21,6 +21,12 @@ if(process.env.QA_COLLECTION_LIST==='1'){
  model.collections=names;model.products=names.map((category,i)=>({...product(i+1,category+' de demonstração',497+i*200),category,categories:[category]}));
  model.storefront.sections.unshift({id:'qa-collection-list',type:'collection-list',enabled:true,title:'O que você procura?',showHeading:true,shape:'square',imageFit:'cover',showTitles:true,columns:6,mobileColumns:2,mobileCarousel:true,background:'#1c2228',textColor:'#ffffff',cardBackground:'#f5f5f3',cardTextColor:'#1c2228',items:names.map((category,i)=>({id:'qa-collection-'+i,category,title:'',image:'',imageAlt:''}))});
 }
+if(process.env.QA_COMPACT_CAROUSEL==='1'){
+ const section=model.storefront.sections.find(s=>s.type==='collection-list');
+ if(section)Object.assign(section,{shape:'round',titleAlign:'center',padding:40,background:'#ffffff',textColor:'#1c2228'});
+ model.storefront.sections.unshift({id:'qa-banner',type:'banner',enabled:true,showText:false,image:'https://rwxqytomiorsrxpgtjin.supabase.co/storage/v1/object/public/product-photos/products/storefront-dbb0cf1720f8e41a77c07e89.png',imageAlt:'Banner da loja'});
+ model.storefront.sections.find(s=>s.type==='collection').eyebrow='Os mais queridinhos';
+}
 const qaProfile={user_id:'qa-master',name:qaPosition==='Principal'?'Grupo Outlet':'Bianca QA',email:qaPosition==='Principal'?'grupooutlet.rj@gmail.com':'vendedor-qa@example.invalid',role:qaPosition==='Principal'?'master':'admin',position:qaPosition==='Principal'?null:qaPosition};
 const qaCustomers=[],qaContacts=[];
 if(process.env.QA_CUSTOMERS==='1'){
