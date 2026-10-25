@@ -161,7 +161,7 @@ saveShippingOption=async(form,index)=>{
 deleteShippingOption=async index=>{
   if(!canConfigureFreight()||freightSaving)return;
   const option=allShippingOptions()[index];if(option?.delivery!=='Entrega')return;
-  if(!confirm(`Excluir a região "${option.name}"? Os pedidos anteriores manterão o frete registrado.`))return;
+  if(!await confirmBusinessChange({title:'Excluir região de entrega',description:`Você confirma a exclusão de “${option.name}”?`,impact:'A região deixará de estar disponível no checkout. Os pedidos anteriores manterão o frete registrado.',confirmLabel:'Sim, excluir região',danger:true}))return;
   await persistRegionalFreight(allShippingOptions().filter((_,i)=>i!==index));
 };
 toggleFreight=async index=>{

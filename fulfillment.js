@@ -2,15 +2,8 @@
 let customerContacts = [];
 let driverDeliveries = [];
 let cepLookupSerial = 0;
-const orderMoment = order => {
-  const timestamp = order.createdAt || order.created_at;
-  if (timestamp && !Number.isNaN(Date.parse(timestamp))) {
-    const date = new Date(timestamp);
-    return `${date.toLocaleDateString('pt-BR')} • ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} • ${esc(order.channel || 'Loja física')}`;
-  }
-  const date = order.date ? new Date(`${order.date}T12:00:00`).toLocaleDateString('pt-BR') : 'Data não registrada';
-  return `${date} • Horário não registrado • ${esc(order.channel || 'Loja física')}`;
-};
+const orderMoment = order => {const stamp=orderCreatedParts(order);return `${stamp.date} • ${stamp.time} • ${esc(order.channel||'Loja física')}`;};
+
 function customerOrderCount(order) {
   const digits = value => String(value || '').replace(/\D/g, '');
   return db.orders.filter(item => {

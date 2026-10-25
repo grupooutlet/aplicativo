@@ -421,6 +421,18 @@ function orderSteps(order, driver = false) {
     <ol class="order-steps">${steps.map((step, index) => `<li class="order-step ${step.done ? 'done' : step.available && !cancelled ? 'current' : 'locked'}"><span class="order-step-number">${step.done ? '✓' : index + 1}</span><div><h3>${step.title}</h3><p>${esc(step.detail)}</p>
       ${!step.done && !cancelled ? step.available ? button(step.label, `onclick="${step.action}"`, 'small primary') : '<span class="step-waiting">' + (driver && !ownsDelivery ? 'Pedido vinculado a outro entregador.' : 'Aguardando a etapa anterior ou a equipe responsável.') + '</span>' : ''}</div></li>`).join('')}</ol></section>`;
 }
+// Order presentation uses saved item names and the current cover without changing historical lines.
+function orderItemVisual(item){
+  const product=item.stockTracked===false?null:db.products.find(p=>Number(p.id)===Number(item.id));
+  const raw=product?.image||productImages(product)[0]||item.image||'';
+  const image=/^https?:\/\/[^\s]+$/i.test(raw)||/^assets\/[\w./-]+$/.test(raw)||/^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/.test(raw)?raw:'assets/product-placeholder.svg';
+  return `<div class="order-item-product">${item.stockTracked===false?`<span class="order-item-service" aria-hidden="true">${icon('shield')}</span>`:`<img class="order-item-photo" src="${esc(image)}" alt="" width="44" height="44" loading="lazy" onerror="this.onerror=null;this.src='assets/product-placeholder.svg'">`}<span>${esc(item.name)}</span></div>`;
+}
+const canEditOrderNotes=()=>isOwner&&canSell()&&['master','admin'].includes(currentProfile?.role);
+function orderNotesCard(order){
+  return `<section class="card order-notes-card"><div class="card-header"><h2>Observações</h2>${canEditOrderNotes()?button(order.notes?'Editar':'Adicionar',`onclick="editOrderNotes(${order.id})" aria-label="${order.notes?'Editar':'Adicionar'} observações do pedido ${order.id}"`,'small','edit'):''}</div><div class="pad"><p class="order-notes-content ${order.notes?'':'subtle'}">${esc(order.notes||'Nenhuma observação adicionada.')}</p>${order.notesUpdatedAt?`<small class="order-notes-updated">Atualizado em ${esc(momentLabel(order.notesUpdatedAt))}</small>`:''}</div></section>`;
+}
+
 orderDetail = id => {
   const order = visibleOrders().find(item => item.id === id);
   if (!order) return heading('Pedido não encontrado', 'Este pedido não está disponível para seu perfil.');
@@ -431,7 +443,7 @@ orderDetail = id => {
       (canPay() && ['pending', 'ready'].includes(order.status) ? button('Editar dados', `onclick="editOrderModal(${id})"`, '', 'edit') : '') +
       button('Imprimir pedido', `onclick="go('/imprimir/${id}')"`, '', 'print')) +
     `<div class="order-detail-layout"><div class="stack"><section class="card"><div class="card-header"><h2>Itens do pedido</h2>${badge(order)}</div>
-      <div class="tablewrap"><table><thead><tr><th>Produto / variações</th><th>Quantidade</th><th>Total</th></tr></thead><tbody>${order.items.map(item => `<tr><td>${esc(item.name)}</td><td>${item.qty}</td><td>${money(item.qty * item.price)}</td></tr>`).join('')}</tbody></table></div>
+      <div class="tablewrap"><table class="order-items-table"><thead><tr><th>Produto / variações</th><th><abbr title="Quantidade">Qtd.</abbr></th><th>Total</th></tr></thead><tbody>${order.items.map(item => `<tr><td>${orderItemVisual(item)}</td><td>${item.qty}</td><td>${money(item.qty * item.price)}</td></tr>`).join('')}</tbody></table></div>
       <div class="pad"><div class="total-line"><span>Produtos</span><strong>${money(productSubtotal(order))}</strong></div><div class="total-line"><span>Frete</span><strong>${order.freightPending ? 'A definir no agendamento' : money(order.freight)}</strong></div>
       ${order.paymentMethodId ? quoteMarkup({ ...order, total: orderTotal(order) }) : ''}<div class="total-line final"><span>Total</span><strong>${money(orderTotal(order))}</strong></div></div></section>
       <section class="card pad"><h2>Entrega e retirada</h2><div class="total-line"><span>Status</span>${badge(order)}</div>
@@ -444,7 +456,7 @@ orderDetail = id => {
       ${order.receipt?.startsWith('data:image/') ? `<img class="receipt-preview" src="${esc(order.receipt)}" alt="Comprovante de pagamento">` : '<p class="subtle" style="margin-top:14px">O comprovante será registrado na etapa de pagamento.</p>'}</section>
       <section class="card pad"><h2>Informações do Cliente</h2><p style="margin:16px 0;line-height:1.8"><strong>${esc(order.customer)}</strong><br>${esc(order.phone)}<br>${esc(order.email || '')}<br>CPF: ${esc(order.cpf)}</p><p class="subtle">Pedidos realizados: <strong>${customerOrderCount(order)}</strong></p></section>
       <section class="card pad"><h2>Responsável pela venda</h2><p style="margin-top:14px">${esc(order.seller || 'Loja online')}</p><p class="subtle" style="margin-top:8px">${esc(order.channel)}</p></section>
-      <section class="card pad"><h2>Observações</h2><p style="margin-top:14px;line-height:1.7">${esc(order.notes || 'Nenhuma observação.')}</p></section>
+      ${orderNotesCard(order)}
       <div class="actions">${canManage() && order.status !== 'cancelled' ? button('Cancelar pedido', `onclick="cancelOrderModal(${id})"`, 'danger') : ''}${mayDelete ? button('Excluir pedido', `onclick="deleteOrderModal(${id})"`, 'danger', 'trash') : ''}</div></div>
       <div class="order-workflow-column">${orderSteps(order)}</div></div>`;
 };

@@ -49,6 +49,10 @@ if(process.env.QA_CUSTOMERS==='1'){
  qaContacts.push({id:'qa-contact',name:'Marina Oliveira',email:'marina@example.invalid',phone:'21999998888',created_at:'2026-10-19T13:30:00Z',address:'Rua das Flores, 100 · Centro · Nova Iguaçu / RJ · CEP 26000-000'});
  model.orders=[{id:102,user_id:'qa-customer',customer_id:'qa-contact',customer:'Marina Oliveira',email:'marina@example.invalid',phone:'21999998888',status:'transit',createdAt:'2026-10-24T14:30:00Z',channel:'Loja online',seller:'Bianca Melo',payment:'Pix',paid:false,delivery:'Entrega',deliveryDate:'2026-10-26',address:'Rua das Palmeiras, 25 · Centro · Nova Iguaçu / RJ · CEP 26000-010',freight:100,items:[{id:1,name:'Sofá retrátil Grécia · Cor: Bege',qty:1,price:1597,cost:50}]},{id:101,user_id:'qa-customer',customer_id:'qa-contact',customer:'Marina Oliveira',email:'marina@example.invalid',status:'delivered',createdAt:'2026-10-19T13:30:00Z',channel:'Loja física',seller:'Eduardo Thales',payment:'Cartão de débito',paid:true,delivery:'Entrega',address:qaContacts[0].address,freight:100,items:[{id:3,name:'Poltrona de apoio',qty:2,price:497,cost:50}]}];
 }
+if(process.env.QA_ORDER_UX==='1'){
+ model.orders[0].notes='Cliente prefere a entrega no período da tarde.';
+ model.orders[0].items.push({id:3,name:model.products[2].name,qty:1,price:model.products[2].price,cost:model.products[2].cost});
+}
 let qaHistory=[];
 if(process.env.QA_AUDIT==='1'){
  const freight=model.settings.shippingOptions.find(o=>o.name==='Niterói');const before=structuredClone(freight);freight.price=220;
@@ -67,6 +71,7 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  if(url.includes('/rpc/sales_state'))return reply({data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p),orderBumps:fixtureModel.orderBumps.map(({cost,...b})=>b)},version:fixtureVersion});
  if(url.includes('/rest/v1/customer_contacts'))return reply(fixtureContacts);
  if(url.includes('/rest/v1/app_state'))return reply([{data:fixtureModel,version:fixtureVersion}]);
+ if(url.includes('/rpc/save_order_notes')){const order=fixtureModel.orders.find(item=>item.id===body.p_order_id);if(!order)return reply({message:'Pedido não encontrado.'},400);if((order.notes||'')!==body.p_expected_notes)return reply({message:'A observação foi alterada em outra sessão.'},409);order.notes=body.p_notes;order.notesUpdatedAt=new Date().toISOString();return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_catalog')){if(body.p_expected_version!==fixtureVersion)return reply({message:'O catálogo mudou em outra sessão.'},409);Object.assign(fixtureModel,body.p_changes);return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_collection')){const before=body.p_previous,name=body.p_name;if(before){fixtureModel.collections=fixtureModel.collections.map(c=>c===before?name:c);for(const p of fixtureModel.products){p.categories=p.categories.map(c=>c===before?name:c);if(p.category===before)p.category=name;}}else fixtureModel.collections.push(name);fixtureModel.collectionSettings[name]={...(fixtureModel.collectionSettings[before]||{}),active:body.p_active,sort:body.p_sort,...(body.p_product_ids?{productIds:body.p_product_ids}:{})};if(before!==name)delete fixtureModel.collectionSettings[before];return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_storefront')){fixtureModel.storefront=body.p_storefront;return reply({version:++fixtureVersion});}

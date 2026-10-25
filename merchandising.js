@@ -532,7 +532,7 @@ function bulkDisplayValue(key,value){
 }
 function bulkReviewPanel(){
   const changes=bulkEditorChanges();
-  return `<div class="bulk-review-intro">${icon('check')}<div><h3>Confira antes de salvar</h3><p>${changes.length} de ${bulkEditor.drafts.length} produtos serão atualizados. Campos sem alteração serão preservados.</p></div></div><div class="bulk-review-list">${changes.map(change=>`<article><h3>${esc(change.name)}</h3>${change.fields.map(key=>`<div class="bulk-review-change"><strong>${bulkFieldLabels[key]}</strong><div><small>Atual</small><span>${esc(bulkDisplayValue(key,change.before[key]))}</span></div><div><small>Após salvar</small><span>${esc(bulkDisplayValue(key,change.after[key]))}</span></div></div>`).join('')}</article>`).join('')}</div>`;
+  return `<div class="bulk-review-intro">${icon('check')}<div><h3>Você confirma estas alterações?</h3><p>${changes.length} de ${bulkEditor.drafts.length} produtos serão atualizados. Campos sem alteração serão preservados.</p></div></div><div class="bulk-review-list">${changes.map(change=>`<article><h3>${esc(change.name)}</h3>${change.fields.map(key=>`<div class="bulk-review-change"><strong>${bulkFieldLabels[key]}</strong><div><small>Atual</small><span>${esc(bulkDisplayValue(key,change.before[key]))}</span></div><div><small>Após salvar</small><span>${esc(bulkDisplayValue(key,change.after[key]))}</span></div></div>`).join('')}</article>`).join('')}</div>`;
 }
 function renderBulkEditor(){
   if(!bulkEditor)return;

@@ -37,7 +37,7 @@ function attributeCard(option, selected = [], draft = false) {
   return `<article class="attribute-card" data-attribute-name="${esc(name)}" ${draft ? 'data-draft="true"' : ''}>
     <div class="attribute-card-head"><strong>${esc(name || 'Novo atributo')}</strong><button class="attribute-edit-trigger" type="button" onclick="toggleAttributeEditor(this)" aria-label="Editar ${esc(name || 'novo atributo')}" aria-expanded="${draft ? 'true' : 'false'}">${icon('edit')}</button></div>
     <div class="attribute-choices">${option.values.map(value => `<label class="attribute-choice"><input class="attribute-choice-input" type="checkbox" value="${esc(value)}" ${selected.some(item => attributeKey(item) === attributeKey(value)) ? 'checked' : ''}><span>${colorDot(name, value)}${esc(value)}</span></label>`).join('') || '<small class="attribute-empty">Adicione as opções deste atributo no lápis.</small>'}</div>
-    <div class="attribute-edit-panel" ${draft ? '' : 'hidden'} onkeydown="if(event.key==='Enter' && event.target.tagName==='INPUT'){event.preventDefault();saveAttribute(this.querySelector('.attribute-edit-actions .primary'))}">
+    <div class="attribute-edit-panel" ${draft ? '' : 'hidden'} onkeydown="if(event.key==='Enter' && event.target.tagName==='INPUT'){event.preventDefault();this.querySelector('.attribute-edit-actions .primary').click()}">
       <label class="field">Nome do atributo<input class="attribute-name-input" type="text" maxlength="40" value="${esc(name)}" placeholder="Ex.: Cor, Medida, Tecido"></label>
       <span class="attribute-edit-label">Opções disponíveis</span><div class="attribute-value-list">${option.values.map(attributeValueInput).join('') || attributeValueInput()}</div>
       <button class="btn small attribute-add-value" type="button" onclick="addAttributeValue(this)">+ Adicionar opção</button>
@@ -111,11 +111,11 @@ function saveAttribute(button) {
   redrawAttributeCards(selected);
   toast('Atributo salvo. Selecione as opções disponíveis para este produto.');
 }
-function deleteAttribute(button) {
+async function deleteAttribute(button) {
   const card = button.closest('.attribute-card');
   if (card.dataset.draft === 'true') return card.remove();
   const name = card.dataset.attributeName;
-  if (!confirm(`Excluir "${name}" do catálogo de atributos?`)) return;
+  if (!await confirmBusinessChange({title:'Excluir atributo',description:`Você confirma a exclusão de “${name}” do catálogo de atributos?`,impact:'Os produtos já salvos mantêm as opções atuais. O atributo deixará de estar disponível para novas seleções.',confirmLabel:'Sim, excluir atributo',danger:true})) return;
   const selected = selectedAttributes();
   selected.delete(attributeKey(name));
   db.attributeCatalog = attributeCatalog().filter(option => attributeKey(option.name) !== attributeKey(name));

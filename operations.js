@@ -187,7 +187,7 @@ editOrderModal = id => {
   if (!order || !canPay() || completed(order) || order.status === 'cancelled') return;
   const names = splitCustomerName(order);
   const address = orderAddressParts(order);
-  modal('Editar dados do pedido', `<form onsubmit="event.preventDefault();saveOrderData(this,${id})"><div class="form-grid">
+  modal('Editar dados do pedido', `<form data-order-id="${id}" onsubmit="event.preventDefault();saveOrderData(this,${id})"><div class="form-grid">
     ${field('Nome', 'firstName', names.firstName, 'text', 'required autocomplete="given-name" minlength="2" maxlength="60"')}
     ${field('Sobrenome', 'lastName', names.lastName, 'text', 'required autocomplete="family-name" minlength="2" maxlength="60"')}
     ${field('Telefone / WhatsApp', 'phone', formatBrazilPhone(order.phone), 'tel', 'required placeholder="+55 (99) 99999-8899" onblur="this.value=formatBrazilPhone(this.value)" data-full')}
