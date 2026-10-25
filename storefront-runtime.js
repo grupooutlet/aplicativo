@@ -33,7 +33,6 @@ function applyStorePageSettings(){
   }
   if(key==='collection'){
     root.classList.toggle('content-align-center',cfg.contentAlign==='center');
-    if(cfg.showFilters===false)root.querySelector('.toolbar')?.setAttribute('hidden','');
     if([2,3,4].includes(Number(cfg.columns))){const grid=root.querySelector('.catalog');if(grid){grid.classList.add('store-custom-grid');grid.style.setProperty('--store-columns',Number(cfg.columns))}}
   }
 }

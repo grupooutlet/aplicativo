@@ -33,6 +33,10 @@ if(process.env.QA_PRODUCT_DESIGN==='1'){
  model.products[3].active=true;
  model.storefront.sections=[{id:'qa-products',type:'collection',category:'Todos',enabled:true,title:'Escolhas para sua casa',eyebrow:'Os mais queridinhos',limit:8}];
 }
+if(process.env.QA_COLLECTION_FILTERS==='1'){
+ model.collections=['Sofás','Poltronas'];model.products=Array.from({length:12},(_,i)=>({...product(i+1,['Sofá retrátil Grécia','Sofá cama Madrid com encosto reclinável e tecido de linho premium','Sofá de canto com chaise'][i%3],697+i*150),promoPrice:i===0?597:undefined,variations:[{name:'Cor',values:[['Bege','Cinza','Preto'][i%3]]},{name:'Tamanho',values:[i%2?'1,80m':'2,00m']},{name:'Característica',values:[i%2?'Retrátil':'Fixo']},{name:'Tecido',values:[i%2?'Veludo':'Linho']}]}));
+ model.productSales={'1':2,'3':9,'5':6};
+}
 const qaProfile={user_id:'qa-master',name:qaPosition==='Principal'?'Grupo Outlet':'Bianca QA',email:qaPosition==='Principal'?'grupooutlet.rj@gmail.com':'vendedor-qa@example.invalid',role:qaPosition==='Principal'?'master':'admin',position:qaPosition==='Principal'?null:qaPosition};
 const qaCustomers=[],qaContacts=[];
 if(process.env.QA_CUSTOMERS==='1'){
@@ -67,6 +71,7 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  if(url.includes('/rpc/revert_change_history')){const row=fixtureHistory.find(h=>h.id===body.p_id);for(const c of row.changes)fixtureModel.settings.shippingOptions=fixtureModel.settings.shippingOptions.map(o=>o.id===c.entityId?c.before:o);row.reverted_at=new Date().toISOString();row.reverted_by_name='Grupo Outlet';return reply({id:body.p_id,reversal_id:9002});}
  return reply({message:'Esta é uma prévia isolada; nenhuma alteração será enviada à loja.'},400);
 };</script>`;
-const html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace('<head>','<head>'+preload);
+const mobileWidth=[320,360,390,430].includes(Number(process.env.QA_MOBILE_WIDTH))?Number(process.env.QA_MOBILE_WIDTH):390;
+const html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace('<head>','<head>'+preload).replace("previewSize==='mobile'?390:1280","previewSize==='mobile'?"+mobileWidth+":1280");
 const server=http.createServer((req,res)=>{if(req.method!=='GET')return res.writeHead(405).end();res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(html);});
 server.listen(0,'127.0.0.1',()=>console.log('Menu and collection QA: http://127.0.0.1:'+server.address().port+'/#/app/menus'));

@@ -138,4 +138,4 @@ const routePathBeforeMenuQueries=routePath;
 routePath=()=>routePathBeforeMenuQueries().split('?')[0];
 let menuLastRoute='';
 const renderBeforeMenuQueries=render;
-render=()=>{const current=location.hash;if(current!==menuLastRoute){menuLastRoute=current;if(routePath()==='/loja/catalogo'){const query=new URLSearchParams(current.split('?')[1]||'');if(query.has('colecao')){catalogCategory=query.get('colecao');catalogQuery='';}}}return renderBeforeMenuQueries();};
+render=()=>{const current=location.hash;if(current!==menuLastRoute){menuLastRoute=current;if(routePath()==='/loja/catalogo'){const query=new URLSearchParams(current.split('?')[1]||'');if(query.has('colecao')){catalogCategory=query.get('colecao');catalogQuery=query.get('q')||'';}}}return renderBeforeMenuQueries();};

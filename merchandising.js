@@ -295,7 +295,102 @@ async function deleteOrderBump(index,submit) {submit.disabled=true;try{await com
 const adminPageBeforeCatalog = adminPage;
 adminPage = page => { if(page==='collections'){const name=routePath().split('/').slice(3).join('/');return name?collectionDetailPage(decodeURIComponent(name)):collectionsPage();}if(page==='order-bumps')return orderBumpsPage();return adminPageBeforeCatalog(page); };
 navigation.splice(navigation.findIndex(item=>item[0]==='products')+1,0,['order-bumps','Order Bumps','plus']);
-catalogPage = () => {const products=collectionProducts(catalogCategory,true).filter(p=>(p.name+' '+p.sku).toLowerCase().includes(catalogQuery.toLowerCase()));return `<div class="store-content">${heading(catalogCategory==='Todos'?'Encontre o seu próximo móvel':esc(catalogCategory),'Conforto, praticidade e preços que cabem nos seus planos.')}<div class="toolbar catalog-toolbar" style="padding:0 0 25px"><form class="search" onsubmit="event.preventDefault();catalogQuery=this.q.value;render()">${icon('search')}<input name="q" value="${esc(catalogQuery)}" placeholder="Buscar na coleção" aria-label="Buscar na coleção"><button aria-label="Buscar">${icon('chevron')}</button></form><div class="actions"><select class="control" aria-label="Filtrar coleção" onchange="catalogCategory=this.value;render()">${['Todos',...visibleCollections()].map(c=>`<option ${c===catalogCategory?'selected':''}>${esc(c)}</option>`).join('')}</select><span class="catalog-count">${products.length} produtos</span></div></div><div class="catalog">${products.map(p=>shopProduct(p,db.storefront?.pageSettings?.collection||{})).join('')}</div>${products.length?'':'<div class="empty">Nenhum produto encontrado.</div>'}</div>`;};
+paths.sliders='M4 7h16M4 17h16M8 4v6M16 14v6';
+const collectionFilterKey=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('pt-BR');
+const shopSortOptions=[['featured','Em destaque'],['price_asc','Menor preço'],['price_desc','Maior preço'],['title_asc','Nome: A–Z'],['title_desc','Nome: Z–A'],['bestsellers','Mais vendidos']];
+let shopFilters={scope:'',query:'',min:null,max:null,selected:[],sort:'featured'},shopFilterHash=null,shopFilterFocus=null;
+function parseCollectionPrice(raw){
+  let text=String(raw??'').trim().replace(/^R\$\s*/i,'').replace(/\s/g,'');if(!text)return null;
+  if(text.includes(',')){
+    if(!/^(?:\d+|\d{1,3}(?:\.\d{3})+),\d{1,2}$/.test(text))throw Error('Informe um preço válido, como 1.500,00.');
+    text=text.replace(/\./g,'').replace(',','.');
+  }else if(/^\d{1,3}(?:\.\d{3})+$/.test(text))text=text.replace(/\./g,'');
+  else if(!/^\d+(?:\.\d{1,2})?$/.test(text))throw Error('Informe um preço válido, como 1.500,00.');
+  const value=Number(text);if(!Number.isFinite(value)||value<0||value>999999999.99)throw Error('Informe um preço válido.');return Math.round(value*100)/100;
+}
+function collectionFilterState(){
+  const hash=location.hash,params=new URLSearchParams(hash.split('?')[1]||''),fromUrl=hash!==shopFilterHash;
+  if(fromUrl&&params.has('q'))catalogQuery=String(params.get('q')).slice(0,200);
+  if(fromUrl||shopFilters.scope!==catalogCategory||shopFilters.query!==catalogQuery){
+    let selected=[];try{const value=JSON.parse((params.get('f')||'[]').slice(0,8000));if(Array.isArray(value))selected=value.filter(entry=>Array.isArray(entry)&&typeof entry[0]==='string'&&Array.isArray(entry[1])).slice(0,40).map(([key,values])=>[key,values.filter(v=>typeof v==='string').slice(0,100)])}catch{}
+    const price=key=>{const value=params.get(key);return value!==null&&/^\d+(?:\.\d{1,2})?$/.test(value)&&Number(value)<=999999999.99?Number(value):null};
+    shopFilters={scope:catalogCategory,query:catalogQuery,min:fromUrl?price('min'):null,max:fromUrl?price('max'):null,selected:fromUrl?selected:[],sort:fromUrl&&shopSortOptions.some(([key])=>key===params.get('sort'))?params.get('sort'):'featured'};
+    if(shopFilters.min!==null&&shopFilters.max!==null&&shopFilters.min>shopFilters.max){shopFilters.min=null;shopFilters.max=null}
+    shopFilterHash=hash;
+  }
+  return shopFilters;
+}
+function completedProductSales(orders){
+  const sales={};for(const order of orders||[])if(order.status==='delivered'&&order.paid===true)for(const line of order.items||[]){const id=String(line.id),qty=Number(line.qty);if(/^\d+$/.test(id)&&Number.isInteger(qty)&&qty>0)sales[id]=(sales[id]||0)+qty}return sales;
+}
+function collectionSales(){return db.productSales&&typeof db.productSales==='object'?db.productSales:isOwner?completedProductSales(db.orders):{}}
+function collectionFilterModel(state=collectionFilterState()){
+  const groups=new Map(),query=collectionFilterKey(catalogQuery);
+  const products=collectionProducts(catalogCategory,true).filter(p=>collectionFilterKey(p.name+' '+p.sku).includes(query));
+  const rows=products.map(product=>{
+    const attributes=new Map();
+    for(const attribute of productVariations(product)){
+      const name=String(attribute.name||'').trim(),key=collectionFilterKey(name);if(!key)continue;
+      if(!groups.has(key))groups.set(key,{key,name,values:new Map()});
+      if(!attributes.has(key))attributes.set(key,new Set());
+      for(const raw of Array.isArray(attribute.values)?attribute.values:[]){const value=String(raw).trim(),valueKey=collectionFilterKey(value);if(valueKey){attributes.get(key).add(valueKey);if(!groups.get(key).values.has(valueKey))groups.get(key).values.set(valueKey,value)}}
+    }
+    return {product,attributes};
+  });
+  const facets=[...groups.values()].filter(group=>group.values.size).sort((a,b)=>{
+    const priority=key=>/^(cor|cores)$/.test(key)?0:/^(tamanho|medida|medidas)$/.test(key)?1:/^caracteristica/.test(key)?2:3;
+    return priority(a.key)-priority(b.key)||a.name.localeCompare(b.name,'pt-BR');
+  });
+  state.selected=state.selected.flatMap(([key,values])=>{const group=groups.get(key),valid=[...new Set(values)].filter(value=>group?.values.has(value));return valid.length?[[key,valid]]:[]});
+  const matches=(row,skip='')=>{
+    const price=salePrice(row.product);if(state.min!==null&&price<state.min||state.max!==null&&price>state.max)return false;
+    return state.selected.every(([key,values])=>key===skip||values.some(value=>row.attributes.get(key)?.has(value)));
+  };
+  for(const group of facets){group.available=new Set(rows.filter(row=>matches(row,group.key)).flatMap(row=>[...(row.attributes.get(group.key)||[])]));group.values=[...group.values].sort((a,b)=>a[1].localeCompare(b[1],'pt-BR',{numeric:true,sensitivity:'base'}))}
+  const filtered=rows.filter(row=>matches(row)).map(row=>row.product),sales=collectionSales();
+  if(state.sort==='bestsellers')filtered.sort((a,b)=>(Number(sales[b.id])||0)-(Number(sales[a.id])||0));
+  else if(state.sort!=='featured'){const ordered=sortedCollectionProducts(filtered,state.sort);filtered.splice(0,filtered.length,...ordered)}
+  return {products:filtered,facets,prices:products.map(salePrice)};
+}
+function collectionFilterUrl(){
+  const params=new URLSearchParams({colecao:catalogCategory});
+  if(catalogQuery)params.set('q',catalogQuery);if(shopFilters.min!==null)params.set('min',String(shopFilters.min));if(shopFilters.max!==null)params.set('max',String(shopFilters.max));
+  if(shopFilters.selected.length)params.set('f',JSON.stringify(shopFilters.selected));if(shopFilters.sort!=='featured')params.set('sort',shopFilters.sort);
+  const hash='#/loja/catalogo?'+params;history.replaceState({},'',basePath+hash);shopFilterHash=hash;
+}
+function updateCollectionResults(focus=null){collectionFilterUrl();render();if(focus){const node=[...document.querySelectorAll('#desktop-collection-filters input')].find(input=>input.name===focus.name&&input.value===focus.value);node?.focus({preventScroll:true})}}
+function applyCollectionFilters(form,focus=null){
+  const state=collectionFilterState(),model=collectionFilterModel(state),data=new FormData(form),error=form.querySelector('[data-filter-error]');
+  try{
+    const min=parseCollectionPrice(data.get('min')),max=parseCollectionPrice(data.get('max'));
+    if(min!==null&&max!==null&&min>max)throw Error('O valor máximo deve ser maior ou igual ao mínimo.');
+    state.min=min;state.max=max;state.selected=model.facets.flatMap(group=>{const values=[...new Set(data.getAll('facet:'+group.key))].filter(value=>group.values.some(([key])=>key===value));return values.length?[[group.key,values]]:[]});
+    const mobile=form.id==='mobile-collection-filters';if(mobile)closeCollectionFilters(false);
+    updateCollectionResults(focus?{name:focus.name,value:focus.value}:null);if(!mobile&&!focus)document.querySelector('#desktop-collection-filters .collection-apply-price')?.focus({preventScroll:true});if(mobile)document.querySelector('#open-collection-filters')?.focus({preventScroll:true});
+  }catch(reason){if(error){error.textContent=reason.message;error.hidden=false;error.focus()}else toast(reason.message)}
+}
+function setShopSort(value){if(!shopSortOptions.some(([key])=>key===value))return;collectionFilterState().sort=value;updateCollectionResults();document.querySelector('#collection-sort')?.focus({preventScroll:true})}
+function clearCollectionFilters(){const state=collectionFilterState();state.min=null;state.max=null;state.selected=[];updateCollectionResults()}
+function removeCollectionFilter(key,value){const state=collectionFilterState();if(key==='price'){state.min=null;state.max=null}else if(key==='query'){catalogQuery='';state.query=''}else state.selected=state.selected.flatMap(([name,values])=>{const next=name===key?values.filter(v=>v!==value):values;return next.length?[[name,next]]:[]});updateCollectionResults()}
+function clearCollectionFilterForm(form){form.querySelectorAll('input').forEach(input=>{if(input.type==='checkbox')input.checked=false;else input.value=''});const error=form.querySelector('[data-filter-error]');if(error)error.hidden=true}
+function openCollectionFilters(button){const dialog=document.querySelector('#collection-filters-dialog');if(!dialog)return;shopFilterFocus=button;document.body.classList.add('collection-filters-open');dialog.showModal()}
+function closeCollectionFilters(restore=true){const dialog=document.querySelector('#collection-filters-dialog');if(restore){dialog?.querySelector('form')?.reset();const error=dialog?.querySelector('[data-filter-error]');if(error)error.hidden=true}dialog?.close();document.body.classList.remove('collection-filters-open');if(restore)shopFilterFocus?.focus({preventScroll:true});shopFilterFocus=null}
+function collectionFilterForm(model,mobile=false){
+  const state=shopFilters,format=value=>value===null?'':value.toLocaleString('pt-BR',{useGrouping:false,maximumFractionDigits:2});
+  const palette={preto:'#222222',branco:'#ffffff',bege:'#d9c8a5',cinza:'#8d9295',marrom:'#795548',azul:'#416a98',verde:'#5f785c',rosa:'#dc9baf',vermelho:'#b54949',amarelo:'#e4bb4b',chumbo:'#4d5458',areia:'#d9cfb5',caramelo:'#b88351',cafe:'#634b3e'};
+  return `<form id="${mobile?'mobile':'desktop'}-collection-filters" class="collection-filter-form" onsubmit="event.preventDefault();applyCollectionFilters(this)"><div class="collection-filter-title"><h2>Filtros</h2><button class="filter-clear" type="button" onclick="${mobile?'clearCollectionFilterForm(this.form)':'clearCollectionFilters()'}">Limpar</button></div><details class="collection-filter-group" open><summary>Faixa de preço ${icon('down')}</summary><div class="collection-price-range"><label>Mínimo<div><span>R$</span><input name="min" inputmode="decimal" maxlength="18" value="${format(state.min)}" placeholder="${format(model.prices.length?Math.min(...model.prices):0)}" aria-label="Preço mínimo"></div></label><label>Máximo<div><span>R$</span><input name="max" inputmode="decimal" maxlength="18" value="${format(state.max)}" placeholder="${format(model.prices.length?Math.max(...model.prices):0)}" aria-label="Preço máximo"></div></label></div>${mobile?'':'<button class="btn small collection-apply-price" type="submit">Aplicar preço</button>'}</details>${model.facets.map(group=>{const selected=new Set(state.selected.find(([key])=>key===group.key)?.[1]||[]);return `<details class="collection-filter-group" open><summary>${esc(group.name)} ${icon('down')}</summary><div class="collection-filter-values">${group.values.map(([key,label])=>{const checked=selected.has(key),disabled=!checked&&!group.available.has(key),color=/^(cor|cores)$/.test(group.key)?palette[key.split(' ')[0]]:null;return `<label class="collection-filter-option ${!mobile&&disabled?'is-unavailable':''}"><input type="checkbox" name="facet:${esc(group.key)}" value="${esc(key)}" ${checked?'checked':''} ${!mobile&&disabled?'disabled':''} ${mobile?'':'onchange="applyCollectionFilters(this.form,this)"'}>${color?`<i class="filter-color-swatch" style="--swatch:${color}" aria-hidden="true"></i>`:''}<span>${esc(label)}</span></label>`}).join('')}</div></details>`}).join('')}<p class="collection-filter-error" data-filter-error role="alert" tabindex="-1" hidden></p>${mobile?'<div class="collection-filter-apply"><button class="btn primary" type="submit">Aplicar filtros</button></div>':''}</form>`;
+}
+function collectionActiveFilters(model){
+  const state=shopFilters,arg=value=>`decodeURIComponent('${encodeURIComponent(value).replace(/'/g,'%27')}')`,chips=[];
+  if(catalogQuery)chips.push(['query','','Busca: '+catalogQuery]);
+  if(state.min!==null||state.max!==null)chips.push(['price','',state.min!==null&&state.max!==null?`${money(state.min)} a ${money(state.max)}`:state.min!==null?'A partir de '+money(state.min):'Até '+money(state.max)]);
+  for(const [key,values] of state.selected){const group=model.facets.find(g=>g.key===key);for(const value of values)chips.push([key,value,(group?.name||key)+': '+(group?.values.find(([k])=>k===value)?.[1]||value)])}
+  return chips.length?`<div class="collection-active-filters" aria-label="Filtros aplicados">${chips.map(([key,value,label])=>`<button type="button" onclick="removeCollectionFilter(${arg(key)},${arg(value)})" aria-label="Remover filtro ${esc(label)}">${esc(label)}<span aria-hidden="true">×</span></button>`).join('')}</div>`:'';
+}
+catalogPage=()=>{
+  const model=collectionFilterModel(),cfg=db.storefront?.pageSettings?.collection||{},filters=cfg.showFilters!==false;
+  return `<div class="store-content collection-shop-page"><header class="heading collection-page-header"><div><h1>${catalogCategory==='Todos'?'Encontre o seu próximo móvel':esc(catalogCategory)}</h1><p>Conforto, praticidade e preços que cabem nos seus planos.</p></div>${filters?`<button id="open-collection-filters" class="btn collection-mobile-filter-toggle" type="button" onclick="openCollectionFilters(this)">${icon('sliders')}Filtrar</button>`:''}<label class="collection-sort-control">Ordenar por<select id="collection-sort" onchange="setShopSort(this.value)">${shopSortOptions.map(([key,label])=>`<option value="${key}" ${shopFilters.sort===key?'selected':''}>${label}</option>`).join('')}</select></label></header><div class="collection-layout ${filters?'':'without-filters'}">${filters?`<aside class="collection-filter-sidebar" aria-label="Filtrar produtos">${collectionFilterForm(model)}</aside>`:''}<section class="collection-filter-results" aria-label="Produtos da coleção" aria-live="polite">${collectionActiveFilters(model)}<div class="catalog">${model.products.map(p=>shopProduct(p,cfg)).join('')}</div>${model.products.length?'':`<div class="collection-filter-empty"><h2>Nenhum produto encontrado</h2><p>Tente outras opções ou amplie a faixa de preço.</p><button class="btn" onclick="clearCollectionFilters()">Limpar filtros</button>${catalogQuery?'<button class="text-link" onclick="removeCollectionFilter(\'query\',\'\')">Limpar busca</button>':''}</div>`}</section></div>${filters?`<dialog id="collection-filters-dialog" class="collection-filters-dialog" aria-label="Filtrar produtos" oncancel="event.preventDefault();closeCollectionFilters()" onclick="if(event.target===this){const r=this.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)closeCollectionFilters()}"><div class="collection-filter-dialog-head"><strong>Encontre seu móvel</strong><button type="button" aria-label="Fechar filtros" onclick="closeCollectionFilters()">×</button></div>${collectionFilterForm(model,true)}</dialog>`:''}</div>`;
+};
 function storeCollectionLinks() {return `<a href="/loja/catalogo" onclick="catalogCategory='Todos';catalogQuery=''">Todos os móveis</a>${visibleCollections().map(name=>`<a href="/loja/catalogo" onclick="catalogCategory=decodeURIComponent('${encodeURIComponent(name).replace(/'/g,'%27')}');catalogQuery=''">${esc(name)}</a>`).join('')}`;}
 const headerBeforeCollections = storeHeader;
 storeHeader=()=>headerBeforeCollections().replace(/<nav class="store-nav">[\s\S]*?<\/nav>/,'<nav class="store-nav">'+storeCollectionLinks()+'</nav>');
