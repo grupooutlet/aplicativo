@@ -655,7 +655,7 @@ render = function () {
       let html = shell(allowed(page) ? page : 'dashboard', content)
         .replace('<div class="navlabel">CANAIS DE VENDA</div>', '')
         .replace('<div class="navlabel">ORGANIZAÇÃO</div>', '<div class="navlabel">CONTA</div>');
-      html = html.replace(/<button class="global-search"[\s\S]*?<\/button>/, `<button class="global-search" onclick="go('/app/deliveries')">${icon('search')}<span>Buscar entregas e clientes da rota</span></button>`)
+      html = html
         .replace(/<button aria-label="Ver pendências"[^>]*>[\s\S]*?<\/button>/, button('Atualizar', currentProfile?.role === 'driver' ? 'onclick="refreshDriverDeliveries()"' : 'onclick="render()"', 'small'));
       $('#app').innerHTML = html; normalizeLinks(); document.title = 'Entregas · Grupo Outlet'; return;
     }

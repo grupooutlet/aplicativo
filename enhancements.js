@@ -384,17 +384,11 @@ async function deleteProduct(id) {
 
 shopProduct = p => `<article class="shop-product"><a href="/loja/produto/${p.id}"><div class="product-photo"><img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy"></div><h3>${esc(p.name)}</h3></a>${priceMarkup(p)}<small>${available(p.id) > 0 ? 'Disponível · pagamento combinado com a loja' : 'Temporariamente indisponível'}</small>${button(available(p.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque', `onclick="addToCart(${p.id})" ${available(p.id) > 0 ? '' : 'disabled'}`, '', 'plus')}</article>`;
 function selectProductPhoto(index) {
-  const product = db.products.find(p => p.id === Number(routePath().split('/')[3]));
-  const url = productImages(product)[index];
-  const image = $('#main-product-photo');
-  if (url && image) {
-    image.src = url;
-    document.querySelectorAll('.detail-thumbs button').forEach((button,i)=>{
-      button.classList.toggle('is-selected',i===index);
-      button.setAttribute('aria-pressed',String(i===index));
-    });
-  }
+  const rail=document.querySelector('.product-photo-rail');if(!rail)return;
+  const slides=rail.querySelectorAll('.product-photo-slide');if(!Number.isInteger(index)||index<0||index>=slides.length)return;
+  rail.scrollTo({left:index*rail.clientWidth,behavior:'smooth'});
 }
+
 productPage = id => {
   const p = db.products.find(p => p.id === id && p.active);
   if (!p) return '<div class="empty">Este produto não está disponível. <a href="/loja/catalogo">Voltar ao catálogo</a></div>';

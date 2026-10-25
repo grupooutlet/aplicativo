@@ -49,6 +49,7 @@ if(process.env.QA_AUDIT==='1'){
  const freight=model.settings.shippingOptions.find(o=>o.name==='Niterói');const before=structuredClone(freight);freight.price=220;
  qaHistory=[{id:9001,created_at:'2026-10-24T17:45:12Z',actor_name:'Bianca Melo',actor_role:'admin',actor_position:'Vendedor',areas:['shippingOptions'],summary:'Alterou: Niterói',change_count:1,reverted_at:null,changes:[{source:'state',kind:'entity',path:['settings','shippingOptions'],entityId:freight.id,before,beforeExists:true,after:structuredClone(freight),afterExists:true,label:'Niterói'}]}];
 }
+for(const order of model.orders)order.date||=String(order.createdAt||'2026-10-25').slice(0,10);
 const preload=`<script>
 let fixtureModel=${JSON.stringify(model)},fixtureVersion=1;
 let fixtureProfile=${JSON.stringify(qaProfile)},fixtureHistory=${JSON.stringify(qaHistory)},fixtureCustomers=${JSON.stringify(qaCustomers)},fixtureContacts=${JSON.stringify(qaContacts)};
@@ -66,7 +67,7 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  if(url.includes('/rpc/save_navigation')){fixtureModel.navigation=body.p_navigation;return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_shipping_settings')){fixtureModel.settings.shippingOptions=body.p_options;fixtureModel.settings.shippingMode='regional';return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_site_section')){if(body.p_section==='store')Object.assign(fixtureModel.settings,body.p_value);else if(body.p_section==='paymentMethods')fixtureModel.settings.paymentMethods=body.p_value;else if(body.p_section==='pages')fixtureModel.pages=body.p_value;return reply({version:++fixtureVersion});}
- if(url.includes('/rpc/list_change_history'))return reply({entries:fixtureHistory.map(({changes,...row})=>row),next_cursor:null});
+ if(url.includes('/rpc/list_change_history'))return reply({entries:fixtureHistory.filter(row=>(!body.p_area||row.areas.includes(body.p_area))&&(!body.p_query||(row.actor_name+' '+row.summary).toLocaleLowerCase('pt-BR').includes(body.p_query.toLocaleLowerCase('pt-BR')))).map(({changes,...row})=>row),next_cursor:null});
  if(url.includes('/rpc/change_history_detail'))return reply({...fixtureHistory.find(h=>h.id===body.p_id),can_revert:!fixtureHistory.find(h=>h.id===body.p_id).reverted_at});
  if(url.includes('/rpc/revert_change_history')){const row=fixtureHistory.find(h=>h.id===body.p_id);for(const c of row.changes)fixtureModel.settings.shippingOptions=fixtureModel.settings.shippingOptions.map(o=>o.id===c.entityId?c.before:o);row.reverted_at=new Date().toISOString();row.reverted_by_name='Grupo Outlet';return reply({id:body.p_id,reversal_id:9002});}
  return reply({message:'Esta é uma prévia isolada; nenhuma alteração será enviada à loja.'},400);

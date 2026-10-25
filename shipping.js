@@ -99,7 +99,7 @@ for(const eventName of ['input','change'])document.addEventListener(eventName,ev
 });
 
 let freightQuery='',freightCity='',freightStatus='all',freightPage=1,freightSaving=false;
-const regionalFreightRows=()=>allShippingOptions().map((option,index)=>({option,index})).filter(({option})=>option.delivery==='Entrega'&&(!freightCity||option.region?.city===freightCity)&&(freightStatus==='all'||(option.active!==false)===(freightStatus==='active'))&&shippingKey([option.name,option.region?.city,...(option.region?.neighborhoods||[])].join(' ')).includes(shippingKey(freightQuery))).sort((a,b)=>(a.option.region?.city||'').localeCompare(b.option.region?.city||'','pt-BR')||a.option.name.localeCompare(b.option.name,'pt-BR'));
+const regionalFreightRows=()=>allShippingOptions().map((option,index)=>({option,index})).filter(({option})=>option.delivery==='Entrega'&&(!freightCity||option.region?.city===freightCity)&&(freightStatus==='all'||(option.active!==false)===(freightStatus==='active'))&&matchesSearch([option.name,option.region?.city,...(option.region?.neighborhoods||[])].join(' '),freightQuery)).sort((a,b)=>(a.option.region?.city||'').localeCompare(b.option.region?.city||'','pt-BR')||a.option.name.localeCompare(b.option.name,'pt-BR'));
 function updateFreightFilter(name,value){if(name==='query')freightQuery=value;if(name==='city')freightCity=value;if(name==='status')freightStatus=value;freightPage=1;const target=document.querySelector('#regional-freight-list');if(target)target.innerHTML=regionalFreightTable();}
 function regionalFreightTable(){
   const rows=regionalFreightRows(),pages=Math.max(1,Math.ceil(rows.length/25));freightPage=Math.min(freightPage,pages);

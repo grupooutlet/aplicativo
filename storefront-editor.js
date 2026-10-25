@@ -54,8 +54,9 @@ const storefront=(()=>{
     }
     if(s.type==='benefits')return `<div class="store-benefits">${(s.items||[]).map(item=>`<div class="benefit">${icon(item.icon||'check')}<div><strong>${esc(item.title||'')}</strong><small>${esc(item.body||'')}</small></div></div>`).join('')}</div>`;
     if(s.type==='collection'){
+      const viewAll=productCardAppearance({productButtonColor:s.viewAllColor||'#1c2228'});
       const category=s.category||'Todos',products=collectionProducts(category,true).slice(0,Math.max(1,Math.min(24,Number(s.limit)||8)));
-      return `<section class="storefront-collection content-align-${s.contentAlign==='center'?'center':'left'}"><div class="catalog-head"><div>${s.eyebrow?`<span class="eyebrow">${esc(s.eyebrow)}</span>`:''}<h2>${esc(s.title||category)}</h2></div></div><div class="catalog">${products.map(p=>shopProduct(p,s)).join('')}</div>${products.length?'':`<p class="subtle">Nenhum produto ativo nesta coleção.</p>`}<div class="collection-footer"><a class="btn collection-view-all" href="/loja/catalogo?colecao=${encodeURIComponent(category)}">Ver todos</a></div></section>`;
+      return `<section class="storefront-collection content-align-${s.contentAlign==='center'?'center':'left'}"><div class="catalog-head"><div>${s.eyebrow?`<span class="eyebrow">${esc(s.eyebrow)}</span>`:''}<h2>${esc(s.title||category)}</h2></div></div><div class="catalog">${products.map(p=>shopProduct(p,s)).join('')}</div>${products.length?'':`<p class="subtle">Nenhum produto ativo nesta coleção.</p>`}<div class="collection-footer footer-align-${['left','right'].includes(s.viewAllAlign)?s.viewAllAlign:'center'}"><a class="btn collection-view-all" style="${viewAll.style}" href="/loja/catalogo?colecao=${encodeURIComponent(category)}">Ver todos</a></div></section>`;
     }
     if(s.type==='image')return `<section class="storefront-image ${s.layout==='image-right'?'image-right':''}"><div class="storefront-image-photo">${photo(s.image)?`<img src="${esc(photo(s.image))}" alt="${esc(s.imageAlt||s.title||'Imagem da loja')}" loading="lazy">`:'<span>Imagem ainda não adicionada</span>'}</div><div class="storefront-image-copy"><span class="eyebrow">${esc(s.eyebrow||'FORTE OUTLET')}</span><h2>${esc(s.title||'Sua casa merece esse cuidado.')}</h2><p>${esc(s.body||'')}</p>${cta(s,preview)}</div></section>`;
     if(s.type==='video')return `<section class="storefront-video"><div class="catalog-head"><div><span class="eyebrow">${esc(s.eyebrow||'INSPIRE-SE')}</span><h2>${esc(s.title||'Veja de perto')}</h2>${s.body?`<p>${esc(s.body)}</p>`:''}</div></div><div class="storefront-video-frame">${videoEmbed(s.url)||'<span>Adicione o link do vídeo para exibi-lo aqui.</span>'}</div></section>`;
@@ -77,13 +78,28 @@ const storefront=(()=>{
   }
   function storeHome(preview=false){const visible=home().sections.map(s=>{const html=renderSection(s,preview);return html?`<div class="home-section ${s.type==='collection-list'&&s.mobileCarousel?'collection-carousel-section':''}">${html}</div>`:''}).filter(Boolean);return `<div class="store-content storefront-home">${visible.join('')||'<div class="empty">A página inicial não tem seções visíveis.</div>'}</div>`}
   function sectionRow(s,i){return `<div class="builder-section-row ${selected===s.id?'active':''} ${s.enabled?'':'is-hidden'}"><button class="builder-section-select" onclick="storefront.select('${s.id}')"><span class="builder-section-icon">${icon(({banner:'image',image:'image',video:'eye',collection:'layers','collection-list':'layers',text:'page',benefits:'shield'})[s.type])}</span><span><strong>${esc(s.title||labels[s.type])}</strong><small>${labels[s.type]}${s.enabled?'':' · Oculta'}</small></span></button><div class="builder-section-actions"><button title="Subir" aria-label="Subir ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',-1)" ${i===0?'disabled':''}>↑</button><button title="Descer" aria-label="Descer ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',1)" ${i===home().sections.length-1?'disabled':''}>↓</button></div></div>`}
-  const input=(label,key,value,type='text',extra='')=>`<label class="field">${label}<input name="${key}" type="${type}" value="${esc(value||'')}" ${extra} oninput="storefront.change('${key}',this.value)"></label>`;
+  const input=(label,key,value,type='text',extra='')=>type==='color'?colorControl(label,key,value):`<label class="field">${label}<input name="${key}" type="${type}" value="${esc(value||'')}" ${extra} oninput="storefront.change('${key}',this.value)"></label>`;
   const textarea=(label,key,value)=>`<label class="field">${label}<textarea name="${key}" oninput="storefront.change('${key}',this.value)">${esc(value||'')}</textarea></label>`;
   const choose=(label,key,value,options)=>`<label class="field">${label}<select name="${key}" onchange="storefront.change('${key}',this.value)">${options.map(([v,text])=>`<option value="${esc(v)}" ${value===v?'selected':''}>${esc(text)}</option>`).join('')}</select></label>`;
   const imageControls=(s,key='image')=>`${input('URL da imagem',key,String(s[key]||'').startsWith('data:image/')?'':s[key],'url','placeholder="https://..."')}<label class="field">Ou envie uma imagem<input type="file" accept="image/png,image/jpeg,image/webp" onchange="storefront.uploadImage(this,'${key}')"><small>JPG, PNG ou WebP · até 2 MB</small></label>${s[key]?`<div class="builder-image-preview"><img src="${esc(photo(s[key]))}" alt="Prévia da imagem"><button class="btn small" onclick="storefront.change('${key}','');storefront.render()">Remover imagem</button></div>`:''}`;
+  function colorControl(label,key,value,page=false){
+    const color=/^#[a-f0-9]{6}$/i.test(value||'')?value:'#1c2228';
+    return `<div class="field builder-color-field"><span>${label}</span><div class="builder-color-control"><input type="color" aria-label="${label} · seletor de cor" value="${esc(color)}" oninput="storefront.changeColor(this,'${key}',${page})"><input class="builder-color-hex" name="${key}" type="text" aria-label="${label} · código hexadecimal" value="${esc(color.toUpperCase())}" maxlength="7" spellcheck="false" autocapitalize="characters" placeholder="#1C2228" oninput="storefront.changeColor(this,'${key}',${page})" onchange="storefront.changeColor(this,'${key}',${page},true)"></div></div>`;
+  }
+  function changeColor(input,key,page=false,complete=false){
+    let value=String(input.value||'').trim();if(!value.startsWith('#'))value='#'+value;
+    if(complete&&/^#[a-f0-9]{3}$/i.test(value))value='#'+value.slice(1).split('').map(c=>c+c).join('');
+    const valid=/^#[a-f0-9]{6}$/i.test(value);
+    input.setCustomValidity(valid?'':'Informe uma cor hexadecimal, como #1C2228.');input.setAttribute('aria-invalid',String(!valid));
+    if(!valid)return;
+    value=value.toLowerCase();
+    const control=input.closest('.builder-color-control'),hex=control.querySelector('.builder-color-hex'),picker=control.querySelector('[type="color"]');
+    picker.value=value;if(input!==hex||complete)hex.value=value.toUpperCase();hex.setCustomValidity('');hex.setAttribute('aria-invalid','false');
+    if(page)changePage(key,value);else change(key,value);
+  }
   function productGridControls(cfg,page=false){
     const action=page?'storefront.changePage':'storefront.change',appearance=productCardAppearance(cfg);
-    return `<div class="builder-list-divider"><h3>Grade de produtos</h3></div><label class="field">Alinhamento das informações<select name="contentAlign" onchange="${action}('contentAlign',this.value)"><option value="left" ${appearance.align==='left'?'selected':''}>À esquerda</option><option value="center" ${appearance.align==='center'?'selected':''}>Centralizado</option></select></label><label class="field">Texto do botão dos produtos<input name="productButtonLabel" maxlength="60" value="${esc(appearance.label)}" oninput="${action}('productButtonLabel',this.value)"></label><label class="field">Cor do botão dos produtos<input name="productButtonColor" type="color" value="${esc(/^#[a-f0-9]{6}$/i.test(cfg.productButtonColor||'')?cfg.productButtonColor:'#f3c30b')}" oninput="${action}('productButtonColor',this.value)"></label><p class="builder-hint">Todos os botões abrem a página do produto. A cor do texto se adapta ao fundo do botão.</p>`;
+    return `<div class="builder-list-divider"><h3>Grade de produtos</h3></div><label class="field">Alinhamento das informações<select name="contentAlign" onchange="${action}('contentAlign',this.value)"><option value="left" ${appearance.align==='left'?'selected':''}>À esquerda</option><option value="center" ${appearance.align==='center'?'selected':''}>Centralizado</option></select></label><label class="field">Texto do botão dos produtos<input name="productButtonLabel" maxlength="60" value="${esc(appearance.label)}" oninput="${action}('productButtonLabel',this.value)"></label>${colorControl('Cor do botão dos produtos','productButtonColor',cfg.productButtonColor||'#f3c30b',page)}<p class="builder-hint">Todos os botões abrem a página do produto. A cor do texto se adapta ao fundo do botão.</p>${page?'':`<div class="builder-list-divider"><h3>Botão “Ver todos”</h3></div>${choose('Alinhamento do botão','viewAllAlign',cfg.viewAllAlign||'center',[['left','À esquerda'],['center','Centralizado'],['right','À direita']])}${colorControl('Cor do botão Ver todos','viewAllColor',cfg.viewAllColor||'#1c2228')}`}`;
   }
   function collectionListControls(s){
     const check=(label,key,defaultValue=true)=>`<label class="builder-switch"><input type="checkbox" ${(s[key]??defaultValue)?'checked':''} onchange="storefront.change('${key}',this.checked)"><span>${label}</span></label>`;
@@ -151,7 +167,7 @@ const storefront=(()=>{
     const s=section();if(!s)return;
     if(key.startsWith('items.')){const [,index,field]=key.split('.');if(!s.items?.[Number(index)]||!(s.type==='collection-list'?['category','title','image','imageAlt']:['title','body','icon']).includes(field))return;if(s.type==='collection-list'&&field==='category'&&(!db.collections.includes(value)||s.items.some((item,i)=>i!==Number(index)&&item.category===value))){toast('Escolha uma coleção que ainda não está nesta lista.');render();return}s.items[Number(index)][field]=value}
     else if(s.type==='collection-list'&&['shape','imageFit','columns','mobileColumns','showHeading','showTitles','showArrows','showCounts','background','textColor','cardBackground','cardTextColor','titleAlign','headingSize','mobileCarousel','padding'].includes(key)){s[key]=['columns','mobileColumns','padding'].includes(key)?Number(value):value;}
-    else if(s.type==='collection'&&['contentAlign','productButtonLabel','productButtonColor'].includes(key)){s[key]=key==='productButtonLabel'?String(value).slice(0,60):value;}
+    else if(s.type==='collection'&&['contentAlign','productButtonLabel','productButtonColor','viewAllColor','viewAllAlign'].includes(key)){s[key]=key==='productButtonLabel'?String(value).slice(0,60):value;}
     else if(['eyebrow','title','subtitle','body','image','imageAlt','url','align','layout','buttonLabel','buttonLink','category','limit','showText'].includes(key))s[key]=key==='limit'?Math.max(1,Math.min(24,Number(value)||1)):key==='showText'?Boolean(value):value;
     else return;
     if(s.type==='collection-list'&&['shape','mobileCarousel'].includes(key))render();else refresh();
@@ -221,6 +237,7 @@ const storefront=(()=>{
   function mountPreview(){if(!editing())return;const stage=document.querySelector('#editor-preview');if(!stage)return;observer?.disconnect();observer=new ResizeObserver(sizeFrame);observer.observe(stage);sizeFrame()}
   async function publish(){
     if(!canConfigureSite()||saving||uploading||!dirty())return;
+    const invalid=document.querySelector('.builder-color-hex[aria-invalid="true"]');if(invalid){invalid.focus();invalid.reportValidity();return;}
     saving=true;refresh();
     try{
       await settleAdminWrites();
@@ -248,5 +265,5 @@ const storefront=(()=>{
     }
   });
   window.addEventListener('beforeunload',event=>{if(dirty()){event.preventDefault();event.returnValue=''}});
-  return {init,announcement,storeHome,editorPage,change,changePage,changeAnnouncement,toggle,move,addModal,add,duplicate,removeModal,remove,select,uploadImage,setPreview,render,mountPreview,navigate,setIdentity,publish,cancelChanges,dirty,pageKey,setCollectionItemOpen,addCollectionItem,moveCollectionItem,removeCollectionItem};
+  return {init,announcement,storeHome,editorPage,change,changePage,changeColor,changeAnnouncement,toggle,move,addModal,add,duplicate,removeModal,remove,select,uploadImage,setPreview,render,mountPreview,navigate,setIdentity,publish,cancelChanges,dirty,pageKey,setCollectionItemOpen,addCollectionItem,moveCollectionItem,removeCollectionItem};
 })();

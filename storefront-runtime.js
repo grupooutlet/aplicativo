@@ -28,7 +28,7 @@ function applyStorePageSettings(){
   if(key==='product'){
     const copy=root.querySelector('.product-summary');
     if(cfg.showDescription===false)root.querySelector('.product-description')?.setAttribute('hidden','');
-    const image=root.querySelector('#main-product-photo');if(image)image.style.objectFit=cfg.galleryFit==='cover'?'cover':'contain';
+    root.querySelectorAll('.detail-main-photo').forEach(image=>image.style.objectFit=cfg.galleryFit==='cover'?'cover':'contain');
     if(typeof cfg.note==='string'&&cfg.note.trim()&&copy){const note=document.createElement('p');note.className='store-product-note';note.textContent=cfg.note;copy.querySelector('.store-product-note')?.remove();copy.querySelector('.product-price-block')?.insertAdjacentElement('afterend',note)}
   }
   if(key==='collection'){
@@ -36,39 +36,56 @@ function applyStorePageSettings(){
     if([2,3,4].includes(Number(cfg.columns))){const grid=root.querySelector('.catalog');if(grid){grid.classList.add('store-custom-grid');grid.style.setProperty('--store-columns',Number(cfg.columns))}}
   }
 }
-let productGalleryCleanup=()=>{};
-function setupProductGallery(){
-  productGalleryCleanup();productGalleryCleanup=()=>{};
-  const rail=document.querySelector('.detail-thumbs');if(!rail)return;
-  const update=()=>{
-    rail.classList.toggle('has-more-before',rail.scrollLeft>2);
-    rail.classList.toggle('has-more-after',rail.scrollLeft+rail.clientWidth<rail.scrollWidth-2);
-  };
+// Touch uses native horizontal scrolling. Mouse drag has the same bounds and snap behavior.
+function bindGalleryDrag(rail,snap=false){
   let start=null,dragged=false;
   const down=event=>{start=null;dragged=false;if(event.pointerType==='mouse'&&event.button===0)start={x:event.clientX,left:rail.scrollLeft}};
   const move=event=>{
-    if(!start)return;
-    if(!(event.buttons&1)){start=null;return}
-    const delta=event.clientX-start.x;
-    if(!dragged&&Math.abs(delta)<5)return;
+    if(!start)return;if(!(event.buttons&1))return end(event);
+    const delta=event.clientX-start.x;if(!dragged&&Math.abs(delta)<5)return;
     if(!dragged){dragged=true;rail.setPointerCapture(event.pointerId);rail.classList.add('is-dragging')}
-    event.preventDefault();rail.scrollLeft=start.left-delta;
+    event.preventDefault();rail.scrollLeft=Math.max(0,Math.min(rail.scrollWidth-rail.clientWidth,start.left-delta));
   };
-  const end=event=>{start=null;rail.classList.remove('is-dragging');if(rail.hasPointerCapture(event.pointerId))rail.releasePointerCapture(event.pointerId)};
+  const end=event=>{
+    const initial=start;start=null;rail.classList.remove('is-dragging');
+    if(rail.hasPointerCapture(event.pointerId))rail.releasePointerCapture(event.pointerId);
+    if(snap&&dragged&&initial&&rail.clientWidth){
+      const delta=rail.scrollLeft-initial.left,width=rail.clientWidth;
+      const index=Math.round(initial.left/width)+(Math.abs(delta)>Math.min(80,width*.2)?Math.sign(delta):0);
+      rail.scrollTo({left:Math.max(0,Math.min(rail.scrollWidth-width,index*width)),behavior:'smooth'});
+    }
+  };
   const click=event=>{if(dragged){event.preventDefault();event.stopImmediatePropagation();dragged=false}};
   const preventDrag=event=>event.preventDefault();
-  rail.addEventListener('scroll',update,{passive:true});
-  rail.addEventListener('pointerdown',down);rail.addEventListener('pointermove',move);
-  rail.addEventListener('pointerup',end);rail.addEventListener('pointercancel',end);
-  rail.addEventListener('click',click,true);rail.addEventListener('dragstart',preventDrag);
-  const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(update):null;
-  if(observer)observer.observe(rail);else window.addEventListener('resize',update);
-  update();
-  productGalleryCleanup=()=>{
-    observer?.disconnect();if(!observer)window.removeEventListener('resize',update);
-    rail.removeEventListener('scroll',update);rail.removeEventListener('pointerdown',down);rail.removeEventListener('pointermove',move);
-    rail.removeEventListener('pointerup',end);rail.removeEventListener('pointercancel',end);rail.removeEventListener('click',click,true);rail.removeEventListener('dragstart',preventDrag);
+  const listeners=[['pointerdown',down],['pointermove',move],['pointerup',end],['pointercancel',end],['click',click,true],['dragstart',preventDrag]];
+  for(const [name,fn,capture]of listeners)rail.addEventListener(name,fn,capture);
+  return ()=>{for(const [name,fn,capture]of listeners)rail.removeEventListener(name,fn,capture)};
+}
+let productGalleryCleanup=()=>{};
+function setupProductGallery(){
+  productGalleryCleanup();productGalleryCleanup=()=>{};
+  const main=document.querySelector('.product-photo-rail');if(!main)return;
+  const rail=document.querySelector('.detail-thumbs'),slides=main.querySelectorAll('.product-photo-slide'),buttons=rail?rail.querySelectorAll('button'):[];
+  const counter=document.querySelector('.product-photo-counter');let active=-1;
+  const updateThumbEdges=()=>{if(!rail)return;rail.classList.toggle('has-more-before',rail.scrollLeft>2);rail.classList.toggle('has-more-after',rail.scrollLeft+rail.clientWidth<rail.scrollWidth-2)};
+  const update=()=>{
+    const index=Math.max(0,Math.min(slides.length-1,Math.round(main.scrollLeft/(main.clientWidth||1))));if(index===active)return;active=index;
+    if(counter)counter.textContent=(index+1)+' / '+slides.length;
+    buttons.forEach((button,i)=>{button.classList.toggle('is-selected',i===index);button.setAttribute('aria-pressed',String(i===index))});
+    const selected=buttons[index];if(rail&&selected){
+      const box=selected.getBoundingClientRect(),viewport=rail.getBoundingClientRect();
+      if(box.left<viewport.left)rail.scrollTo({left:rail.scrollLeft+box.left-viewport.left,behavior:'smooth'});
+      else if(box.right>viewport.right)rail.scrollTo({left:rail.scrollLeft+box.right-viewport.right,behavior:'smooth'});
+    }
   };
+  const key=event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();selectProductPhoto(event.key==='Home'?0:event.key==='End'?slides.length-1:Math.max(0,Math.min(slides.length-1,active+(event.key==='ArrowRight'?1:-1))))};
+  const resize=()=>{main.scrollTo({left:Math.max(0,active)*main.clientWidth,behavior:'instant'});updateThumbEdges()};
+  const cleanupMain=bindGalleryDrag(main,true),cleanupThumbs=rail?bindGalleryDrag(rail):()=>{};
+  main.addEventListener('scroll',update,{passive:true});main.addEventListener('keydown',key);rail?.addEventListener('scroll',updateThumbEdges,{passive:true});
+  const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(resize):null;
+  if(observer)observer.observe(main);else window.addEventListener('resize',resize);
+  update();updateThumbEdges();
+  productGalleryCleanup=()=>{observer?.disconnect();if(!observer)window.removeEventListener('resize',resize);cleanupMain();cleanupThumbs();main.removeEventListener('scroll',update);main.removeEventListener('keydown',key);rail?.removeEventListener('scroll',updateThumbEdges)};
 }
 const authPageBeforeStoreRuntime=authPage;
 authPage=(mode='login')=>{storeAuthView=mode==='signup'?'signup':'login';authPageBeforeStoreRuntime(mode);applyStorePageSettings();setupProductGallery();notifyStorePreviewRoute()};

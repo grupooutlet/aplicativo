@@ -52,9 +52,9 @@ function deliveryCard(order) {
 function deliveryBoard() {
   const orders = deliveryOrders().filter(order =>
     (!deliveryDayFilter || order.deliveryDate === deliveryDayFilter) &&
-    (`${order.id} ${order.customer} ${order.address}`).toLocaleLowerCase('pt-BR').includes(deliverySearch.toLocaleLowerCase('pt-BR')));
+    matchesSearch(`${order.id} #${order.id} ${order.customer} ${order.address} ${order.phone||''}`,deliverySearch));
   return `<section class="card delivery-filters"><label class="field">Dia da entrega<input type="date" value="${esc(deliveryDayFilter)}" onchange="deliveryDayFilter=this.value;render()"></label>
-    <label class="field">Buscar pedido ou cliente<input type="search" value="${esc(deliverySearch)}" placeholder="Nome, pedido ou endereço" onchange="deliverySearch=this.value;render()"></label>
+    <label class="field">Buscar pedido ou cliente<input type="search" value="${esc(deliverySearch)}" placeholder="Nome, pedido ou endereço" data-section-search="deliveries" oninput="updateSectionSearch(this,'deliveries')"></label>
     ${button('Hoje', "onclick=\"deliveryDayFilter=localToday();render()\"", 'small')}
     ${button('Ver todos', "onclick=\"deliveryDayFilter='';deliverySearch='';render()\"", 'small')}</section>
     <div class="delivery-days">${deliveryGroups(orders).map(([day, rows]) => `<section class="delivery-day">
