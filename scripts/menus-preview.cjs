@@ -33,6 +33,11 @@ if(process.env.QA_PRODUCT_DESIGN==='1'){
  model.products[3].active=true;
  model.storefront.sections=[{id:'qa-products',type:'collection',category:'Todos',enabled:true,title:'Escolhas para sua casa',eyebrow:'Os mais queridinhos',limit:8}];
 }
+if(process.env.QA_LOOP_CAROUSELS==='1'){
+ model.products[0].name='Sofá Retrátil Reclinável Verona 2,00m Linho Bege - Molas Ensacadas';
+ model.products[0].variations=[{name:'Cor',values:['Bege','Cinza']},{name:'Tamanho',values:['2,00m']}];
+ model.storefront.sections.unshift({id:'qa-loop-collections',type:'collection-list',enabled:true,title:'O que você procura?',showHeading:true,titleAlign:'center',shape:'round',imageFit:'cover',showTitles:true,columns:6,mobileColumns:2,mobileCarousel:true,background:'#ffffff',textColor:'#1c2228',cardBackground:'#f5f5f3',cardTextColor:'#1c2228',items:model.collections.map((category,i)=>({id:'qa-loop-collection-'+i,category,title:'',image:'',imageAlt:''}))});
+}
 if(process.env.QA_COLLECTION_FILTERS==='1'){
  model.collections=['Sofás','Poltronas'];model.products=Array.from({length:12},(_,i)=>({...product(i+1,['Sofá retrátil Grécia','Sofá cama Madrid com encosto reclinável e tecido de linho premium','Sofá de canto com chaise'][i%3],697+i*150),promoPrice:i===0?597:undefined,variations:[{name:'Cor',values:[['Bege','Cinza','Preto'][i%3]]},{name:'Tamanho',values:[i%2?'1,80m':'2,00m']},{name:'Característica',values:[i%2?'Retrátil':'Fixo']},{name:'Tecido',values:[i%2?'Veludo':'Linho']}]}));
  model.productSales={'1':2,'3':9,'5':6};

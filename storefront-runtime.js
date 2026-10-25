@@ -36,9 +36,71 @@ function applyStorePageSettings(){
     if([2,3,4].includes(Number(cfg.columns))){const grid=root.querySelector('.catalog');if(grid){grid.classList.add('store-custom-grid');grid.style.setProperty('--store-columns',Number(cfg.columns))}}
   }
 }
-// Touch uses native horizontal scrolling. Mouse drag has the same bounds and snap behavior.
-function bindGalleryDrag(rail,snap=false){
+// Buffered copies keep native touch scrolling continuous in either direction.
+const carouselModulo=(value,count)=>count>0?((value%count)+count)%count:0;
+function createInfiniteRail(rail,items){
+  if(items.length<2||!rail.insertBefore||!items[0]?.cloneNode)return null;
+  rail._carouselLoop?.destroy();
+  const copies=[];let origin=0,period=0,offsets=[],settleTimer=null,frame=null,disposed=false,jumping=false;
+  const clone=item=>{
+    const copy=item.cloneNode(true);copy.setAttribute('data-loop-copy','');copy.setAttribute('aria-hidden','true');copy.removeAttribute('id');
+    copy.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+    copy.querySelectorAll('a,button,input,select,textarea,[tabindex]').forEach(node=>node.setAttribute('tabindex','-1'));
+    if(copy.matches('a,button,input,select,textarea,[tabindex]'))copy.setAttribute('tabindex','-1');
+    copy.querySelectorAll('img').forEach(image=>image.loading='lazy');copies.push(copy);return copy;
+  };
+  items.forEach((item,index)=>item.setAttribute('data-loop-index',String(index)));
+  for(let repeat=0;repeat<2;repeat++)for(const item of items)rail.insertBefore(clone(item),items[0]);
+  const after=[];for(let repeat=0;repeat<2;repeat++)for(const item of items){const copy=clone(item);rail.appendChild(copy);after.push(copy)}
+  const requestFrame=callback=>typeof requestAnimationFrame==='function'?requestAnimationFrame(callback):setTimeout(callback,0);
+  const jump=left=>{
+    if(disposed||Math.abs(rail.scrollLeft-left)<.5)return;
+    const delta=left-rail.scrollLeft;jumping=true;rail.classList.add('is-recentering');rail.scrollTo({left,behavior:'instant'});jumping=false;
+    controller.onShift?.(delta);
+    if(frame!==null){if(typeof cancelAnimationFrame==='function')cancelAnimationFrame(frame);else clearTimeout(frame)}
+    frame=requestFrame(()=>{frame=null;rail.classList.remove('is-recentering')});
+  };
+  const controller={
+    count:items.length,onShift:null,
+    get step(){return period/items.length||rail.clientWidth},
+    index(){return carouselModulo(Math.round((rail.scrollLeft-origin)/(period/items.length||1)),items.length)},
+    measure(index=this.index()){
+      if(disposed||!rail.clientWidth)return;
+      const first=rail.firstElementChild.getBoundingClientRect().left,base=items[0].getBoundingClientRect().left;
+      origin=base-first;period=after[0].getBoundingClientRect().left-base;
+      offsets=items.map(item=>item.getBoundingClientRect().left-base);
+      if(period>0)jump(origin+offsets[carouselModulo(index,items.length)]);
+    },
+    go(index,behavior='smooth'){
+      if(disposed||!Number.isInteger(index)||!period)return;
+      const canonical=origin+offsets[carouselModulo(index,items.length)];
+      const nearest=canonical+Math.round((rail.scrollLeft-canonical)/period)*period;
+      rail.scrollTo({left:Math.max(0,Math.min(rail.scrollWidth-rail.clientWidth,nearest)),behavior});
+    },
+    normalize(){if(!disposed&&period>0)jump(origin+carouselModulo(rail.scrollLeft-origin,period))},
+    elements:()=>[...items,...copies],
+    destroy(){
+      if(disposed)return;disposed=true;clearTimeout(settleTimer);
+      if(frame!==null){if(typeof cancelAnimationFrame==='function')cancelAnimationFrame(frame);else clearTimeout(frame)}
+      rail.removeEventListener('scroll',scroll);rail.removeEventListener('scrollend',settled);
+      copies.forEach(copy=>copy.remove());items.forEach(item=>item.removeAttribute('data-loop-index'));
+      rail.classList.remove('is-recentering');delete rail._carouselLoop;
+    }
+  };
+  const settled=()=>{clearTimeout(settleTimer);controller.normalize()};
+  const scroll=()=>{
+    if(jumping||disposed||!period)return;
+    // Keep a full spare cycle in reserve even during a long drag or fast flick.
+    if(rail.scrollLeft<period*.5||rail.scrollLeft>origin+period*1.5)controller.normalize();
+    clearTimeout(settleTimer);settleTimer=setTimeout(settled,140);
+  };
+  rail._carouselLoop=controller;rail.addEventListener('scroll',scroll,{passive:true});rail.addEventListener('scrollend',settled);
+  controller.measure(0);return controller;
+}
+// Native touch gestures are preserved; mouse dragging uses the same loop positions.
+function bindGalleryDrag(rail,snap=false,loop=null){
   let start=null,dragged=false;
+  if(loop)loop.onShift=delta=>{if(start)start.left+=delta};
   const down=event=>{start=null;dragged=false;if(event.pointerType==='mouse'&&event.button===0)start={x:event.clientX,left:rail.scrollLeft}};
   const move=event=>{
     if(!start)return;if(!(event.buttons&1))return end(event);
@@ -50,50 +112,67 @@ function bindGalleryDrag(rail,snap=false){
     const initial=start;start=null;rail.classList.remove('is-dragging');
     if(rail.hasPointerCapture(event.pointerId))rail.releasePointerCapture(event.pointerId);
     if(snap&&dragged&&initial&&rail.clientWidth){
-      const delta=rail.scrollLeft-initial.left,width=rail.clientWidth;
+      const delta=rail.scrollLeft-initial.left,width=loop?.step||rail.clientWidth;
       const index=Math.round(initial.left/width)+(Math.abs(delta)>Math.min(80,width*.2)?Math.sign(delta):0);
-      rail.scrollTo({left:Math.max(0,Math.min(rail.scrollWidth-width,index*width)),behavior:'smooth'});
+      rail.scrollTo({left:Math.max(0,Math.min(rail.scrollWidth-rail.clientWidth,index*width)),behavior:'smooth'});
     }
   };
   const click=event=>{if(dragged){event.preventDefault();event.stopImmediatePropagation();dragged=false}};
   const preventDrag=event=>event.preventDefault();
   const listeners=[['pointerdown',down],['pointermove',move],['pointerup',end],['pointercancel',end],['click',click,true],['dragstart',preventDrag]];
   for(const [name,fn,capture]of listeners)rail.addEventListener(name,fn,capture);
-  return ()=>{for(const [name,fn,capture]of listeners)rail.removeEventListener(name,fn,capture)};
+  return ()=>{if(loop)loop.onShift=null;for(const [name,fn,capture]of listeners)rail.removeEventListener(name,fn,capture)};
 }
-let productGalleryCleanup=()=>{};
+let productGalleryCleanup=()=>{},collectionCarouselsCleanup=()=>{};
 function setupProductGallery(){
   productGalleryCleanup();productGalleryCleanup=()=>{};
   const main=document.querySelector('.product-photo-rail');if(!main)return;
-  const rail=document.querySelector('.detail-thumbs'),slides=main.querySelectorAll('.product-photo-slide'),buttons=rail?rail.querySelectorAll('button'):[];
+  const rail=document.querySelector('.detail-thumbs'),slides=[...main.querySelectorAll('.product-photo-slide')],buttons=rail?[...rail.querySelectorAll('button')]:[];
+  const loop=createInfiniteRail(main,slides),thumbLoop=rail&&rail.scrollWidth>rail.clientWidth+1?createInfiniteRail(rail,buttons):null;
   const counter=document.querySelector('.product-photo-counter');let active=-1;
   const updateThumbEdges=()=>{if(!rail)return;rail.classList.toggle('has-more-before',rail.scrollLeft>2);rail.classList.toggle('has-more-after',rail.scrollLeft+rail.clientWidth<rail.scrollWidth-2)};
   const update=()=>{
-    const index=Math.max(0,Math.min(slides.length-1,Math.round(main.scrollLeft/(main.clientWidth||1))));if(index===active)return;active=index;
+    const index=loop?loop.index():Math.max(0,Math.min(slides.length-1,Math.round(main.scrollLeft/(main.clientWidth||1))));if(index===active)return;active=index;
     if(counter)counter.textContent=(index+1)+' / '+slides.length;
-    buttons.forEach((button,i)=>{button.classList.toggle('is-selected',i===index);button.setAttribute('aria-pressed',String(i===index))});
+    (thumbLoop?thumbLoop.elements():buttons).forEach((button,i)=>{const selected=thumbLoop?Number(button.getAttribute('data-loop-index'))===index:i===index;button.classList.toggle('is-selected',selected);button.setAttribute('aria-pressed',String(selected))});
+    if(thumbLoop){thumbLoop.go(index);return;}
     const selected=buttons[index];if(rail&&selected){
       const box=selected.getBoundingClientRect(),viewport=rail.getBoundingClientRect();
       if(box.left<viewport.left)rail.scrollTo({left:rail.scrollLeft+box.left-viewport.left,behavior:'smooth'});
       else if(box.right>viewport.right)rail.scrollTo({left:rail.scrollLeft+box.right-viewport.right,behavior:'smooth'});
     }
   };
-  const key=event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();selectProductPhoto(event.key==='Home'?0:event.key==='End'?slides.length-1:Math.max(0,Math.min(slides.length-1,active+(event.key==='ArrowRight'?1:-1))))};
-  const resize=()=>{main.scrollTo({left:Math.max(0,active)*main.clientWidth,behavior:'instant'});updateThumbEdges()};
-  const cleanupMain=bindGalleryDrag(main,true),cleanupThumbs=rail?bindGalleryDrag(rail):()=>{};
+  const key=event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();selectProductPhoto(event.key==='Home'?0:event.key==='End'?slides.length-1:loop?carouselModulo(active+(event.key==='ArrowRight'?1:-1),slides.length):Math.max(0,Math.min(slides.length-1,active+(event.key==='ArrowRight'?1:-1))))};
+  const resize=()=>{if(loop)loop.measure(Math.max(0,active));else main.scrollTo({left:Math.max(0,active)*main.clientWidth,behavior:'instant'});thumbLoop?.measure();updateThumbEdges()};
+  const cleanupMain=bindGalleryDrag(main,true,loop),cleanupThumbs=rail?bindGalleryDrag(rail,false,thumbLoop):()=>{};
   main.addEventListener('scroll',update,{passive:true});main.addEventListener('keydown',key);rail?.addEventListener('scroll',updateThumbEdges,{passive:true});
   const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(resize):null;
   if(observer)observer.observe(main);else window.addEventListener('resize',resize);
   update();updateThumbEdges();
-  productGalleryCleanup=()=>{observer?.disconnect();if(!observer)window.removeEventListener('resize',resize);cleanupMain();cleanupThumbs();main.removeEventListener('scroll',update);main.removeEventListener('keydown',key);rail?.removeEventListener('scroll',updateThumbEdges)};
+  productGalleryCleanup=()=>{observer?.disconnect();if(!observer)window.removeEventListener('resize',resize);cleanupMain();cleanupThumbs();main.removeEventListener('scroll',update);main.removeEventListener('keydown',key);rail?.removeEventListener('scroll',updateThumbEdges);loop?.destroy();thumbLoop?.destroy()};
+}
+function setupCollectionCarousels(){
+  collectionCarouselsCleanup();const cleanups=[];
+  document.querySelectorAll('.collection-list-grid.is-mobile-carousel').forEach(rail=>{
+    const items=[...rail.children];let loop=null,dragCleanup=()=>{};
+    const resize=()=>{
+      const mobile=window.matchMedia('(max-width:650px)').matches;
+      if(mobile&&(loop||rail.scrollWidth>rail.clientWidth+1)&&items.length>1){if(loop)loop.measure();else{loop=createInfiniteRail(rail,items);dragCleanup=bindGalleryDrag(rail,false,loop)}}
+      else if(loop){dragCleanup();loop.destroy();loop=null;rail.scrollLeft=0}
+    };
+    const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(resize):null;
+    if(observer)observer.observe(rail);window.addEventListener('resize',resize);resize();
+    cleanups.push(()=>{observer?.disconnect();window.removeEventListener('resize',resize);dragCleanup();loop?.destroy()});
+  });
+  collectionCarouselsCleanup=()=>cleanups.forEach(cleanup=>cleanup());
 }
 const authPageBeforeStoreRuntime=authPage;
-authPage=(mode='login')=>{storeAuthView=mode==='signup'?'signup':'login';authPageBeforeStoreRuntime(mode);applyStorePageSettings();setupProductGallery();notifyStorePreviewRoute()};
+authPage=(mode='login')=>{storeAuthView=mode==='signup'?'signup':'login';authPageBeforeStoreRuntime(mode);applyStorePageSettings();setupProductGallery();setupCollectionCarousels();notifyStorePreviewRoute()};
 const renderBeforeStoreRuntime=render;
 render=()=>{
   const path=routePath();storeAuthView='';
   if(booted&&!bootError&&(path==='/loja/cadastro'||path==='/loja/login'))return authPage(path==='/loja/cadastro'?'signup':'login');
-  const result=renderBeforeStoreRuntime();applyStorePageSettings();setupProductGallery();
+  const result=renderBeforeStoreRuntime();applyStorePageSettings();setupProductGallery();setupCollectionCarousels();
   if(path.startsWith('/app/store-editor'))storefront.mountPreview();
   notifyStorePreviewRoute();return result;
 };

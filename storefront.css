@@ -92,3 +92,5 @@
   }
   .is-mobile-carousel .collection-tile-caption small{font-size:11px;line-height:1.35}
 }
+
+@media(max-width:650px){.collection-list-grid.is-mobile-carousel{position:relative;cursor:grab;touch-action:pan-x pan-y pinch-zoom}.collection-list-grid.is-mobile-carousel.is-dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}.collection-list-grid.is-mobile-carousel img{user-select:none;-webkit-user-drag:none}}
