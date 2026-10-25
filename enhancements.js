@@ -387,7 +387,13 @@ function selectProductPhoto(index) {
   const product = db.products.find(p => p.id === Number(routePath().split('/')[3]));
   const url = productImages(product)[index];
   const image = $('#main-product-photo');
-  if (url && image) image.src = url;
+  if (url && image) {
+    image.src = url;
+    document.querySelectorAll('.detail-thumbs button').forEach((button,i)=>{
+      button.classList.toggle('is-selected',i===index);
+      button.setAttribute('aria-pressed',String(i===index));
+    });
+  }
 }
 productPage = id => {
   const p = db.products.find(p => p.id === id && p.active);

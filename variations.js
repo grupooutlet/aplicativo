@@ -166,28 +166,32 @@ function collectProductOptions() {
   return Object.fromEntries([...document.querySelectorAll('.product-option')].map(select => [select.dataset.optionName, select.value]));
 }
 
-shopProduct = product => {
-  const hasOptions = productVariations(product).length > 0;
-  const inStock = available(product.id) > 0;
-  return `<article class="shop-product"><a class="product-card-link" href="/loja/produto/${product.id}" title="${esc(product.name)}"><div class="product-photo"><img src="${esc(product.image)}" alt="${esc(product.name)}" loading="lazy"></div><h3>${esc(product.name)}</h3></a>
-    <div class="product-card-price">${priceMarkup(product)}</div><small class="product-card-meta">${hasOptions ? 'Escolha as opções do produto' : inStock ? 'Disponível · pagamento combinado com a loja' : 'Temporariamente indisponível'}</small>
-    ${button(inStock ? hasOptions ? 'Escolher opções' : 'Adicionar ao carrinho' : 'Sem estoque',
-      `onclick="${hasOptions ? `go('/loja/produto/${product.id}')` : `addToCart(${product.id})`}" ${inStock ? '' : 'disabled'}`, '', hasOptions ? 'chevron' : 'plus')}</article>`;
+function productCardAppearance(config={}) {
+  const color=/^#[a-f0-9]{6}$/i.test(config.productButtonColor||'')?config.productButtonColor:'#f3c30b';
+  const rgb=color.slice(1).match(/../g).map(value=>{const n=parseInt(value,16)/255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4});
+  const luminance=rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;
+  return {label:String(config.productButtonLabel||'').trim().slice(0,60)||'Ver mais',align:config.contentAlign==='center'?'center':'left',style:`--product-button-bg:${color};--product-button-ink:${luminance>.179?'#1c2228':'#ffffff'}`};
+}
+shopProduct = (product,config={}) => {
+  const appearance=productCardAppearance(config);
+  return `<article class="shop-product card-align-${appearance.align}" style="${appearance.style}"><a class="product-card-link" href="/loja/produto/${product.id}" title="${esc(product.name)}"><div class="product-photo"><img src="${esc(product.image||'assets/product-placeholder.svg')}" alt="${esc(product.name)}" loading="lazy"></div><h3>${esc(product.name)}</h3></a>
+    <div class="product-card-price">${priceMarkup(product)}</div>
+    <a class="btn product-card-button" href="/loja/produto/${product.id}" aria-label="${esc(appearance.label)}: ${esc(product.name)}">${esc(appearance.label)}</a></article>`;
 };
 productPage = id => {
   const product = db.products.find(item => item.id === id && item.active);
   if (!product) return '<div class="empty">Este produto não está disponível. <a href="/loja/catalogo">Voltar ao catálogo</a></div>';
   const images = productImages(product);
-  return `<div class="store-content product-page"><a class="text-link product-breadcrumb" href="/loja/catalogo">Loja / ${esc(product.category)}</a>
+  return `<div class="store-content product-page"><a class="text-link product-breadcrumb" href="/loja/catalogo">Voltar à loja</a>
     <section class="detail-product"><div class="product-gallery"><img id="main-product-photo" class="detail-main-photo" src="${esc(images[0])}" alt="${esc(product.name)}">
-    <div class="detail-thumbs">${images.map((url, index) => `<button onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}"><img src="${esc(url)}" alt=""></button>`).join('')}</div></div>
-    <div class="product-summary"><span class="product-category">${esc(product.category)}</span><h1>${esc(product.name)}</h1><span class="subtle product-code">Código: ${esc(product.sku)}</span>
-    <div class="product-price-block">${priceMarkup(product)}</div><p class="product-payment-hint">Pagamento combinado com nossa equipe pelo WhatsApp.</p>
+    ${images.length>1?`<div class="detail-thumbs" role="group" aria-label="Fotos do produto. Deslize para ver mais imagens.">${images.map((url, index) => `<button type="button" class="${index===0?'is-selected':''}" onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}" aria-pressed="${index===0}"><img src="${esc(url)}" alt="" draggable="false"></button>`).join('')}</div>`:''}</div>
+    <div class="product-summary"><h1>${esc(product.name)}</h1>
+    <div class="product-price-block">${priceMarkup(product)}</div>
     ${productVariations(product).length ? `<div class="product-options">${detailOptions(product)}</div>` : ''}
     <div class="product-purchase"><label class="field">Quantidade<input id="detail-qty" type="number" value="1" min="1" max="${Math.max(1,available(product.id))}" ${available(product.id)>0?'':'disabled'}></label>
     ${button(available(product.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque',
       `onclick="addToCart(${id},Number($('#detail-qty').value),collectProductOptions())" ${available(product.id) > 0 ? '' : 'disabled'}`, 'primary', 'bag')}</div></div></section>
-    <section class="product-description" aria-labelledby="product-description-title"><h2 id="product-description-title">Sobre o produto</h2><div>${esc(product.description||'Consulte nossa equipe para mais informações sobre este produto.')}</div></section></div>`;
+    <section class="product-description" aria-labelledby="product-description-title"><h2 id="product-description-title">Sobre o produto</h2><div>${esc(product.description||'Consulte nossa equipe para mais informações sobre este produto.')}</div></section><p class="subtle product-code">Código: ${esc(product.sku)}</p></div>`;
 };
 addToCart = (id, qty = 1, choices = {}) => {
   const product = db.products.find(item => item.id === id && item.active);

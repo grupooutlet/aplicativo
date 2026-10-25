@@ -32,17 +32,52 @@ function applyStorePageSettings(){
     if(typeof cfg.note==='string'&&cfg.note.trim()&&copy){const note=document.createElement('p');note.className='store-product-note';note.textContent=cfg.note;copy.querySelector('.store-product-note')?.remove();copy.querySelector('.product-price-block')?.insertAdjacentElement('afterend',note)}
   }
   if(key==='collection'){
+    root.classList.toggle('content-align-center',cfg.contentAlign==='center');
     if(cfg.showFilters===false)root.querySelector('.toolbar')?.setAttribute('hidden','');
     if([2,3,4].includes(Number(cfg.columns))){const grid=root.querySelector('.catalog');if(grid){grid.classList.add('store-custom-grid');grid.style.setProperty('--store-columns',Number(cfg.columns))}}
   }
 }
+let productGalleryCleanup=()=>{};
+function setupProductGallery(){
+  productGalleryCleanup();productGalleryCleanup=()=>{};
+  const rail=document.querySelector('.detail-thumbs');if(!rail)return;
+  const update=()=>{
+    rail.classList.toggle('has-more-before',rail.scrollLeft>2);
+    rail.classList.toggle('has-more-after',rail.scrollLeft+rail.clientWidth<rail.scrollWidth-2);
+  };
+  let start=null,dragged=false;
+  const down=event=>{start=null;dragged=false;if(event.pointerType==='mouse'&&event.button===0)start={x:event.clientX,left:rail.scrollLeft}};
+  const move=event=>{
+    if(!start)return;
+    if(!(event.buttons&1)){start=null;return}
+    const delta=event.clientX-start.x;
+    if(!dragged&&Math.abs(delta)<5)return;
+    if(!dragged){dragged=true;rail.setPointerCapture(event.pointerId);rail.classList.add('is-dragging')}
+    event.preventDefault();rail.scrollLeft=start.left-delta;
+  };
+  const end=event=>{start=null;rail.classList.remove('is-dragging');if(rail.hasPointerCapture(event.pointerId))rail.releasePointerCapture(event.pointerId)};
+  const click=event=>{if(dragged){event.preventDefault();event.stopImmediatePropagation();dragged=false}};
+  const preventDrag=event=>event.preventDefault();
+  rail.addEventListener('scroll',update,{passive:true});
+  rail.addEventListener('pointerdown',down);rail.addEventListener('pointermove',move);
+  rail.addEventListener('pointerup',end);rail.addEventListener('pointercancel',end);
+  rail.addEventListener('click',click,true);rail.addEventListener('dragstart',preventDrag);
+  const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(update):null;
+  if(observer)observer.observe(rail);else window.addEventListener('resize',update);
+  update();
+  productGalleryCleanup=()=>{
+    observer?.disconnect();if(!observer)window.removeEventListener('resize',update);
+    rail.removeEventListener('scroll',update);rail.removeEventListener('pointerdown',down);rail.removeEventListener('pointermove',move);
+    rail.removeEventListener('pointerup',end);rail.removeEventListener('pointercancel',end);rail.removeEventListener('click',click,true);rail.removeEventListener('dragstart',preventDrag);
+  };
+}
 const authPageBeforeStoreRuntime=authPage;
-authPage=(mode='login')=>{storeAuthView=mode==='signup'?'signup':'login';authPageBeforeStoreRuntime(mode);applyStorePageSettings();notifyStorePreviewRoute()};
+authPage=(mode='login')=>{storeAuthView=mode==='signup'?'signup':'login';authPageBeforeStoreRuntime(mode);applyStorePageSettings();setupProductGallery();notifyStorePreviewRoute()};
 const renderBeforeStoreRuntime=render;
 render=()=>{
   const path=routePath();storeAuthView='';
   if(booted&&!bootError&&(path==='/loja/cadastro'||path==='/loja/login'))return authPage(path==='/loja/cadastro'?'signup':'login');
-  const result=renderBeforeStoreRuntime();applyStorePageSettings();
+  const result=renderBeforeStoreRuntime();applyStorePageSettings();setupProductGallery();
   if(path.startsWith('/app/store-editor'))storefront.mountPreview();
   notifyStorePreviewRoute();return result;
 };

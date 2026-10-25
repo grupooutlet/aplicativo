@@ -25,11 +25,16 @@ const state = {
 };
 vm.runInNewContext(source, state, { filename: 'variations.js' });
 
-assert.match(state.shopProduct(product), /Escolher opções/);
+assert.match(state.shopProduct(product), /product-card-button[^>]*href="\/loja\/produto\/1"[^>]*>Ver mais<\/a>/);
+assert.doesNotMatch(state.shopProduct(product), /Escolher opções|Escolha as opções do produto|pagamento combinado|<small|onclick=/);
+assert.match(state.shopProduct({...product,variations:[]},{productButtonLabel:'Conhecer',productButtonColor:'#1c2228',contentAlign:'center'}), /card-align-center[\s\S]*--product-button-bg:#1c2228[\s\S]*>Conhecer<\/a>/);
+assert.match(state.shopProduct(product,{productButtonColor:'red;position:fixed'}), /--product-button-bg:#f3c30b/);
 assert.match(state.productPage(1), /Selecione cor/);
 const productMarkup=state.productPage(1);
 assert.ok(productMarkup.indexOf('Adicionar ao carrinho')<productMarkup.indexOf('Sobre o produto'),'purchase controls precede the description');
 assert.ok(productMarkup.indexOf('product-price-block')<productMarkup.indexOf('product-options'),'price precedes variation choices');
+assert.ok(productMarkup.indexOf('Código:')>productMarkup.indexOf('Sobre o produto'),'the SKU follows the description');
+assert.doesNotMatch(productMarkup,/product-category|product-payment-hint|Pagamento combinado com nossa equipe/);
 assert.match(productMarkup,/aria-label="Cor"/,'variation fields have an explicit accessible name');
 assert.throws(() => state.validateProductOptions(product, { Cor: 'Bege' }), /Selecione todas/);
 assert.throws(() => state.validateProductOptions(product, { Cor: 'Azul', Tecido: 'Linho' }), /Cor/);

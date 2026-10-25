@@ -27,6 +27,12 @@ if(process.env.QA_COMPACT_CAROUSEL==='1'){
  model.storefront.sections.unshift({id:'qa-banner',type:'banner',enabled:true,showText:false,image:'https://rwxqytomiorsrxpgtjin.supabase.co/storage/v1/object/public/product-photos/products/storefront-dbb0cf1720f8e41a77c07e89.png',imageAlt:'Banner da loja'});
  model.storefront.sections.find(s=>s.type==='collection').eyebrow='Os mais queridinhos';
 }
+if(process.env.QA_PRODUCT_DESIGN==='1'){
+ model.products[0].images=Array.from({length:9},(_,i)=>photo+'?qa-photo='+i);
+ model.products[0].image=model.products[0].images[0];
+ model.products[3].active=true;
+ model.storefront.sections=[{id:'qa-products',type:'collection',category:'Todos',enabled:true,title:'Escolhas para sua casa',eyebrow:'Os mais queridinhos',limit:8}];
+}
 const qaProfile={user_id:'qa-master',name:qaPosition==='Principal'?'Grupo Outlet':'Bianca QA',email:qaPosition==='Principal'?'grupooutlet.rj@gmail.com':'vendedor-qa@example.invalid',role:qaPosition==='Principal'?'master':'admin',position:qaPosition==='Principal'?null:qaPosition};
 const qaCustomers=[],qaContacts=[];
 if(process.env.QA_CUSTOMERS==='1'){
