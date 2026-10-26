@@ -74,7 +74,7 @@ function menuItemModal(menuId,itemId='',initialType='collection'){
 function menuDestinationField(type,target=''){
  if(type==='group')return '<p class="subtle menu-link-hint">Crie um grupo como Sala de estar. Depois, use Adicionar subcoleções para escolher as coleções que ficam dentro dele.</p>';
  if(type==='external')return field('Endereço do link','target',target,'url','required maxlength="2048" placeholder="https://"');
- const options=type==='collection'?db.collections.map(c=>[c,c+(collectionConfig(c).active===false?' · Desativada':'')]):type==='product'?db.products.map(p=>[String(p.id),p.name+(p.active?'':' · Rascunho')]):type==='page'?db.pages.map(p=>[String(p.id),p.title+(p.active?'':' · Desativada')]):null;
+ const options=type==='collection'?db.collections.map(c=>[c,c+(collectionConfig(c).active===false?' · Desativada':'')]):type==='product'?db.products.map(p=>[String(p.id),p.name+(p.active?'':' · Rascunho')]):type==='page'?db.pages.map(p=>[String(p.id),(typeof displayPageTitle==='function'?displayPageTitle(p):p.title)+(p.active?'':' · Desativada')]):null;
  if(!options)return '<p class="subtle menu-link-hint">O link abrirá a página escolhida da loja.</p>';
  return `<label class="field">${type==='collection'?'Coleção':type==='product'?'Produto':'Página'}<select name="target" required><option value="">Selecione um destino</option>${options.map(([id,label])=>`<option value="${esc(id)}" ${id===String(target)?'selected':''}>${esc(label)}</option>`).join('')}</select></label>`;
 }

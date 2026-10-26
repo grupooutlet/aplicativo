@@ -53,6 +53,10 @@ if(process.env.QA_ORDER_UX==='1'){
  model.orders[0].notes='Cliente prefere a entrega no período da tarde.';
  model.orders[0].items.push({id:3,name:model.products[2].name,qty:1,price:model.products[2].price,cost:model.products[2].cost});
 }
+if(process.env.QA_BUSINESS==='1'){
+ Object.assign(model.settings,{legalName:'Empresa de Teste LTDA',cnpj:'60.454.727/0001-70',email:'loja@example.invalid',phone:'5521968464050',address:'Rua de Teste, 100 · Centro · Nova Iguaçu / RJ · CEP 26260-045',addressParts:{cep:'26260-045',street:'Rua de Teste',number:'100',neighborhood:'Centro',city:'Nova Iguaçu',state:'RJ',complement:''}});
+ model.pages=require('../content/institutional-pages.json').map((page,index)=>({...page,id:index+1,active:true,updatedAt:'2026-10-25T12:00:00Z'}));
+}
 let qaHistory=[];
 if(process.env.QA_AUDIT==='1'){
  const freight=model.settings.shippingOptions.find(o=>o.name==='Niterói');const before=structuredClone(freight);freight.price=220;
@@ -85,5 +89,13 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
 };</script>`;
 const mobileWidth=[320,360,390,430].includes(Number(process.env.QA_MOBILE_WIDTH))?Number(process.env.QA_MOBILE_WIDTH):390;
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace('<head>','<head>'+preload).replace("previewSize==='mobile'?390:1280","previewSize==='mobile'?"+mobileWidth+":1280");
-const server=http.createServer((req,res)=>{if(req.method!=='GET')return res.writeHead(405).end();res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(html);});
+const server=http.createServer((req,res)=>{
+ if(req.method!=='GET')return res.writeHead(405).end();
+ res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});
+ if(req.url.startsWith('/__qa/mobile')){
+  const requested=new URL(req.url,'http://localhost').searchParams.get('route')||'/app';const route=/^\/(?:app|loja)(?:\/[a-z0-9-]+)*$/.test(requested)?requested:'/app';
+  return res.end('<!doctype html><meta name="viewport" content="width=device-width"><style>body{margin:0;background:#e7e9e8;display:flex;justify-content:center}iframe{width:390px;height:100dvh;border:0;background:#fff;max-width:100%}</style><iframe title="Prévia de celular" src="/#'+route+'"></iframe>');
+ }
+ res.end(html);
+});
 server.listen(0,'127.0.0.1',()=>console.log('Menu and collection QA: http://127.0.0.1:'+server.address().port+'/#/app/menus'));
