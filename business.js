@@ -111,9 +111,15 @@ menuLinkMarkup=(item,extraClass='')=>{
   return menuLinkBeforeBusiness(item,extraClass);
 };
 storeFooter=()=>{
-  const column=location=>{const menu=placedMenu(location);return menu?'<nav class="store-footer-menu" aria-label="'+esc(menu.name)+'"><strong>'+esc(menu.name)+'</strong>'+menuTreeMarkup(menu.items)+'</nav>':'';};
-  const policies=db.pages.filter(page=>page.active&&page.policyKey&&!['about','delivery'].includes(page.policyKey));
-  return '<footer class="store-footer"><div class="store-footer-brand"><img src="assets/logo.webp" alt="Grupo Outlet"><small>Sua casa merece esse cuidado.</small>'+storeIdentityMarkup()+'</div>'+column('footerAbout')+column('footerHelp')+(policies.length?'<nav class="store-legal-links" aria-label="Termos e políticas">'+policies.map(page=>'<a href="/loja/pagina/'+page.id+'">'+esc(displayPageTitle(page))+'</a>').join('')+'</nav>':'')+'</footer>';
+  const s=db.settings,linked=new Set();
+  const record=items=>{for(const item of items||[]){if(item.type==='page')linked.add(String(item.target));record(item.children);}};
+  const column=location=>{const menu=placedMenu(location);if(!menu)return '';record(menu.items);return '<nav class="store-footer-menu" aria-label="'+esc(menu.name)+'"><h2>'+esc(menu.name)+'</h2>'+menuTreeMarkup(menu.items)+'</nav>';};
+  const menus=column('footerAbout')+column('footerHelp');
+  const policies=db.pages.filter(page=>page.active&&page.policyKey&&!['about','delivery'].includes(page.policyKey)&&!linked.has(String(page.id)));
+  const whatsapp=storeWhatsAppUrl(),phone=formatBrazilPhone(s.phone);
+  const contact='<section class="store-footer-contact"><h2>Atendimento</h2>'+(whatsapp?'<a class="store-footer-contact-row" href="'+esc(whatsapp)+'" target="_blank" rel="noopener noreferrer">'+icon('users')+'<span><small>WhatsApp</small>'+esc(phone)+'</span></a>':'')+(s.email?'<a class="store-footer-contact-row" href="mailto:'+esc(s.email)+'">'+icon('mail')+'<span><small>E-mail</small>'+esc(s.email)+'</span></a>':'')+(s.address?'<div class="store-footer-contact-row">'+icon('pin')+'<span><small>Encontre a loja</small>'+esc(s.address)+'</span></div>':'')+'</section>';
+  const company=[s.legalName,s.cnpj?'CNPJ '+formatStoreCnpj(s.cnpj):''].filter(Boolean).map(value=>'<span>'+esc(value)+'</span>').join('');
+  return '<footer class="store-footer store-footer-refined"><div class="store-footer-inner"><div class="store-footer-main"><div class="store-footer-brand"><a href="/loja" aria-label="Grupo Outlet · Página inicial"><img src="assets/logo.webp" width="180" height="64" alt="Grupo Outlet"></a><p>Sua casa merece esse cuidado.</p></div>'+menus+contact+'</div><div class="store-footer-bottom">'+(policies.length?'<nav class="store-legal-links" aria-label="Termos e políticas">'+policies.map(page=>'<a href="/loja/pagina/'+Number(page.id)+'">'+esc(displayPageTitle(page))+'</a>').join('')+'</nav>':'')+(company?'<div class="store-footer-company">'+company+'</div>':'')+'<div class="store-footer-last"><small>© '+new Date().getFullYear()+' '+esc(s.name||'Grupo Outlet')+'</small><div class="store-footer-controls"><!--store-privacy-control--></div></div></div></div></footer>';
 };
 shippingSupportUrl=address=>{
   const place=[address.neighborhood,address.city,address.state].filter(Boolean).join(' · '),detail=[address.street,address.number,address.cep&&'CEP '+address.cep].filter(Boolean).join(' · ');

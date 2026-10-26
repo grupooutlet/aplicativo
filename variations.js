@@ -186,13 +186,20 @@ productPage = id => {
     <section class="detail-product"><div class="product-gallery"><div class="product-photo-stage"><div class="product-photo-rail" tabindex="0" role="region" aria-roledescription="carrossel" aria-label="Fotos de ${esc(product.name)}. Deslize para ver a próxima foto.">${images.map((url,index)=>`<div class="product-photo-slide" role="group" aria-roledescription="slide" aria-label="Foto ${index+1} de ${images.length}"><img ${index===0?'id="main-product-photo"':''} class="detail-main-photo" src="${esc(url)}" alt="${esc(product.name)} · foto ${index+1}" draggable="false" ${index?'loading="lazy"':''}></div>`).join('')}</div>${images.length>1?`<span class="product-photo-counter" aria-live="polite" aria-atomic="true">1 / ${images.length}</span>`:''}</div>
     ${images.length>1?`<div class="detail-thumbs" role="group" aria-label="Fotos do produto. Deslize para ver mais imagens.">${images.map((url, index) => `<button type="button" class="${index===0?'is-selected':''}" onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}" aria-pressed="${index===0}"><img src="${esc(url)}" alt="" draggable="false"></button>`).join('')}</div>`:''}</div>
     <div class="product-summary"><h1>${esc(product.name)}</h1>
-    <div class="product-price-block">${priceMarkup(product)}</div>
+    <p class="product-availability ${available(product.id)>0?'in-stock':'sold-out'}"><i aria-hidden="true"></i>${available(product.id)>0?'Disponível para compra':'Indisponível no momento'}</p>
+    <div class="product-price-block" aria-label="Preço do produto">${priceMarkup(product)}</div>
+    <div class="product-order-panel" role="group" aria-label="Opções e compra">
     ${productVariations(product).length ? `<div class="product-options">${detailOptions(product)}</div>` : ''}
     <div class="product-purchase"><label class="field">Quantidade<input id="detail-qty" type="number" value="1" min="1" max="${Math.max(1,available(product.id))}" ${available(product.id)>0?'':'disabled'}></label>
     ${button(available(product.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque',
-      `onclick="addToCart(${id},Number($('#detail-qty').value),collectProductOptions())" ${available(product.id) > 0 ? '' : 'disabled'}`, 'primary', 'bag')}</div></div></section>
+      `onclick="addToCart(${id},Number($('#detail-qty').value),collectProductOptions())" ${available(product.id) > 0 ? '' : 'disabled'}`, 'primary', 'bag')}</div></div>${productServiceInfo(product)}</div></section>
     <section class="product-description" aria-labelledby="product-description-title"><h2 id="product-description-title">Sobre o produto</h2><div>${esc(product.description||'Consulte nossa equipe para mais informações sobre este produto.')}</div></section><p class="subtle product-code">Código: ${esc(product.sku)}</p></div>`;
 };
+function productServiceInfo(product){
+  const delivery=(db.pages||[]).find(page=>page.active&&page.policyKey==='delivery');
+  const help=typeof storeWhatsAppUrl==='function'?storeWhatsAppUrl('Olá! Gostaria de tirar uma dúvida sobre '+product.name+'.'):'';
+  return '<div class="product-service-info"><div>'+icon('truck')+'<div><strong>Entrega e retirada</strong><p>Confira o frete e as opções disponíveis no checkout.</p>'+(delivery?'<a href="/loja/pagina/'+Number(delivery.id)+'">Como funciona</a>':'')+'</div></div>'+(help?'<div>'+icon('users')+'<div><strong>Podemos ajudar?</strong><a href="'+esc(help)+'" target="_blank" rel="noopener noreferrer">Fale com a loja</a></div></div>':'')+'</div>';
+}
 addToCart = (id, qty = 1, choices = {}) => {
   const product = db.products.find(item => item.id === id && item.active);
   if (!product) return toast('Produto indisponível.');

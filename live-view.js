@@ -51,7 +51,7 @@ function syncAudience(){
  const banner=document.createElement('section');banner.id='audience-consent';banner.className='audience-consent';banner.setAttribute('aria-label','Preferências de privacidade');banner.innerHTML='<div><strong>Sua privacidade, sua escolha</strong><p>Podemos medir visitas e usar a Meta para publicidade e conversões? Você escolhe quais recursos opcionais permitir. Sua compra funciona com apenas os necessários.</p></div>'+audienceChoices();document.body.append(banner);
 }
 const storeFooterBeforeAudience=storeFooter;
-storeFooter=()=>storeFooterBeforeAudience()+'<div class="audience-footer"><button onclick="audiencePreferences()">Preferências de privacidade</button></div>';
+storeFooter=()=>{const html=storeFooterBeforeAudience(),control='<button onclick="audiencePreferences()">Preferências de privacidade</button>';return html.includes('<!--store-privacy-control-->')?html.replace('<!--store-privacy-control-->',control):html+'<div class="audience-footer">'+control+'</div>';};
 navigation.push(['live-view','Live View','globe']);
 const adminPageBeforeLive=adminPage;adminPage=page=>page==='live-view'?liveViewPage():adminPageBeforeLive(page);
 const renderBeforeLive=render;render=()=>{stopLivePage();const result=renderBeforeLive();syncLivePage();syncAudience();return result;};

@@ -11,7 +11,7 @@ const logo = `data:image/webp;base64,${logoBase64}`;
 const logoIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#1C2228"/><image href="${logo}" x="30.72" y="30.72" width="450.56" height="450.56" preserveAspectRatio="xMidYMid meet"/></svg>`;
 fs.writeFileSync(path.join(root, 'assets/app-icon.svg'), logoIconSvg, 'utf8');
 const icon = logo;
-const css = [read('styles.css'), read('storefront.css'), read('merchandising.css'), read('panel.css'), read('receipts.css')].join('\n').replace(/<\/style/gi, '<\\/style');
+const css = [read('styles.css'), read('storefront.css'), read('merchandising.css'), read('panel.css'), read('store-product.css'), read('receipts.css')].join('\n').replace(/<\/style/gi, '<\\/style');
 const script = name => read(name).replaceAll('assets/logo.webp', logo)
   .replace(/<\/script/gi, '<\\/script');
 

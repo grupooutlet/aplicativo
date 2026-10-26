@@ -115,9 +115,9 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace('<head>'
 const server=http.createServer((req,res)=>{
  if(req.method!=='GET')return res.writeHead(405).end();
  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});
- if(req.url.startsWith('/__qa/mobile')){
-  const params=new URL(req.url,'http://localhost').searchParams,requested=params.get('route')||'/app';const route=/^\/(?:app|loja|imprimir)(?:\/[a-z0-9-]+)*$/.test(requested)?requested:'/app',width=[320,360,390,430].includes(Number(params.get('width')))?Number(params.get('width')):390;
-  return res.end('<!doctype html><meta name="viewport" content="width=device-width"><style>body{margin:0;background:#e7e9e8;display:flex;justify-content:center}iframe{width:'+width+'px;height:100dvh;border:0;background:#fff;max-width:100%}</style><iframe title="Prévia de celular" src="/#'+route+'"></iframe>');
+ if(req.url.startsWith('/__qa/mobile')||req.url.startsWith('/__qa/viewport')){
+  const wide=req.url.startsWith('/__qa/viewport'),params=new URL(req.url,'http://localhost').searchParams,requested=params.get('route')||'/app';const route=/^\/(?:app|loja|imprimir)(?:\/[a-z0-9-]+)*$/.test(requested)?requested:'/app',width=[320,360,390,430,...(wide?[1024,1440,1920]:[])].includes(Number(params.get('width')))?Number(params.get('width')):390;
+  return res.end('<!doctype html><meta name="viewport" content="width=device-width"><style>body{margin:0;background:#e7e9e8;display:flex;justify-content:center;'+(wide?'width:'+width+'px':'')+'}iframe{width:'+width+'px;height:100dvh;border:0;background:#fff;max-width:'+(wide?'none':'100%')+';flex-shrink:0}</style><iframe title="Prévia de '+(wide?'desktop':'celular')+'" src="/#'+route+'"></iframe>');
  }
  const paper=new URL(req.url,'http://localhost').searchParams.get('paper')==='1';
  const paperStyle=paper?'<style>'+fs.readFileSync(path.join(root,'receipts.css'),'utf8').replaceAll('@media print','@media all')+'#app{width:186mm;margin:20px auto}.print-actions{display:none!important}.receipt.order-sheet{max-width:none}</style>':'';
