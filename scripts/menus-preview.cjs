@@ -61,6 +61,14 @@ if(process.env.QA_THEMES==='1'){
  model.activeThemeId='11111111-1111-4111-8111-111111111111';
  model.storeThemes=[{id:model.activeThemeId,name:'Forte · Principal',config:structuredClone(model.storefront),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()},{id:'22222222-2222-4222-8222-222222222222',name:'Nova coleção · Rascunho',config:structuredClone(model.storefront),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}];
 }
+if(process.env.QA_RECEIPTS==='1'){
+ Object.assign(model.settings,{legalName:'Forte Outlet Group LTDA',cnpj:'60.454.727/0001-70',email:'grupooutlet.rj@gmail.com',phone:'5521968464050',address:'Avenida Abílio Augusto Távora, 857 · Da Luz · Nova Iguaçu / RJ · CEP 26260-045'});
+ const base={id:5032,createdAt:'2026-10-25T19:20:00Z',date:'2026-10-25',channel:'Loja online',seller:'Loja online',customer:'Marina Oliveira · Exemplo',email:'cliente@example.invalid',phone:'21999998888',cpf:'12345678901',status:'pending',paid:false,delivery:'Entrega',deliveryDate:'2026-10-26',payment:'Pix',paymentMethodId:'pay-pix',paymentKind:'pix',paymentTiming:'Na entrega',freight:170,freightPending:false,paymentFee:0,total:867,shippingOptionName:'Rio de Janeiro · Irajá',address:'Rua das Flores, 30, apto. 101 · Irajá · Rio de Janeiro / RJ · CEP 21230-105',addressParts:{street:'Rua das Flores',number:'30',complement:'Apto. 101 · Bloco B',neighborhood:'Irajá',city:'Rio de Janeiro',state:'RJ',cep:'21230-105'},notes:'Ligar para o cliente antes de sair para entrega.\nAcesso pela portaria do bloco B.',items:[{id:1,name:'Sofá Malibu 2,30m · Cor: Cinza · Tamanho: 2,30m',qty:1,price:697,options:{Cor:'Cinza',Tamanho:'2,30m'}}]};
+ model.orders=[base,{...structuredClone(base),id:5033,status:'transit',paid:true,paidAt:'2026-10-26T15:10:00Z',releasedAt:'2026-10-26T12:30:00Z'},
+ {...structuredClone(base),id:5034,status:'cancelled',paid:true,cancelledAt:'2026-10-26T15:40:00Z',paidAt:'2026-10-26T15:10:00Z'},
+ {...structuredClone(base),id:5035,status:'delivered',paid:true,delivery:'Retirada',paymentTiming:'Antecipado',paymentKind:'credit',payment:'Cartão de crédito',installments:3,installmentAmount:250,lastInstallmentAmount:250,freight:0,paymentFee:53,paymentRate:7.6,paidAt:'2026-10-26T13:10:00Z',releasedAt:'2026-10-26T15:30:00Z',deliveredAt:'2026-10-26T15:30:00Z'},
+ {...structuredClone(base),id:5036,items:Array.from({length:24},(_,i)=>({id:1,name:'Sofá retrátil e reclinável com assento de molas ensacadas e acabamento em linho · Cor: Bege · Tamanho: 2,30m · Item '+(i+1),qty:2,price:1697,options:{Cor:'Bege',Tamanho:'2,30m'}}))}];
+}
 let qaHistory=[];
 if(process.env.QA_AUDIT==='1'){
  const freight=model.settings.shippingOptions.find(o=>o.name==='Niterói');const before=structuredClone(freight);freight.price=220;
@@ -108,9 +116,11 @@ const server=http.createServer((req,res)=>{
  if(req.method!=='GET')return res.writeHead(405).end();
  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});
  if(req.url.startsWith('/__qa/mobile')){
-  const params=new URL(req.url,'http://localhost').searchParams,requested=params.get('route')||'/app';const route=/^\/(?:app|loja)(?:\/[a-z0-9-]+)*$/.test(requested)?requested:'/app',width=[320,360,390,430].includes(Number(params.get('width')))?Number(params.get('width')):390;
+  const params=new URL(req.url,'http://localhost').searchParams,requested=params.get('route')||'/app';const route=/^\/(?:app|loja|imprimir)(?:\/[a-z0-9-]+)*$/.test(requested)?requested:'/app',width=[320,360,390,430].includes(Number(params.get('width')))?Number(params.get('width')):390;
   return res.end('<!doctype html><meta name="viewport" content="width=device-width"><style>body{margin:0;background:#e7e9e8;display:flex;justify-content:center}iframe{width:'+width+'px;height:100dvh;border:0;background:#fff;max-width:100%}</style><iframe title="Prévia de celular" src="/#'+route+'"></iframe>');
  }
- res.end(html);
+ const paper=new URL(req.url,'http://localhost').searchParams.get('paper')==='1';
+ const paperStyle=paper?'<style>'+fs.readFileSync(path.join(root,'receipts.css'),'utf8').replaceAll('@media print','@media all')+'#app{width:186mm;margin:20px auto}.print-actions{display:none!important}.receipt.order-sheet{max-width:none}</style>':'';
+ res.end(paper?html.replace('</head>',paperStyle+'</head>'):html);
 });
 server.listen(0,'127.0.0.1',()=>console.log('Menu and collection QA: http://127.0.0.1:'+server.address().port+'/#/app/menus'));
