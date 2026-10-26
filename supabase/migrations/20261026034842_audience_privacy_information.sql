@@ -1,0 +1,7 @@
+-- Explain optional audience measurement while preserving customized page content.
+update public.app_state set data=jsonb_set(data,'{pages}',(select jsonb_agg(case when value->>'policyKey' in ('privacy','cookies') and position('## Medição opcional de visitas' in coalesce(value->>'content',''))=0 then jsonb_set(value,'{content}',to_jsonb(coalesce(value->>'content','') || '
+
+## Medição opcional de visitas
+Somente se você permitir em Preferências de privacidade, medimos a etapa da visita (loja, produto, carrinho, checkout ou conclusão), a existência de itens no carrinho e a cidade aproximada fornecida pela infraestrutura Cloudflare. Um identificador aleatório é criado para esta aba; ele não é vinculado ao cadastro ou pedido. Não solicitamos GPS nem guardamos seu IP, endereço exato, e-mail ou telefone nessa medição.
+Os registros são apagados após 30 minutos sem atividade, com limpeza automática periódica de até 5 minutos. A equipe autorizada vê apenas contagens agregadas; visitantes ativos representam os últimos 2 minutos. Visitas da equipe e prévias de temas são excluídas.
+Você pode recusar ou revogar essa medição em Preferências de privacidade no rodapé, sem afetar sua compra. A escolha fica neste navegador até ser alterada ou o armazenamento ser limpo. Sinais de não rastrear e de privacidade global do navegador são respeitados.')) else value end order by ord) from jsonb_array_elements(data->'pages') with ordinality e(value,ord))),version=version+1,updated_at=now() where id=1;

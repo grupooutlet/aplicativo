@@ -69,3 +69,11 @@ Abra `http://127.0.0.1:4173/#/loja`. O build incorpora CSS, JavaScript e a marca
 Os PNGs são versionados e o build da Cloudflare apenas os copia. Para regenerá-los após uma mudança da marca, instale `Pillow==12.0.0`, execute `python scripts/generate-app-icons.py` e versione os quatro PNGs resultantes. A publicação não depende de Python.
 
 O painel e a loja usam os endpoints de senha e cadastro do Supabase Auth. A URL principal do Auth é `https://forteoutlet.com.br/`. O domínio oficial, sua variante `www` e o endereço anterior do GitHub permanecem permitidos. As funções de checkout e administração de clientes usam uma lista explícita dessas três origens HTTPS; as verificações de identidade e permissões continuam obrigatórias.
+
+### Painel, temas e Live View
+
+O painel usa navegação lateral `#1C2228` e estilos isolados em `panel.css`, sem aplicar a aparência administrativa à vitrine. A biblioteca em `/#/app/themes` permite criar, duplicar, renomear, editar, pré-visualizar, publicar e excluir rascunhos. Salvar um rascunho preserva o tema publicado. Produtos, pedidos, estoque, menus, páginas e configurações comerciais são compartilhados entre os temas. As alterações são auditadas e podem ser revertidas por quem possui essa permissão.
+
+O Live View em `/#/app/live-view` mostra atividade consentida e agregada, com mapa centrado no Rio. Não usa GPS, não guarda IP e não associa o identificador temporário da visita ao cliente. A coleta opcional pode ser recusada ou revogada no rodapé da loja. Sessões expiram após 30 minutos sem atividade, com limpeza a cada 5 minutos. Funcionários e prévias não são medidos.
+
+`functions/api/live.js` é publicado automaticamente pelo Cloudflare Pages. `_routes.json` limita a função a `/api/live`, preservando o caminho estático para os demais arquivos. As migrações de temas, métricas e privacidade estão em `supabase/migrations`. Veja a estrutura e os testes em `docs/redesign-painel.md`.

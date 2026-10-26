@@ -6,13 +6,15 @@ const storefront=(()=>{
     {icon:'shield',title:'Atendimento de verdade',body:'Nossa equipe cuida de você'},
     {icon:'store',title:'Sua loja de confiança',body:'Visite nossa loja física'}
   ];
-  let selected='home-hero',previewSize='desktop',draft=null,baseline=null,saving=false,uploading=false;
+  let selected='home-hero',previewSize=window.innerWidth<=650?'mobile':'desktop',draft=null,baseline=null,saving=false,uploading=false,draftScope='';
   let previewRoute='/loja',previewCategory='Todos',previewView='home',previewIdentity='current';
   let openedCollectionItem='';
   const channel=typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2);
   const editing=()=>routePath().startsWith('/app/store-editor');
   function ensureDraft(){
-    if(!draft || (!dirty() && JSON.stringify(baseline)!==JSON.stringify(db.storefront))){baseline=structuredClone(db.storefront);draft=structuredClone(db.storefront)}
+    const source=typeof themeEditorModel==='function'?themeEditorModel():db.storefront;
+    const scope=typeof currentEditingThemeId==='function'?currentEditingThemeId()||'published':'published';
+    if(!draft || draftScope!==scope || (!dirty() && JSON.stringify(baseline)!==JSON.stringify(source))){draftScope=scope;baseline=structuredClone(source);draft=structuredClone(source)}
     return draft;
   }
   const home=()=>editing()?ensureDraft():db.storefront;
@@ -136,18 +138,19 @@ const storefront=(()=>{
     if(key==='collection')fields+=`${productGridControls(cfg,true)}${check('Exibir filtros de produtos','showFilters')}<label class="field">Produtos por linha no computador<select onchange="storefront.changePage('columns',Number(this.value))">${[2,3,4].map(n=>`<option value="${n}" ${Number(cfg.columns||3)===n?'selected':''}>${n} produtos</option>`).join('')}</select></label>`;
     return `<section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">EDITAR PÁGINA</span><h2>${esc(pageTitle())}</h2></div></div><div class="builder-fields">${fields}<p class="builder-hint">${key==='product'?'Este modelo é aplicado a todos os produtos. Cada produto mantém seu título, suas fotos e sua descrição.':key==='collection'?'Este modelo é aplicado a todas as coleções e ao catálogo. Os produtos de cada coleção são mantidos.':'Estas opções personalizam esta página. Navegue na prévia para editar outras partes da loja.'} A loja publicada só muda ao salvar.</p></div></section>`;
   }
-  function editorControls(){
+  function editorControlsContent(){
     if(pageKey(previewRoute,previewCategory,previewView)!=='home')return announcementControls()+pageControls();
     const s=section()||home().sections[0];selected=s.id;
     return announcementControls()+`<section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">PÁGINA INICIAL</span><h2>Seções da home</h2></div><span class="builder-count">${home().sections.length}</span></div><div class="builder-section-list">${home().sections.map(sectionRow).join('')}</div><button class="builder-add" onclick="storefront.addModal()">${icon('plus')} Adicionar seção</button><p class="builder-hint">Use as setas para mudar a ordem. Seções ocultas não aparecem na loja.</p></section><section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">EDITAR SEÇÃO</span><h2>${esc(labels[s.type])}</h2></div><label class="builder-switch"><input type="checkbox" ${s.enabled?'checked':''} onchange="storefront.toggle('${s.id}',this.checked)"><span>${s.enabled?'Visível':'Oculta'}</span></label></div><div class="builder-fields">${controls(s)}</div><div class="builder-card-foot"><button class="btn small" onclick="storefront.duplicate('${s.id}')">${icon('plus')} Duplicar</button><button class="btn small danger" onclick="storefront.removeModal('${s.id}')">${icon('trash')} Excluir</button></div></section>`;
   }
-  function saveBar(){return `<div class="builder-save-status" role="status">${uploading?'Enviando imagem…':saving?'Salvando mudanças…':dirty()?'Você tem mudanças não publicadas.':'Todas as mudanças estão salvas.'}</div><div class="actions"><button class="btn" onclick="storefront.cancelChanges()" ${!dirty()||saving||uploading?'disabled':''}>Cancelar mudanças</button><button class="btn primary" onclick="storefront.publish()" ${!dirty()||saving||uploading?'disabled':''}>Salvar mudanças</button></div>`}
+  function editorControls(){const html=editorControlsContent();return typeof layoutThemeEditorControls==='function'?layoutThemeEditorControls(html):html;}
+  function saveBar(){return `<div class="builder-save-status" role="status">${uploading?'Enviando imagem…':saving?'Salvando mudanças…':dirty()?'Você tem mudanças não salvas.':'Todas as mudanças estão salvas.'}</div><div class="actions"><button class="btn" aria-label="Cancelar mudanças" onclick="storefront.cancelChanges()" ${!dirty()||saving||uploading?'disabled':''}>${window.innerWidth<=650?'Cancelar':'Cancelar mudanças'}</button><button class="btn primary" aria-label="Salvar mudanças" onclick="storefront.publish()" ${!dirty()||saving||uploading?'disabled':''}>${window.innerWidth<=650?'Salvar':'Salvar mudanças'}</button></div>`}
   function previewOptionValue(){const key=pageKey(previewRoute,previewCategory,previewView);return key==='product'?'template:product':key==='collection'?'template:collection':previewRoute;}
   function pageOptions(){return [['/loja','Página inicial'],['template:product','Página de vendas'],['template:collection','Coleção'],['/loja/carrinho','Carrinho'],['/loja/checkout','Checkout'],['/loja/conta','Meus pedidos'],['/loja/login','Login'],['/loja/cadastro','Cadastro']].map(([value,label])=>`<option value="${value}" ${previewOptionValue()===value?'selected':''}>${label}</option>`).join('')}
   function editorPage(){
     ensureDraft();
     const params=new URLSearchParams(location.search);params.set('storePreview','1');params.set('channel',channel);
-    return heading('Loja online','Edite, navegue na prévia e publique quando estiver pronto.',`<a class="btn" href="/loja" target="_blank" rel="noopener noreferrer">${icon('external')}Abrir loja</a>`)+
+    return (typeof themeEditorHeader==='function'?themeEditorHeader():heading('Loja online','Edite, navegue na prévia e publique quando estiver pronto.',`<a class="btn" href="/loja" target="_blank" rel="noopener noreferrer">${icon('external')}Abrir loja</a>`))+
       `<div id="builder-save-bar" class="builder-save-bar">${saveBar()}</div><div class="storefront-builder"><div id="builder-controls" class="builder-column">${editorControls()}</div><section class="builder-preview-panel"><div class="builder-preview-head"><div><strong id="builder-preview-title">Prévia · ${esc(pageTitle())}</strong><small>Pedidos e cadastros da prévia são simulados.</small></div><div class="builder-view-switch"><button data-device="desktop" class="${previewSize==='desktop'?'active':''}" onclick="storefront.setPreview('desktop')">Desktop</button><button data-device="mobile" class="${previewSize==='mobile'?'active':''}" onclick="storefront.setPreview('mobile')">Celular</button></div></div><div class="builder-preview-toolbar"><button class="btn small" onclick="storefront.navigate('/loja')" aria-label="Página inicial na prévia">${icon('home')}</button><select aria-label="Página da prévia" onchange="storefront.navigate(this.value)">${pageOptions()}</select><select aria-label="Conta na prévia" onchange="storefront.setIdentity(this.value)"><option value="current" ${previewIdentity==='current'?'selected':''}>Conta atual</option><option value="guest" ${previewIdentity==='guest'?'selected':''}>Sem login</option></select></div><div id="editor-preview"><div id="builder-frame-stage"><iframe id="store-preview-frame" title="Prévia funcional da loja" sandbox="allow-scripts allow-same-origin allow-forms" src="${esc(basePath+'index.html?'+params.toString()+'#'+previewRoute)}"></iframe></div></div></section></div>`;
   }
   function render(){
@@ -214,7 +217,8 @@ const storefront=(()=>{
   function setPreview(size){previewSize=size==='mobile'?'mobile':'desktop';document.querySelectorAll('[data-device]').forEach(b=>b.classList.toggle('active',b.dataset.device===previewSize));sizeFrame()}
   function sizeFrame(){
     const stage=document.querySelector('#builder-frame-stage'),frame=document.querySelector('#store-preview-frame');if(!stage||!frame)return;
-    const width=previewSize==='mobile'?390:1280,scale=Math.min(1,stage.parentElement.clientWidth/width);
+    const width=previewSize==='mobile'?390:1280,parent=stage.parentElement,style=typeof getComputedStyle==='function'?getComputedStyle(parent):null;
+    const inset=style?(parseFloat(style.paddingLeft)||0)+(parseFloat(style.paddingRight)||0):0,scale=Math.min(1,Math.max(1,parent.clientWidth-inset)/width);
     frame.style.width=width+'px';frame.style.height='900px';frame.style.transform=`scale(${scale})`;stage.style.width=width*scale+'px';stage.style.height=900*scale+'px';
   }
   function previewModel(){
@@ -241,15 +245,16 @@ const storefront=(()=>{
     saving=true;refresh();
     try{
       await settleAdminWrites();
-      await backendRequest('/rest/v1/rpc/save_storefront',{method:'POST',body:JSON.stringify({p_storefront:draft,p_expected:baseline})},true);
-      await loadAdminState();baseline=structuredClone(db.storefront);draft=structuredClone(db.storefront);toast('Mudanças salvas. A loja publicada foi atualizada.');
+      if(typeof saveThemeEditor==='function'&&currentEditingThemeId())await saveThemeEditor(draft,baseline);
+      else await backendRequest('/rest/v1/rpc/save_storefront',{method:'POST',body:JSON.stringify({p_storefront:draft,p_expected:baseline})},true);
+      await loadAdminState();const source=typeof themeEditorModel==='function'?themeEditorModel():db.storefront;baseline=structuredClone(source);draft=structuredClone(source);toast(typeof themeEditorIsDraft==='function'&&themeEditorIsDraft()?'Rascunho salvo. A loja publicada foi preservada.':'Mudanças salvas. A loja publicada foi atualizada.');
     }catch(error){toast('Não foi possível publicar: '+error.message)}
     finally{saving=false;render()}
   }
   async function cancelChanges(){
     if(saving||uploading)return;
     try{await settleAdminWrites();await loadAdminState()}catch(error){toast('Não foi possível atualizar a loja: '+error.message)}
-    baseline=structuredClone(db.storefront);draft=structuredClone(db.storefront);render();toast('Rascunho descartado.');sendPreview();
+    const source=typeof themeEditorModel==='function'?themeEditorModel():db.storefront;baseline=structuredClone(source);draft=structuredClone(source);render();toast('Alterações não salvas descartadas.');sendPreview();
   }
   window.addEventListener('message',event=>{
     const frame=document.querySelector('#store-preview-frame');
@@ -265,5 +270,6 @@ const storefront=(()=>{
     }
   });
   window.addEventListener('beforeunload',event=>{if(dirty()){event.preventDefault();event.returnValue=''}});
-  return {init,announcement,storeHome,editorPage,change,changePage,changeColor,changeAnnouncement,toggle,move,addModal,add,duplicate,removeModal,remove,select,uploadImage,setPreview,render,mountPreview,navigate,setIdentity,publish,cancelChanges,dirty,pageKey,setCollectionItemOpen,addCollectionItem,moveCollectionItem,removeCollectionItem};
+  function resetDraft(){draft=null;baseline=null;draftScope='';}
+  return {init,announcement,storeHome,editorPage,change,changePage,changeColor,changeAnnouncement,toggle,move,addModal,add,duplicate,removeModal,remove,select,uploadImage,setPreview,render,mountPreview,navigate,setIdentity,publish,cancelChanges,dirty,pageKey,setCollectionItemOpen,addCollectionItem,moveCollectionItem,removeCollectionItem,resetDraft};
 })();

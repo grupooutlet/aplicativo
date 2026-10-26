@@ -57,6 +57,10 @@ if(process.env.QA_BUSINESS==='1'){
  Object.assign(model.settings,{legalName:'Empresa de Teste LTDA',cnpj:'60.454.727/0001-70',email:'loja@example.invalid',phone:'5521968464050',address:'Rua de Teste, 100 · Centro · Nova Iguaçu / RJ · CEP 26260-045',addressParts:{cep:'26260-045',street:'Rua de Teste',number:'100',neighborhood:'Centro',city:'Nova Iguaçu',state:'RJ',complement:''}});
  model.pages=require('../content/institutional-pages.json').map((page,index)=>({...page,id:index+1,active:true,updatedAt:'2026-10-25T12:00:00Z'}));
 }
+if(process.env.QA_THEMES==='1'){
+ model.activeThemeId='11111111-1111-4111-8111-111111111111';
+ model.storeThemes=[{id:model.activeThemeId,name:'Forte · Principal',config:structuredClone(model.storefront),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()},{id:'22222222-2222-4222-8222-222222222222',name:'Nova coleção · Rascunho',config:structuredClone(model.storefront),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}];
+}
 let qaHistory=[];
 if(process.env.QA_AUDIT==='1'){
  const freight=model.settings.shippingOptions.find(o=>o.name==='Niterói');const before=structuredClone(freight);freight.price=220;
@@ -79,6 +83,17 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  if(url.includes('/rpc/save_catalog')){if(body.p_expected_version!==fixtureVersion)return reply({message:'O catálogo mudou em outra sessão.'},409);Object.assign(fixtureModel,body.p_changes);return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_collection')){const before=body.p_previous,name=body.p_name;if(before){fixtureModel.collections=fixtureModel.collections.map(c=>c===before?name:c);for(const p of fixtureModel.products){p.categories=p.categories.map(c=>c===before?name:c);if(p.category===before)p.category=name;}}else fixtureModel.collections.push(name);fixtureModel.collectionSettings[name]={...(fixtureModel.collectionSettings[before]||{}),active:body.p_active,sort:body.p_sort,...(body.p_product_ids?{productIds:body.p_product_ids}:{})};if(before!==name)delete fixtureModel.collectionSettings[before];return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_storefront')){fixtureModel.storefront=body.p_storefront;return reply({version:++fixtureVersion});}
+ if(url.includes('/rpc/store_live_snapshot'))return reply({observedAt:new Date().toISOString(),active:0,sessions:0,activeCarts:0,checkout:0,productViews:0,ordersToday:0,revenueToday:0,locations:[]});
+ if(url.includes('/rpc/manage_store_theme')){
+  const themes=fixtureModel.storeThemes,theme=themes.find(t=>t.id===body.p_id);let id=body.p_id;
+  if(['create','duplicate'].includes(body.p_action)){id=crypto.randomUUID();themes.push({id,name:body.p_name,config:structuredClone(body.p_config||theme?.config||fixtureModel.storefront),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});}
+  else if(!theme)return reply({message:'Tema não encontrado.'},400);
+  else if(body.p_action==='save'){if(JSON.stringify(theme.config)!==JSON.stringify(body.p_expected))return reply({message:'O tema mudou em outra sessão.'},409);theme.config=body.p_config;theme.updatedAt=new Date().toISOString();if(id===fixtureModel.activeThemeId)fixtureModel.storefront=structuredClone(theme.config);}
+  else if(body.p_action==='rename')theme.name=body.p_name;
+  else if(body.p_action==='publish'){fixtureModel.activeThemeId=id;fixtureModel.storefront=structuredClone(theme.config);}
+  else if(body.p_action==='delete'){if(id===fixtureModel.activeThemeId)return reply({message:'Publique outro tema antes de excluir.'},400);fixtureModel.storeThemes=themes.filter(t=>t.id!==id);}
+  return reply({id,version:++fixtureVersion,active:id===fixtureModel.activeThemeId});
+ }
  if(url.includes('/rpc/save_navigation')){fixtureModel.navigation=body.p_navigation;return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_shipping_settings')){fixtureModel.settings.shippingOptions=body.p_options;fixtureModel.settings.shippingMode='regional';return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_site_section')){if(body.p_section==='store')Object.assign(fixtureModel.settings,body.p_value);else if(body.p_section==='paymentMethods')fixtureModel.settings.paymentMethods=body.p_value;else if(body.p_section==='pages')fixtureModel.pages=body.p_value;return reply({version:++fixtureVersion});}

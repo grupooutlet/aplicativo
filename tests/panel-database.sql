@@ -1,0 +1,60 @@
+-- Run as a single transaction using the database connector. Every QA write is rolled back.
+begin;
+do $qa$
+declare original jsonb; state jsonb; live jsonb; draft jsonb; revised jsonb; result jsonb; active_id text; draft_id text; duplicate_id text; denied boolean; actor uuid; visit uuid:=gen_random_uuid();
+begin
+ select data into original from public.app_state where id=1;active_id:=original->>'activeThemeId';
+ perform set_config('request.jwt.claim.sub',(select user_id::text from private.master_account where singleton=1),true);
+ perform private.validate_theme_config(original->'storefront',original);
+ result:=public.manage_store_theme('create',active_id,'QA theme',null,null,null);draft_id:=result->>'id';
+ select data into state from public.app_state where id=1;
+ assert state->'storefront'=original->'storefront','Creating a draft must not change live layout';
+ select value into draft from jsonb_array_elements(state->'storeThemes') where value->>'id'=draft_id;
+ revised:=jsonb_set(draft->'config','{announcement,text}','"QA unpublished"');
+ perform public.manage_store_theme('save',draft_id,null,revised,draft->'config',null);
+ select data into state from public.app_state where id=1;
+ assert state->'storefront'=original->'storefront','Draft saves must remain private';
+ assert (select data->'storefront'=original->'storefront' from public.shop_public where id=1),'Public catalog must preserve live presentation';
+ denied:=false;begin perform public.manage_store_theme('save',draft_id,null,revised,draft->'config',null);exception when others then denied:=true;end;assert denied,'Stale saves must be rejected';
+ select value into draft from jsonb_array_elements(state->'storeThemes') where value->>'id'=draft_id;
+ result:=public.manage_store_theme('duplicate',draft_id,'QA copy',null,draft,null);duplicate_id:=result->>'id';
+ denied:=false;begin perform public.manage_store_theme('delete',active_id,null,null,(select value from jsonb_array_elements(state->'storeThemes') where value->>'id'=active_id),null);exception when others then denied:=true;end;assert denied,'Active theme deletion must be rejected';
+ perform public.manage_store_theme('publish',draft_id,null,null,draft,original->'storefront');
+ select data into state from public.app_state where id=1;
+ assert state->>'activeThemeId'=draft_id and state->'storefront'=revised,'Publication must atomically switch theme and layout';
+ assert (select data->'storefront'=revised from public.shop_public where id=1),'Publication must refresh the public layout';
+ assert state-'storefront'-'storeThemes'-'activeThemeId'=original-'storefront'-'storeThemes'-'activeThemeId','Themes must preserve all business roots';
+ perform public.manage_store_theme('delete',duplicate_id,null,null,(select value from jsonb_array_elements(state->'storeThemes') where value->>'id'=duplicate_id),null);
+ assert exists(select 1 from private.change_history where transaction_id=txid_current() and 'storeThemes'=any(areas)),'Theme actions must be audited';
+ perform set_config('request.jwt.claim.sub',gen_random_uuid()::text,true);
+ denied:=false;begin perform public.manage_store_theme('create',null,'Denied',null,null,null);exception when others then denied:=true;end;assert denied,'Unknown users must not edit themes';
+ denied:=false;begin perform public.store_live_snapshot();exception when others then denied:=true;end;assert denied,'Unknown users must not read Live View';
+ select user_id into actor from public.profiles where role='customer' limit 1;
+ if actor is not null then
+  update public.profiles set role='admin',position='Vendedor' where user_id=actor;
+  perform set_config('request.jwt.claim.sub',actor::text,true);
+  assert private.can_edit_site(),'Sellers must retain site configuration access';
+  perform public.manage_store_theme('create',null,'Seller QA',null,null,null);
+  denied:=false;begin perform public.store_live_snapshot();exception when others then denied:=true;end;assert denied,'Sellers must not read manager metrics';
+  assert not exists(select 1 from jsonb_array_elements(public.sales_state()->'data'->'products') p where p ? 'cost'),'Seller catalog must not expose costs';
+ end if;
+ assert not has_table_privilege('anon','private.store_live_visits','SELECT'),'Anonymous users must not read sessions';
+ assert not has_table_privilege('authenticated','private.store_live_visits','SELECT'),'Direct session reads must stay private';
+ assert public.record_store_visit(visit,'Rio de Janeiro','RJ','BR',-22.912,-43.231,'product',true,false),'Valid visitor must be accepted';
+ assert (select latitude=-22.9 and longitude=-43.2 from private.store_live_visits where visit_id=visit),'Coordinates must be rounded';
+ assert public.record_store_visit(visit,'Rio de Janeiro','RJ','BR',-22.912,-43.231,'checkout',true,false),'Rapid heartbeat can be ignored safely';
+ assert (select phase='product' from private.store_live_visits where visit_id=visit),'20-second write limit must hold';
+ update private.store_live_visits set last_seen=clock_timestamp()-interval '25 seconds' where visit_id=visit;
+ perform public.record_store_visit(visit,'Rio de Janeiro','RJ','BR',-22.912,-43.231,'checkout',true,false);
+ assert not public.record_store_visit(gen_random_uuid(),'Invalid','RJ','BR',999,0,'store',false,false),'Invalid geographic input must be rejected';
+ perform set_config('request.jwt.claim.sub',(select user_id::text from private.master_account where singleton=1),true);
+ live:=public.store_live_snapshot();assert (live->>'active')::integer>=1 and (live->>'checkout')::integer>=1,'Manager must see real aggregate activity';
+ assert not(live ? 'visits') and not(live::text like '%'||visit::text||'%'),'Snapshot must not expose visitor IDs';
+ update private.store_live_visits set last_seen=clock_timestamp()-interval '31 minutes' where visit_id=visit;
+ perform private.purge_live_visits();assert not exists(select 1 from private.store_live_visits where visit_id=visit),'Expired visits must be purged';
+ assert private.live_order_day('{"createdAt":"2026-10-26T01:30:00Z"}')='2026-10-25'::date,'Order dates must follow Brasília';
+ assert private.live_order_day('{"date":"2026-02-31"}') is null,'Malformed old dates must not break Live View';
+ assert (select data->'orders'=original->'orders' and data->'products'=original->'products' from public.app_state where id=1),'QA must not change orders or catalog';
+end $qa$;
+rollback;
+
