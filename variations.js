@@ -192,14 +192,9 @@ productPage = id => {
     ${productVariations(product).length ? `<div class="product-options">${detailOptions(product)}</div>` : ''}
     <div class="product-purchase"><label class="field">Quantidade<input id="detail-qty" type="number" value="1" min="1" max="${Math.max(1,available(product.id))}" ${available(product.id)>0?'':'disabled'}></label>
     ${button(available(product.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque',
-      `onclick="addToCart(${id},Number($('#detail-qty').value),collectProductOptions())" ${available(product.id) > 0 ? '' : 'disabled'}`, 'primary', 'bag')}</div></div>${productServiceInfo(product)}</div></section>
+      `onclick="addToCart(${id},Number($('#detail-qty').value),collectProductOptions())" ${available(product.id) > 0 ? '' : 'disabled'}`, 'primary', 'bag')}</div></div></div></section>
     <section class="product-description" aria-labelledby="product-description-title"><h2 id="product-description-title">Sobre o produto</h2><div>${esc(product.description||'Consulte nossa equipe para mais informações sobre este produto.')}</div></section><p class="subtle product-code">Código: ${esc(product.sku)}</p></div>`;
 };
-function productServiceInfo(product){
-  const delivery=(db.pages||[]).find(page=>page.active&&page.policyKey==='delivery');
-  const help=typeof storeWhatsAppUrl==='function'?storeWhatsAppUrl('Olá! Gostaria de tirar uma dúvida sobre '+product.name+'.'):'';
-  return '<div class="product-service-info"><div>'+icon('truck')+'<div><strong>Entrega e retirada</strong><p>Confira o frete e as opções disponíveis no checkout.</p>'+(delivery?'<a href="/loja/pagina/'+Number(delivery.id)+'">Como funciona</a>':'')+'</div></div>'+(help?'<div>'+icon('users')+'<div><strong>Podemos ajudar?</strong><a href="'+esc(help)+'" target="_blank" rel="noopener noreferrer">Fale com a loja</a></div></div>':'')+'</div>';
-}
 addToCart = (id, qty = 1, choices = {}) => {
   const product = db.products.find(item => item.id === id && item.active);
   if (!product) return toast('Produto indisponível.');

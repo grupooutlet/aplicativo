@@ -4,7 +4,7 @@
 
 A página usa um contêiner central de 1.240 px. A regra anterior de proteção contra overflow também aplicava `max-width:100%` ao próprio contêiner, anulando o limite da loja e espalhando imagem, título e compra por toda a tela. A correção fica isolada em `store-product.css`.
 
-No desktop, galeria e resumo usam colunas proporcionais, com 56 px de espaço. O título tem até 30 px e linha de 1,3, preço com 34 px e opções/quantidade/compra em um grupo de fundo suave. A informação de disponibilidade usa o estoque realmente disponível. Entrega, retirada e suporte usam as páginas e contatos ativos da loja. A descrição permanece depois da compra; o código permanece no final.
+No desktop, galeria e resumo usam colunas proporcionais, com 56 px de espaço. O título tem até 30 px e linha de 1,3, preço com 34 px e opções/quantidade/compra em um grupo de fundo suave. A informação de disponibilidade usa o estoque realmente disponível. A área de compra termina no botão, sem blocos adicionais de entrega e suporte. A descrição permanece depois da compra; o código permanece no final.
 
 A galeria preserva o enquadramento configurável (`contain`/`cover`), miniaturas, contador, arraste, teclado e looping infinito. Nenhuma lógica de preço, estoque, variações, carrinho ou checkout foi alterada. Uma única opção continua selecionada automaticamente. Não foram adicionados descontos, avaliações ou promessas comerciais fictícias.
 
@@ -22,7 +22,7 @@ A barra de rolagem vertical usa trilho neutro e thumb arredondado de oito pixels
 
 `npm run check`, `npm test`, `npm run pages:build`.
 
-A suíte de layout cobre os contratos de opções/compra/galeria, preço promocional real, falta de estoque, opção única, suporte dinâmico, menus aninhados, políticas sem duplicação, páginas ocultas e controle de privacidade integrado. A suíte existente de carrosséis continua verificando looping e gestos.
+A suíte de layout cobre os contratos de opções/compra/galeria, preço promocional real, falta de estoque, opção única, menus aninhados, políticas sem duplicação, páginas ocultas e controle de privacidade integrado. A suíte existente de carrosséis continua verificando looping e gestos.
 
 Revisão nativa: desktop em 1.280 px, contêiner de 1.920 px e celulares de 390 e 320 px. Verificados título longo, preço promocional, seleção de cor, opção única de tecido, confirmação do carrinho, volta da foto 9 à foto 1, margens e rodapé. Sem overflow horizontal nessas larguras.
 
