@@ -64,13 +64,14 @@ const html = `<!doctype html>
   <script>${script('panel.js')}</script>
   <script>${script('themes.js')}</script>
   <script>${script('live-view.js')}</script>
+  <script>${script('meta-pixel.js')}</script>
   <script>${script('storefront-runtime.js')}</script>
 </body>
 </html>
 `;
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
-if (inlineScripts.length !== 18) throw new Error(`Esperados 18 scripts embutidos; encontrados ${inlineScripts.length}.`);
+if (inlineScripts.length !== 19) throw new Error(`Esperados 19 scripts embutidos; encontrados ${inlineScripts.length}.`);
 inlineScripts.forEach((match, index) => new vm.Script(match[1], { filename: `index.html:script-${index + 1}` }));
 fs.writeFileSync(path.join(root, 'index.html'), html, 'utf8');
 console.log(`index.html gerado (${Buffer.byteLength(html, 'utf8')} bytes).`);

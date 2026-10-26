@@ -176,6 +176,7 @@ async function registerAccount(form) {
     if (!response.ok) throw new Error(result.msg || result.message || 'Não foi possível criar a conta.');
     if (!result.access_token) throw new Error('O cadastro não foi concluído. Tente novamente em instantes.');
     rememberAuth(result);
+    try { if(typeof metaEvent==='function')metaEvent('CompleteRegistration',{status:true}); } catch { /* Optional measurement. */ }
     await boot();
     go(sessionStore.getItem('forte-after-login') || '/loja/conta');
     sessionStore.removeItem('forte-after-login');

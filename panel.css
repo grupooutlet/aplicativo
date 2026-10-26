@@ -227,3 +227,4 @@
  .admin-panel.panel-editor .panel-scroll{border-radius:0}
 }
 @media(max-width:360px){.admin-panel .panel-mobile-header{padding-left:15px;padding-right:15px;gap:12px}.admin-panel .panel-mobile-brand>img{width:136px;height:49px}.admin-panel .panel-mobile-actions{gap:8px}.admin-panel .panel-mobile-dock{left:9px;right:9px;padding:6px;gap:0}.admin-panel .panel-dock-item{font-size:9px}.admin-panel .panel-dock-icon>.icon{width:21px;height:21px}}
+@media(max-width:390px){.audience-actions button{min-width:0;padding:10px 6px;font-size:11px;line-height:1.4}}

@@ -320,6 +320,7 @@ checkout = async form => {
     addressParts: typeof shippingFormAddress === 'function' ? shippingFormAddress(form) : {},
     shippingRestrictionConfirmed: fields.shippingRestrictionConfirmed === 'true',
     orderBumps: selectedBumps,
+    meta: typeof metaCheckoutContext==='function' ? metaCheckoutContext() : null,
     items: db.cart.reduce((lines, item) => {
       const matching = lines.find(line => line.id === item.id && JSON.stringify(line.options) === JSON.stringify(item.options));
       if (matching) matching.qty += item.qty; else lines.push({ id: item.id, qty: item.qty, options: item.options || {} });
@@ -334,6 +335,7 @@ checkout = async form => {
       : await backendRequest('/functions/v1/checkout-account', { method: 'POST', body: JSON.stringify({ request }) });
     if (!result?.id || !result?.token || !result?.order) throw new Error('A confirmação não foi recebida. Consulte a loja antes de tentar novamente.');
     confirmed = result;
+    try { if(typeof metaOrderPlaced==='function')metaOrderPlaced(result.order,request.meta); } catch { /* Measurement must never block a confirmed order. */ }
     if (result.session?.access_token) rememberAuth(result.session);
     const cityParts = String(fields.city || '').split(/\s*\/\s*/);
     localStore.setItem(checkoutContactKey, JSON.stringify({ userId: authSession?.user?.id || null,

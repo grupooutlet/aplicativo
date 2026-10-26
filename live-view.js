@@ -48,7 +48,7 @@ function audiencePreferences(){modal('Preferências de privacidade','<div class=
 function syncAudience(){
  clearInterval(liveConsentTimer);liveConsentTimer=null;if(!audienceEligible()){document.querySelector('#audience-consent')?.remove();return;}
  const consent=localStore.getItem(liveConsentKey);if(consent==='yes'){sendAudience();liveConsentTimer=setInterval(()=>sendAudience(),30000);return;}if(consent==='no'||document.querySelector('#audience-consent'))return;
- const banner=document.createElement('section');banner.id='audience-consent';banner.className='audience-consent';banner.setAttribute('aria-label','Preferências de privacidade');banner.innerHTML='<div><strong>Sua privacidade, sua escolha</strong><p>Podemos medir visitas de forma aproximada para melhorar a loja? Isso é opcional e não afeta sua compra. <button onclick="audiencePreferences()">Saiba mais</button></p></div>'+audienceChoices();document.body.append(banner);
+ const banner=document.createElement('section');banner.id='audience-consent';banner.className='audience-consent';banner.setAttribute('aria-label','Preferências de privacidade');banner.innerHTML='<div><strong>Sua privacidade, sua escolha</strong><p>Podemos medir visitas e usar a Meta para publicidade e conversões? Você escolhe quais recursos opcionais permitir. Sua compra funciona com apenas os necessários.</p></div>'+audienceChoices();document.body.append(banner);
 }
 const storeFooterBeforeAudience=storeFooter;
 storeFooter=()=>storeFooterBeforeAudience()+'<div class="audience-footer"><button onclick="audiencePreferences()">Preferências de privacidade</button></div>';
