@@ -55,4 +55,14 @@ O degradê inferior com desfoque aparece apenas quando há mais conteúdo abaixo
 
 Validação: lista de 65 produtos, seleção em massa após rolar, fim da lista por teclado, páginas curtas, alertas ao lado do perfil e editor no celular. A geometria medida confirmou topo 0, base na altura da janela, documento sem rolagem externa e barra interna de 6 px. As 25 suítes Node e as verificações de sintaxe passaram.
 
+### Navegação móvel e grupos exclusivos
+
+Pedidos, Produtos e Análises abrem um único grupo de subabas por vez. Navegar pelo título abre o grupo correspondente e fecha os demais; as setas permitem abrir ou fechar o grupo sem recarregar o conteúdo do formulário. Rotas de subabas, recarregamento e navegação pelo histórico identificam seu grupo automaticamente.
+
+Em larguras de até 900 px, o topo reúne a logo oficial à esquerda e sino/perfil à direita. A barra inferior flutuante usa as cores carvão e dourado da loja e oferece Início, Pedidos, Produtos e Entregas, com Mais para as outras ferramentas. As opções respeitam cada cargo; Estoque substitui Produtos quando apropriado e entregadores recebem Início, Entregas e Mais. O editor de temas mantém seu espaço próprio sem essa barra.
+
+Mais abre a navegação completa; o conteúdo de fundo fica inerte até fechar, com retorno do foco ao botão. O rodapé tem espaço de rolagem para que a barra não impeça acesso às últimas informações. Os espaçamentos consideram as áreas seguras de iOS/Android. Os indicadores usam contadores compactos arredondados e são limitados visualmente a 99+, preservando o total no rótulo acessível.
+
+Foram removidos apenas os títulos Dados publicados e Páginas conectadas das configurações, mantendo os dados, formulários e acesso às páginas. Validação adicional: grupos exclusivos pelo título e pelas setas, telas de 320/390 px, alertas/lidos, perfil, Mais, prévia de entregador e 25 suítes Node.
+
 Referências técnicas: [Pages Functions](https://developers.cloudflare.com/pages/functions/routing/), [geografia do request.cf](https://developers.cloudflare.com/workers/runtime-apis/request/), [Leaflet](https://leafletjs.com/download.html), [política de tiles OSM](https://operations.osmfoundation.org/policies/tiles/), [Supabase Cron](https://supabase.com/docs/guides/cron/quickstart).

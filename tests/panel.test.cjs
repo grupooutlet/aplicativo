@@ -8,12 +8,19 @@ const run=s=>vm.runInContext(s,context),plain=v=>JSON.parse(JSON.stringify(v));
 (async()=>{
 run("db=defaults();role='Proprietário';isOwner=true;booted=true;currentProfile={role:'master',name:'Grupo Outlet'};authSession={user:{id:'master'}};render=()=>{};storefront.init(db);db.activeThemeId='live';db.storeThemes=[{id:'live',name:'Publicado',config:structuredClone(db.storefront)},{id:'draft',name:'Nova coleção',config:structuredClone(db.storefront)}];");
 const publicConfig=plain(run('db.storefront'));
-assert.match(run('themesPage()'),/Rascunhos de tema/);assert.match(run('panelNav(\'themes\')'),/Live View/);
+assert.match(run('themesPage()'),/Rascunhos de tema/);assert.match(run('panelNav(\'reports\')'),/Live View/);
 assert.equal(run("allowed('themes')&&allowed('live-view')"),true);
+run("panelNav('products')");assert.equal(run('panelOpenGroup'),'products');assert.match(run("panelNav('products')"),/panel-nav-children[\s\S]*Coleções/);assert.doesNotMatch(run("panelNav('products')"),/>Live View<|>Entregas</);
+context.location.hash='#/app/products';run("togglePanelGroup('orders')");assert.equal(run('panelOpenGroup'),'orders');assert.match(run("panelNav('products')"),/>Entregas</);assert.doesNotMatch(run("panelNav('products')"),/>Coleções<|>Live View</);
+run("togglePanelGroup('reports')");assert.equal(run('panelOpenGroup'),'reports');assert.match(run("panelNav('products')"),/>Live View</);assert.doesNotMatch(run("panelNav('products')"),/>Coleções<|>Entregas</);
+run("go('/app/orders')");assert.equal(run('panelOpenGroup'),'orders');run("panelNav('collections')");assert.equal(run('panelOpenGroup'),'products');
+context.location.hash='#/app/themes';
 const chrome=run("shell('products','')");
 assert.doesNotMatch(chrome,/class="topbar"|Painel da loja|panel-collapse|Recolher menu lateral/);
 assert.match(chrome,/class="panel-account-row"[\s\S]*Conta e visualizações[\s\S]*Abrir alertas/);
 assert.match(chrome,/id="panel-workspace"/);
+assert.match(chrome,/panel-mobile-header[\s\S]*panel-mobile-brand[\s\S]*panel-mobile-actions[\s\S]*panel-mobile-profile/);
+const dock=run("panelMobileNavigation('products')");assert.match(dock,/aria-label="Navegação rápida"/);assert.match(dock,/aria-current="page"/);assert.match(dock,/Mais opções/);assert.doesNotMatch(run('settingsPage()'),/Páginas conectadas|Dados publicados/);
 let hasMore=false;context.scrollFixture={scrollHeight:1000,clientHeight:600,scrollTop:0};context.frameFixture={classList:{toggle(name,value){assert.equal(name,'panel-has-more');hasMore=value;}}};
 run('updatePanelScrollFade(scrollFixture,frameFixture)');assert.equal(hasMore,true);
 context.scrollFixture.scrollTop=400;run('updatePanelScrollFade(scrollFixture,frameFixture)');assert.equal(hasMore,false,'The end of the page must remain readable');
@@ -28,6 +35,7 @@ assert.equal(preview.orders.length,0);assert.equal(preview.products.some(p=>'cos
 run("liveSnapshot={locations:[{city:'São Gonçalo',region:'RJ',country:'BR',visitors:2,latitude:-22.8,longitude:-43}],active:2};liveQuery='sao goncalo'");assert.equal(run('liveLocations().length'),1);assert.equal(run('validLivePoint({latitude:null,longitude:0})'),false);
 run("role='Vendedor';currentProfile={role:'admin',position:'Vendedor'}");assert.equal(run('allowed(\'themes\')'),true);assert.equal(run('allowed(\'live-view\')'),false);assert.equal(run('canViewLive()'),false);assert.match(run('panelNav(\'themes\')'),/Loja virtual/);assert.doesNotMatch(run('panelNav(\'themes\')'),/Live View|Histórico de alterações|Equipe e permissões/);
 run("role='Entregador';currentProfile={role:'driver',position:'Entregador'}");assert.match(run('panelNav(\'deliveries\')'),/Entregas/);assert.doesNotMatch(run('panelNav(\'deliveries\')'),/Loja virtual|Pagamentos|Produtos/);assert.match(run('shell(\'deliveries\',\'\')'),/Atualizar entregas/);
+assert.deepEqual(plain(run('panelMobileItems().map(item=>item[0])')),['dashboard','deliveries']);assert.doesNotMatch(run("panelMobileNavigation('deliveries')"),/Produtos|Pedidos|Clientes/);
 context.location.hash='#/loja/produto/1';run("currentProfile=null;authSession=null;isOwner=false");assert.equal(run('audienceEligible()'),true);context.navigator.doNotTrack='1';assert.equal(run('audienceEligible()'),false);context.navigator.doNotTrack=undefined;context.location.search='?storePreview=1';assert.equal(run('audienceEligible()'),false);context.location.search='';run("currentProfile={role:'admin'}");assert.equal(run('audienceEligible()'),false);
 assert.equal(run('audiencePhase()'),'product');assert.equal(Object.keys(plain(run("safeJson(sessionStore.getItem(liveVisitKey),null)"))||{}).length,0);
 assert.equal(JSON.stringify(JSON.parse(fs.readFileSync(path.join(root,'_routes.json'),'utf8')).include),'["/api/live"]');

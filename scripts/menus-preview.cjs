@@ -108,8 +108,8 @@ const server=http.createServer((req,res)=>{
  if(req.method!=='GET')return res.writeHead(405).end();
  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});
  if(req.url.startsWith('/__qa/mobile')){
-  const requested=new URL(req.url,'http://localhost').searchParams.get('route')||'/app';const route=/^\/(?:app|loja)(?:\/[a-z0-9-]+)*$/.test(requested)?requested:'/app';
-  return res.end('<!doctype html><meta name="viewport" content="width=device-width"><style>body{margin:0;background:#e7e9e8;display:flex;justify-content:center}iframe{width:390px;height:100dvh;border:0;background:#fff;max-width:100%}</style><iframe title="Prévia de celular" src="/#'+route+'"></iframe>');
+  const params=new URL(req.url,'http://localhost').searchParams,requested=params.get('route')||'/app';const route=/^\/(?:app|loja)(?:\/[a-z0-9-]+)*$/.test(requested)?requested:'/app',width=[320,360,390,430].includes(Number(params.get('width')))?Number(params.get('width')):390;
+  return res.end('<!doctype html><meta name="viewport" content="width=device-width"><style>body{margin:0;background:#e7e9e8;display:flex;justify-content:center}iframe{width:'+width+'px;height:100dvh;border:0;background:#fff;max-width:100%}</style><iframe title="Prévia de celular" src="/#'+route+'"></iframe>');
  }
  res.end(html);
 });
