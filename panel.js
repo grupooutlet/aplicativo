@@ -1,7 +1,6 @@
 // Administrative chrome is scoped to the panel; store and print styles remain independent.
 Object.assign(paths,{collapse:'M4 3h16v18H4V3Zm4 0v18m7-13-3 4 3 4',globe:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM3 12h18M12 3c-5 5-5 13 0 18 5-5 5-13 0-18',palette:'M12 3a9 9 0 1 0 0 18h2a2 2 0 0 0 1-4c-1-1 0-3 2-3h2a2 2 0 0 0 2-2 9 9 0 0 0-9-9ZM7 10h.01M9 6h.01M14 6h.01M17 10h.01',pin:'M19 10c0 5-7 12-7 12S5 15 5 10a7 7 0 1 1 14 0Zm-4 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0',refresh:'M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 14-2l1 6M4 12l1 6a8 8 0 0 0 14-2'});
-let panelCollapsed=localStore.getItem('forte-panel-collapsed')==='1';
-let panelMenuFocus=null,panelUnreadOnly=false;
+let panelMenuFocus=null,panelUnreadOnly=false,panelWorkspaceCleanup=()=>{};
 const panelSectionGroups=[
  {id:'dashboard',name:'Início',icon:'home'},
  {id:'orders',name:'Pedidos',icon:'bag',children:[['deliveries','Entregas','truck']]},
@@ -30,11 +29,10 @@ function panelNav(page){
 }
 function togglePanelGroup(id){if(panelGroupOpen.has(id))panelGroupOpen.delete(id);else panelGroupOpen.add(id);const nav=document.querySelector('.sidebar>nav'),page=routePath().split('/')[2]||'dashboard';if(nav){nav.innerHTML=panelNav(page);normalizeLinks();nav.querySelector('[onclick="togglePanelGroup(\''+id+'\')"]')?.focus();}}
 function togglePanelSidebar(button){
- const aside=document.querySelector('.sidebar');if(!aside)return;
- if(window.innerWidth<=900){const opening=!aside.classList.contains('open');aside.inert=!opening;aside.classList.toggle('open',opening);document.body.classList.toggle('panel-menu-open',opening);button?.setAttribute('aria-expanded',String(opening));if(opening){panelMenuFocus=button;aside.querySelector('a')?.focus();}else panelMenuFocus?.focus();return;}
- panelCollapsed=!panelCollapsed;localStore.setItem('forte-panel-collapsed',panelCollapsed?'1':'0');document.body.classList.toggle('panel-collapsed',panelCollapsed);
+ const aside=document.querySelector('.sidebar');if(!aside||window.innerWidth>900)return;
+ const opening=!aside.classList.contains('open');aside.inert=!opening;aside.classList.toggle('open',opening);document.body.classList.toggle('panel-menu-open',opening);button?.setAttribute('aria-expanded',String(opening));if(opening){panelMenuFocus=button;aside.querySelector('a')?.focus();}else panelMenuFocus?.focus();
 }
-function closePanelSidebar(){const aside=document.querySelector('.sidebar');aside?.classList.remove('open');if(aside)aside.inert=window.innerWidth<=900;document.body.classList.remove('panel-menu-open');document.querySelector('[aria-controls="panel-navigation"]')?.setAttribute('aria-expanded','false');panelMenuFocus?.focus();}
+function closePanelSidebar(){if(window.innerWidth>900)return;const aside=document.querySelector('.sidebar');aside?.classList.remove('open');if(aside)aside.inert=true;document.body.classList.remove('panel-menu-open');document.querySelector('[aria-controls="panel-navigation"]')?.setAttribute('aria-expanded','false');panelMenuFocus?.focus();}
 function panelPosition(){return currentProfile?.role==='master'?(masterPreviewPosition==='Principal'?'Principal':'Prévia: '+masterPreviewPosition):currentProfile?.position||role;}
 function panelAlertReadSet(){return new Set(safeJson(localStore.getItem('forte-panel-alerts-'+(currentProfile?.user_id||'current')),[]));}
 function panelAlerts(){
@@ -59,18 +57,36 @@ const modalBeforePanel=modal;
 modal=(...args)=>{document.querySelector('#modal')?.classList.remove('panel-alert-dialog');return modalBeforePanel(...args);};
 shell=(page,content)=>{
  const name=currentProfile?.name||'Grupo Outlet',position=panelPosition(),unread=panelAlerts().filter(alert=>!panelAlertReadSet().has(alert.id)).length;
- return '<aside class="sidebar" id="panel-navigation" aria-label="Menu do painel"><div class="panel-brand-row"><a class="wordmark official-brand" href="/app" aria-label="Grupo Outlet · início do painel"><img src="assets/logo.webp" alt="Grupo Outlet" width="767" height="272"><span class="panel-brand-compact">FO</span></a><button class="panel-collapse" onclick="togglePanelSidebar(this)" aria-label="Recolher menu lateral">'+icon('collapse')+'</button><button class="sidebar-close" onclick="closePanelSidebar()" aria-label="Fechar menu">×</button></div><nav aria-label="Navegação principal">'+panelNav(page)+'</nav><div class="sidebar-bottom">'+panelNavLink('settings','Configurações','settings',page)+'<a class="navitem panel-open-store" href="/loja" target="_blank" rel="noopener noreferrer" title="Ver minha loja">'+icon('external')+'<span class="panel-nav-text">Ver minha loja</span></a><button class="panel-store-account" onclick="roleModal()" title="'+esc(name)+'"><span class="avatar">'+esc(initials(name))+'</span><span class="panel-nav-text"><strong>'+esc(name)+'</strong><small>'+esc(position)+'</small></span>'+icon('down')+'</button></div></aside><div class="sidebar-backdrop" onclick="closePanelSidebar()"></div><div class="shell"><header class="topbar"><div class="panel-header-start"><button class="mobile-menu" aria-label="Abrir menu" aria-controls="panel-navigation" aria-expanded="false" onclick="togglePanelSidebar(this)">'+icon('menu')+'</button><span class="panel-header-label">Painel da loja</span></div><div class="top-actions"><a class="panel-header-store" href="/loja" target="_blank" rel="noopener noreferrer">'+icon('external')+'Ver loja</a><button class="panel-notifications" aria-label="Abrir alertas" onclick="openPanelAlerts()">'+icon('bell')+(unread?'<span class="panel-alert-counter">'+unread+'</span>':'')+'</button><button class="account" onclick="roleModal()" aria-label="Conta e visualizações"><span class="avatar">'+esc(initials(name))+'</span>'+icon('down')+'</button></div></header><main class="main">'+content+'<footer class="footer"><span>© 2026 Forte Outlet · Feito por Magemind.</span><span>Dados sincronizados com a loja</span></footer></main></div>';
+ const driverRefresh=isDeliveryDriverView()?'<button class="navitem" aria-label="Atualizar entregas" onclick="'+(currentProfile?.role==='driver'?'refreshDriverDeliveries()':'render()')+'">'+icon('refresh')+'<span>Atualizar entregas</span></button>':'';
+ return `<aside class="sidebar" id="panel-navigation" aria-label="Menu do painel">
+  <div class="panel-brand-row"><a class="wordmark official-brand" href="/app" aria-label="Grupo Outlet · início do painel"><img src="assets/logo.webp" alt="Grupo Outlet" width="767" height="272"></a><button class="sidebar-close" onclick="closePanelSidebar()" aria-label="Fechar menu">×</button></div>
+  <nav aria-label="Navegação principal">${panelNav(page)}</nav>
+  <div class="sidebar-bottom">${driverRefresh}${panelNavLink('settings','Configurações','settings',page)}
+   <a class="navitem panel-open-store" href="/loja" target="_blank" rel="noopener noreferrer" title="Ver minha loja">${icon('external')}<span class="panel-nav-text">Ver minha loja</span></a>
+   <div class="panel-account-row"><button class="panel-store-account" onclick="roleModal()" aria-label="Conta e visualizações" title="${esc(name)}"><span class="avatar">${esc(initials(name))}</span><span class="panel-nav-text"><strong>${esc(name)}</strong><small>${esc(position)}</small></span>${icon('down')}</button><button class="panel-notifications" aria-label="Abrir alertas" onclick="openPanelAlerts()">${icon('bell')}${unread?'<span class="panel-alert-counter">'+unread+'</span>':''}</button></div>
+  </div></aside><div class="sidebar-backdrop" onclick="closePanelSidebar()"></div>
+  <div class="shell"><button class="panel-mobile-menu" aria-label="Abrir menu" aria-controls="panel-navigation" aria-expanded="false" onclick="togglePanelSidebar(this)">${icon('menu')}</button><div class="panel-scroll" id="panel-workspace" data-route="${esc(routePath())}" role="region" aria-label="Conteúdo do painel" tabindex="0"><main class="main">${content}<footer class="footer"><span>© 2026 Forte Outlet · Feito por Magemind.</span><span>Dados sincronizados com a loja</span></footer></main></div><div class="panel-scroll-fade" aria-hidden="true"></div></div>`;
 };
-const panelShellWithoutDriverRefresh=shell;
-shell=(...args)=>{const html=panelShellWithoutDriverRefresh(...args);return isDeliveryDriverView()?html.replace('<div class="top-actions">','<div class="top-actions"><button class="panel-notifications" aria-label="Atualizar entregas" onclick="'+(currentProfile?.role==='driver'?'refreshDriverDeliveries()':'render()')+'">'+icon('refresh')+'</button>'):html;};
+function updatePanelScrollFade(scroll,shell){shell.classList.toggle('panel-has-more',scroll.scrollHeight-scroll.clientHeight-scroll.scrollTop>2);}
+function mountPanelWorkspace(){
+ const scroll=document.querySelector('#panel-workspace'),frame=document.querySelector('.shell');if(!scroll||!frame||document.body?.classList.contains('panel-editor'))return;
+ const update=()=>updatePanelScrollFade(scroll,frame);update();scroll.addEventListener('scroll',update,{passive:true});window.addEventListener('resize',update);
+ const observer=typeof ResizeObserver==='function'?new ResizeObserver(update):null;observer?.observe(scroll);const main=scroll.querySelector('.main');if(main)observer?.observe(main);
+ panelWorkspaceCleanup=()=>{observer?.disconnect();scroll.removeEventListener('scroll',update);window.removeEventListener('resize',update);};
+}
+const goBeforePanelWorkspace=go;
+go=path=>{const result=goBeforePanelWorkspace(path);if(path.startsWith('/app'))document.querySelector('#panel-workspace')?.scrollTo?.(0,0);return result;};
 const panelRenderBefore=render;
 render=()=>{
+ const previous=document.querySelector('#panel-workspace'),previousRoute=previous?.dataset.route,previousTop=previous?.scrollTop||0;
+ panelWorkspaceCleanup();panelWorkspaceCleanup=()=>{};
  const active=routePath().startsWith('/app')&&booted&&authSession&&['master','admin','driver'].includes(currentProfile?.role);
- document.body?.classList.toggle('admin-panel',Boolean(active));document.body?.classList.toggle('panel-collapsed',Boolean(active&&panelCollapsed));document.body?.classList.toggle('panel-editor',Boolean(active&&routePath().startsWith('/app/store-editor')));
+ document.body?.classList.toggle('admin-panel',Boolean(active));document.body?.classList.remove('panel-collapsed');document.body?.classList.toggle('panel-editor',Boolean(active&&routePath().startsWith('/app/store-editor')));
  document.body?.classList.remove('panel-menu-open');const result=panelRenderBefore();
  if(active&&routePath().startsWith('/app/store-editor')&&document.body?.dataset)document.body.dataset.themeEditorPane=typeof themeEditorPane==='string'?themeEditorPane:'preview';
  if(active){const aside=document.querySelector('.sidebar');if(aside)aside.inert=window.innerWidth<=900&&!aside.classList.contains('open');}
  if(active){const h=document.querySelector('.main>.heading h1');if(h&&!h.querySelector('.icon')){const page=panelArea(routePath().split('/')[2]||'dashboard'),glyph=navigation.find(row=>row[0]===page)?.[2]||'home';h.insertAdjacentHTML('afterbegin',icon(glyph));}}
+ if(active){const scroll=document.querySelector('#panel-workspace');if(scroll&&previousRoute===routePath())scroll.scrollTop=previousTop;mountPanelWorkspace();}
  return result;
 };
 window.addEventListener('resize',()=>{const aside=document.querySelector('.sidebar');if(aside)aside.inert=window.innerWidth<=900&&!aside.classList.contains('open');});

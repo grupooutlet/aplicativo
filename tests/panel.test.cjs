@@ -10,6 +10,14 @@ run("db=defaults();role='Proprietário';isOwner=true;booted=true;currentProfile=
 const publicConfig=plain(run('db.storefront'));
 assert.match(run('themesPage()'),/Rascunhos de tema/);assert.match(run('panelNav(\'themes\')'),/Live View/);
 assert.equal(run("allowed('themes')&&allowed('live-view')"),true);
+const chrome=run("shell('products','')");
+assert.doesNotMatch(chrome,/class="topbar"|Painel da loja|panel-collapse|Recolher menu lateral/);
+assert.match(chrome,/class="panel-account-row"[\s\S]*Conta e visualizações[\s\S]*Abrir alertas/);
+assert.match(chrome,/id="panel-workspace"/);
+let hasMore=false;context.scrollFixture={scrollHeight:1000,clientHeight:600,scrollTop:0};context.frameFixture={classList:{toggle(name,value){assert.equal(name,'panel-has-more');hasMore=value;}}};
+run('updatePanelScrollFade(scrollFixture,frameFixture)');assert.equal(hasMore,true);
+context.scrollFixture.scrollTop=400;run('updatePanelScrollFade(scrollFixture,frameFixture)');assert.equal(hasMore,false,'The end of the page must remain readable');
+context.scrollFixture={scrollHeight:400,clientHeight:600,scrollTop:0};run('updatePanelScrollFade(scrollFixture,frameFixture)');assert.equal(hasMore,false,'Short pages do not need a fade');
 context.location.hash='#/app/store-editor/draft';run("storefront.editorPage();storefront.change('title','Título privado')");
 assert.deepEqual(plain(run('db.storefront')),publicConfig);assert.equal(run('storefront.dirty()'),true);assert.doesNotMatch(JSON.stringify(run('db.storeThemes')),/Título privado/);
 context.location.hash='#/app/store-editor/live';run('storefront.editorPage()');assert.equal(run('storefront.dirty()'),false,'Different themes must never share draft edits');

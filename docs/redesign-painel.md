@@ -45,4 +45,14 @@ Revisão no navegador: todas as rotas administrativas existentes, biblioteca, fo
 - O mapa usa Leaflet 1.9.4 com integridade SRI e tiles OpenStreetMap com atribuição visível. Se o mapa externo falhar, a lista e os indicadores continuam disponíveis.
 - A função Cloudflare aceita apenas `/api/live`; `_routes.json` deixa os arquivos estáticos fora da função. A chave usada é publicável; o RPC anônimo permite somente eventos mínimos, sem leitura de sessões ou dados comerciais.
 
+### Refinamento da moldura
+
+A moldura administrativa ocupa toda a altura da janela, sem margem superior ou inferior. A lateral escura permanece fixa e aberta no computador; o controle de recolhimento foi removido, inclusive para navegadores que tinham essa preferência salva. No celular, a navegação mantém abertura por botão e fechamento para permitir acesso ao conteúdo.
+
+O conteúdo branco possui rolagem própria, com barra de 6 px sem setas. O cabeçalho de conta foi removido da área branca; perfil, troca de visualização e sino ficam juntos no rodapé da lateral. Ver minha loja e a atualização das entregas continuam disponíveis na lateral.
+
+O degradê inferior com desfoque aparece apenas quando há mais conteúdo abaixo e desaparece ao atingir o fim. A posição da rolagem é preservada ao atualizar a mesma tela, e a navegação para outra página volta ao início. O editor de temas conserva sua disposição e suas áreas de rolagem.
+
+Validação: lista de 65 produtos, seleção em massa após rolar, fim da lista por teclado, páginas curtas, alertas ao lado do perfil e editor no celular. A geometria medida confirmou topo 0, base na altura da janela, documento sem rolagem externa e barra interna de 6 px. As 25 suítes Node e as verificações de sintaxe passaram.
+
 Referências técnicas: [Pages Functions](https://developers.cloudflare.com/pages/functions/routing/), [geografia do request.cf](https://developers.cloudflare.com/workers/runtime-apis/request/), [Leaflet](https://leafletjs.com/download.html), [política de tiles OSM](https://operations.osmfoundation.org/policies/tiles/), [Supabase Cron](https://supabase.com/docs/guides/cron/quickstart).
