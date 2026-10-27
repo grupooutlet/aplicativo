@@ -102,6 +102,13 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
   else if(body.p_action==='payment'){order.paid=true;order.paidAt=new Date().toISOString();}
   return reply({id:order.id,version:++fixtureVersion});
  }
+ if(url.includes('/rpc/move_stock')){
+  const product=fixtureModel.products.find(p=>p.id===body.p_product_id);if(!product)return reply({message:'Produto não encontrado.'},400);
+  const prior=fixtureModel.movements.find(m=>m.requestId===body.p_request_id);if(prior)return reply({id:prior.id,stock:product.stock,duplicate:true,version:fixtureVersion});
+  const reserved=fixtureModel.orders.filter(o=>['pending','ready'].includes(o.status)).reduce((n,o)=>n+o.items.filter(i=>i.id===product.id&&i.stockTracked!==false).reduce((sum,i)=>sum+i.qty,0),0),qty=Number(body.p_quantity),delta=body.p_type==='out'?-qty:qty;
+  if(!Number.isInteger(qty)||qty<1||!body.p_reason||body.p_type==='out'&&qty>product.stock-reserved)return reply({message:'Confira a quantidade e o saldo disponível.'},400);
+  product.stock+=delta;const movement={id:Date.now(),productId:product.id,product:product.name,qty:delta,reason:body.p_reason,date:new Date().toLocaleString('pt-BR'),by:fixtureProfile.name,actorId:fixtureProfile.user_id,requestId:body.p_request_id};fixtureModel.movements.unshift(movement);return reply({id:movement.id,stock:product.stock,reserved,available:product.stock-reserved,version:++fixtureVersion});
+ }
  if(url.includes('/rpc/save_order_notes')){const order=fixtureModel.orders.find(item=>item.id===body.p_order_id);if(!order)return reply({message:'Pedido não encontrado.'},400);if((order.notes||'')!==body.p_expected_notes)return reply({message:'A observação foi alterada em outra sessão.'},409);order.notes=body.p_notes;order.notesUpdatedAt=new Date().toISOString();return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_catalog')){if(body.p_expected_version!==fixtureVersion)return reply({message:'O catálogo mudou em outra sessão.'},409);Object.assign(fixtureModel,body.p_changes);return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_collection')){const before=body.p_previous,name=body.p_name;if(before){fixtureModel.collections=fixtureModel.collections.map(c=>c===before?name:c);for(const p of fixtureModel.products){p.categories=p.categories.map(c=>c===before?name:c);if(p.category===before)p.category=name;}}else fixtureModel.collections.push(name);fixtureModel.collectionSettings[name]={...(fixtureModel.collectionSettings[before]||{}),active:body.p_active,sort:body.p_sort,...(body.p_product_ids?{productIds:body.p_product_ids}:{})};if(before!==name)delete fixtureModel.collectionSettings[before];return reply({version:++fixtureVersion});}

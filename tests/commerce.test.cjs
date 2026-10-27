@@ -125,7 +125,7 @@ assert.equal(run('canConfigurePayments()'), true);
 assert.equal(run("allowed('products')"), true);
 assert.equal(run("allowed('inventory')"), true);
 assert.doesNotMatch(context.productsPage(), /Adicionar produto|onclick="productModal|onclick="deleteProduct|Custo do produto/);
-assert.doesNotMatch(context.inventoryPage(), /onclick="stockModal|Movimentar estoque/);
+assert.match(context.inventoryPage(), /onclick="stockModal|Movimentar estoque/);
 assert.doesNotMatch(context.shell('customers',''), /CANAIS DE VENDA|ORGANIZAÇÃO/);
 run(`accountProfiles=[{user_id:'client',role:'customer',name:'Ana Souza',email:'ana@example.com',created_at:'2026-10-09T15:05:00Z'}];customerContacts=[];`);
 assert.match(context.customersPage(), /Cadastrado em/);

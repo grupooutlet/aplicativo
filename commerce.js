@@ -685,11 +685,6 @@ render = function () {
   return renderBeforeCommerce();
 };
 // Restricted projections and workflow RPCs keep costs private and stock transactional.
-const inventoryBeforeSellerAccess = inventoryPage;
-inventoryPage = () => role === 'Vendedor' ? inventoryBeforeSellerAccess()
-  .replace(/<button[^>]*onclick="stockModal\([^)]*\)"[^>]*>[\s\S]*?<\/button>/g, '') : inventoryBeforeSellerAccess();
-const stockModalBeforeSellerAccess = stockModal;
-stockModal = (...args) => { if (role !== 'Vendedor') stockModalBeforeSellerAccess(...args); };
 const shellBeforeSellerAccess = shell;
 shell = (...args) => {
   const html = shellBeforeSellerAccess(...args);
