@@ -24,6 +24,9 @@ run("storefront.changeGlobal('headerBackground','#1c2228');storefront.changeGlob
 run("storefront.navigate('/loja/carrinho')");assert.doesNotMatch(run("storefront.renderPageSections('/loja/carrinho')"),/Você também pode gostar/,'Page blocks do not leak into another page');
 const cartId=run("storefront.add('collection')");run(`storefront.toggle('${cartId}',true);storefront.change('category','Poltronas')`);assert.match(run("storefront.renderPageSections('/loja/carrinho')"),/Poltrona/);assert.doesNotMatch(run("storefront.renderPageSections('/loja/carrinho')"),/Sofá semelhante/);
 run(`storefront.remove('${cartId}')`);assert.equal(run("storefront.renderPageSections('/loja/carrinho')"),'','Last additional section can be removed');
+run("storefront.navigate('/loja/cadastro')");const signupId=run("storefront.add('collection')");run(`storefront.toggle('${signupId}',true);storefront.change('title','Seleção do cadastro')`);
+assert.match(run("storefront.renderPageSections('/loja/conta','after','signup')"),/Seleção do cadastro/,'Auth view selects the signup template even from an account route');
+assert.doesNotMatch(run("storefront.renderPageSections('/loja/conta')"),/Seleção do cadastro/);run(`storefront.remove('${signupId}')`);
 assert.match(run("storeHelpLink('/loja/produto/1')"),/^https:\/\/wa.me\/5521968464050\?/);assert.match(decodeURIComponent(run("storeHelpLink('/loja/produto/1')")),/Sofá atual/);
 run("db.settings.phone='11987654321'");assert.match(run('storeHelpLink()'),/5511987654321/,'Link always reads the current store number');run("db.settings.phone='123'");assert.equal(run('storeHelpLink()'),'');
 for(const path of ['/app','/loja/checkout','/loja/login','/loja/cadastro','/loja/pedido/2','/loja/conta'])assert.equal(run(`storeHelpAllowed('${path}')`),false,path);

@@ -110,7 +110,7 @@ function applyStorePageSettings(){
     if([2,3,4].includes(Number(cfg.columns))){const grid=root.querySelector('.catalog');if(grid){grid.classList.add('store-custom-grid');grid.style.setProperty('--store-columns',Number(cfg.columns))}}
   }
   if(key!=='home')for(const position of ['before','after']){
-    const html=storefront.renderPageSections(routePath(),position);
+    const html=storefront.renderPageSections(routePath(),position,storeAuthView);
     if(html)root.insertAdjacentHTML(position==='before'?'afterbegin':'beforeend',`<div class="page-theme-sections sections-${position}">${html}</div>`);
   }
   normalizeLinks();

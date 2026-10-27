@@ -169,8 +169,8 @@ const storefront=(()=>{
     if(key==='whatsappInterval'&&![60,90,180].includes(Number(value)))return;
     cfg[key]=value;refresh();
   }
-  function renderPageSections(path,position='after'){
-    const key=pageKey(path,typeof catalogCategory==='string'?catalogCategory:'Todos'),list=home().pageSettings?.[key]?.sections;
+  function renderPageSections(path,position='after',view=''){
+    const key=pageKey(path,typeof catalogCategory==='string'?catalogCategory:'Todos',view),list=home().pageSettings?.[key]?.sections;
     return (Array.isArray(list)?list:[]).filter(s=>(s.position==='before'?'before':'after')===position).map(s=>{const html=renderSection(s,false,path);return html?`<div class="page-theme-section ${s.type==='collection-list'&&s.mobileCarousel?'collection-carousel-section':''}">${html}</div>`:''}).join('');
   }
   function pageControls(){

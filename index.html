@@ -992,8 +992,8 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
     if(key==='whatsappInterval'&&![60,90,180].includes(Number(value)))return;
     cfg[key]=value;refresh();
   }
-  function renderPageSections(path,position='after'){
-    const key=pageKey(path,typeof catalogCategory==='string'?catalogCategory:'Todos'),list=home().pageSettings?.[key]?.sections;
+  function renderPageSections(path,position='after',view=''){
+    const key=pageKey(path,typeof catalogCategory==='string'?catalogCategory:'Todos',view),list=home().pageSettings?.[key]?.sections;
     return (Array.isArray(list)?list:[]).filter(s=>(s.position==='before'?'before':'after')===position).map(s=>{const html=renderSection(s,false,path);return html?`<div class="page-theme-section ${s.type==='collection-list'&&s.mobileCarousel?'collection-carousel-section':''}">${html}</div>`:''}).join('');
   }
   function pageControls(){
@@ -6069,7 +6069,7 @@ function applyStorePageSettings(){
     if([2,3,4].includes(Number(cfg.columns))){const grid=root.querySelector('.catalog');if(grid){grid.classList.add('store-custom-grid');grid.style.setProperty('--store-columns',Number(cfg.columns))}}
   }
   if(key!=='home')for(const position of ['before','after']){
-    const html=storefront.renderPageSections(routePath(),position);
+    const html=storefront.renderPageSections(routePath(),position,storeAuthView);
     if(html)root.insertAdjacentHTML(position==='before'?'afterbegin':'beforeend',`<div class="page-theme-sections sections-${position}">${html}</div>`);
   }
   normalizeLinks();
