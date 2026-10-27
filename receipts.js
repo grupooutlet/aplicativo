@@ -17,7 +17,7 @@ function receiptDriver(order){
  const driver=[...(db.team||[]),...(typeof accountProfiles!=='undefined'?accountProfiles:[])].find(person=>String(person.user_id||person.id)===String(id));
  return driver?.name||'Entregador designado';
 }
-function receiptLogistics(order){return ({pending:'Em preparação',ready:'Aguardando saída',transit:'Em rota de entrega',delivered:order.delivery==='Retirada'?'Retirada concluída':'Entrega concluída',cancelled:'Entrega cancelada'})[order.status]||'Em acompanhamento';}
+function receiptLogistics(order){if(order.delivery==='Retirada'&&!['delivered','cancelled'].includes(order.status))return order.pickupReadyAt?'Aguardando retirada':'Em preparação';return ({pending:'Em preparação',ready:'Aguardando saída',transit:'Em rota de entrega',delivered:order.delivery==='Retirada'?'Retirada concluída':'Entrega concluída',cancelled:'Entrega cancelada'})[order.status]||'Em acompanhamento';}
 function receiptField(label,value,extra=''){return '<div class="order-sheet-field '+extra+'"><dt>'+esc(label)+'</dt><dd>'+esc(value||'Não informado')+'</dd></div>';}
 function receiptAddress(order){
  if(order.delivery==='Retirada')return '<p class="order-sheet-address">'+esc(db.settings.address||'Endereço da loja não informado')+'</p>';

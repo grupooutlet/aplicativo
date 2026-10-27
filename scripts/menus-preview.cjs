@@ -69,6 +69,13 @@ if(process.env.QA_RECEIPTS==='1'){
  {...structuredClone(base),id:5035,status:'delivered',paid:true,delivery:'Retirada',paymentTiming:'Antecipado',paymentKind:'credit',payment:'Cartão de crédito',installments:3,installmentAmount:250,lastInstallmentAmount:250,freight:0,paymentFee:53,paymentRate:7.6,paidAt:'2026-10-26T13:10:00Z',releasedAt:'2026-10-26T15:30:00Z',deliveredAt:'2026-10-26T15:30:00Z'},
  {...structuredClone(base),id:5036,items:Array.from({length:24},(_,i)=>({id:1,name:'Sofá retrátil e reclinável com assento de molas ensacadas e acabamento em linho · Cor: Bege · Tamanho: 2,30m · Item '+(i+1),qty:2,price:1697,options:{Cor:'Bege',Tamanho:'2,30m'}}))}];
 }
+if(process.env.QA_PICKUPS==='1'){
+ model.settings.address='Avenida da Loja, 857 · Nova Iguaçu / RJ';
+ const base={customer:'Marina de Souza',firstName:'Marina',phone:'21999998899',email:'cliente@example.invalid',cpf:'',address:model.settings.address,delivery:'Retirada',payment:'Pix',paymentTiming:'Na retirada',freight:0,freightPending:false,createdAt:'2026-10-26T14:35:00Z',date:'2026-10-26',channel:'Loja online',seller:'Loja online',status:'pending',paid:false,items:[{id:1,name:model.products[0].name,qty:1,price:1597}]};
+ model.orders=[{...structuredClone(base),id:5041}, {...structuredClone(base),id:5042,customer:'João Pedro',pickupReadyAt:'2026-10-26T15:15:00Z'},
+ {...structuredClone(base),id:5043,customer:'Carolina Santos',paid:true,status:'ready',pickupReadyAt:'2026-10-26T14:30:00Z',pickupNotifiedAt:'2026-10-26T14:40:00Z',paidAt:'2026-10-26T16:00:00Z'},
+ {...structuredClone(base),id:5044,customer:'Bruno Oliveira',paid:true,status:'delivered',pickupReadyAt:'2026-10-26T12:00:00Z',pickupNotifiedAt:'2026-10-26T12:10:00Z',paidAt:'2026-10-26T13:00:00Z',deliveredAt:'2026-10-26T13:20:00Z'}];
+}
 let qaHistory=[];
 if(process.env.QA_AUDIT==='1'){
  const freight=model.settings.shippingOptions.find(o=>o.name==='Niterói');const before=structuredClone(freight);freight.price=220;
@@ -87,6 +94,14 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  if(url.includes('/rpc/sales_state'))return reply({data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p),orderBumps:fixtureModel.orderBumps.map(({cost,...b})=>b)},version:fixtureVersion});
  if(url.includes('/rest/v1/customer_contacts'))return reply(fixtureContacts);
  if(url.includes('/rest/v1/app_state'))return reply([{data:fixtureModel,version:fixtureVersion}]);
+ if(url.includes('/rpc/order_action')||url.includes('/rpc/confirm_pickup_notice')){
+  const order=fixtureModel.orders.find(item=>item.id===body.p_order_id);if(!order)return reply({message:'Pedido não encontrado.'},400);
+  if(url.includes('confirm_pickup_notice')){if(!order.pickupReadyAt)return reply({message:'Prepare o pedido antes de avisar.'},400);order.pickupNotifiedAt=new Date().toISOString();order.pickupNoticeMessage=body.p_message;}
+  else if(body.p_action==='pickup_ready'){order.pickupReadyAt=new Date().toISOString();}
+  else if(body.p_action==='release'){if(!order.paid||!order.pickupNotifiedAt)return reply({message:'Conclua as etapas anteriores.'},400);order.status='delivered';order.deliveredAt=new Date().toISOString();}
+  else if(body.p_action==='payment'){order.paid=true;order.paidAt=new Date().toISOString();}
+  return reply({id:order.id,version:++fixtureVersion});
+ }
  if(url.includes('/rpc/save_order_notes')){const order=fixtureModel.orders.find(item=>item.id===body.p_order_id);if(!order)return reply({message:'Pedido não encontrado.'},400);if((order.notes||'')!==body.p_expected_notes)return reply({message:'A observação foi alterada em outra sessão.'},409);order.notes=body.p_notes;order.notesUpdatedAt=new Date().toISOString();return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_catalog')){if(body.p_expected_version!==fixtureVersion)return reply({message:'O catálogo mudou em outra sessão.'},409);Object.assign(fixtureModel,body.p_changes);return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_collection')){const before=body.p_previous,name=body.p_name;if(before){fixtureModel.collections=fixtureModel.collections.map(c=>c===before?name:c);for(const p of fixtureModel.products){p.categories=p.categories.map(c=>c===before?name:c);if(p.category===before)p.category=name;}}else fixtureModel.collections.push(name);fixtureModel.collectionSettings[name]={...(fixtureModel.collectionSettings[before]||{}),active:body.p_active,sort:body.p_sort,...(body.p_product_ids?{productIds:body.p_product_ids}:{})};if(before!==name)delete fixtureModel.collectionSettings[before];return reply({version:++fixtureVersion});}

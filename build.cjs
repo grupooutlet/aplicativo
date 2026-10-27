@@ -11,7 +11,7 @@ const logo = `data:image/webp;base64,${logoBase64}`;
 const logoIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#1C2228"/><image href="${logo}" x="30.72" y="30.72" width="450.56" height="450.56" preserveAspectRatio="xMidYMid meet"/></svg>`;
 fs.writeFileSync(path.join(root, 'assets/app-icon.svg'), logoIconSvg, 'utf8');
 const icon = logo;
-const css = [read('styles.css'), read('storefront.css'), read('merchandising.css'), read('panel.css'), read('store-product.css'), read('receipts.css')].join('\n').replace(/<\/style/gi, '<\\/style');
+const css = [read('styles.css'), read('storefront.css'), read('merchandising.css'), read('panel.css'), read('store-product.css'), read('receipts.css'), read('pickups.css')].join('\n').replace(/<\/style/gi, '<\\/style');
 const script = name => read(name).replaceAll('assets/logo.webp', logo)
   .replace(/<\/script/gi, '<\\/script');
 
@@ -62,6 +62,7 @@ const html = `<!doctype html>
   <script>${script('change-history.js')}</script>
   <script>${script('business.js')}</script>
   <script>${script('receipts.js')}</script>
+  <script>${script('pickups.js')}</script>
   <script>${script('panel.js')}</script>
   <script>${script('themes.js')}</script>
   <script>${script('live-view.js')}</script>
@@ -72,7 +73,7 @@ const html = `<!doctype html>
 `;
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
-if (inlineScripts.length !== 20) throw new Error(`Esperados 20 scripts embutidos; encontrados ${inlineScripts.length}.`);
+if (inlineScripts.length !== 21) throw new Error(`Esperados 21 scripts embutidos; encontrados ${inlineScripts.length}.`);
 inlineScripts.forEach((match, index) => new vm.Script(match[1], { filename: `index.html:script-${index + 1}` }));
 fs.writeFileSync(path.join(root, 'index.html'), html, 'utf8');
 console.log(`index.html gerado (${Buffer.byteLength(html, 'utf8')} bytes).`);

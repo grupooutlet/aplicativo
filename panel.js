@@ -4,7 +4,7 @@ let panelMenuFocus=null,panelUnreadOnly=false,panelWorkspaceCleanup=()=>{},panel
 paths.more='M4 12h.01M12 12h.01M20 12h.01';
 const panelSectionGroups=[
  {id:'dashboard',name:'Início',icon:'home'},
- {id:'orders',name:'Pedidos',icon:'bag',children:[['deliveries','Entregas','truck']]},
+ {id:'orders',name:'Pedidos',icon:'bag',children:[['deliveries','Entregas','truck'],['pickups','Retiradas','store']]},
  {id:'payments',name:'Pagamentos',icon:'wallet'},
  {id:'products',name:'Produtos',icon:'box',children:[['collections','Coleções','layers'],['inventory','Estoque','store'],['order-bumps','Order Bumps','plus']]},
  {id:'customers',name:'Clientes',icon:'users'},
@@ -48,7 +48,7 @@ function panelAlerts(){
  const orders=isDeliveryDriverView()?deliveryOrders():visibleOrders(),alerts=[];
  for(const order of orders.filter(order=>order.status!=='cancelled'&&order.status!=='delivered')){
   if(!order.paid)alerts.push({id:'pay-'+order.id,area:'Pagamento',icon:'wallet',title:'Pagamento pendente · #'+order.id,body:money(orderTotal(order))+' a receber. Confira a condição registrada no pedido.',route:'/app/'+(isDeliveryDriverView()?'deliveries/order/':'orders/')+order.id,time:order.createdAt||order.date});
-  if(!order.deliveryDate)alerts.push({id:'schedule-'+order.id,area:'Entrega',icon:'calendar',title:'Agendamento pendente · #'+order.id,body:'Defina uma data para organizar a entrega ou retirada.',route:'/app/'+(isDeliveryDriverView()?'deliveries/order/':'orders/')+order.id,time:order.createdAt||order.date});
+  if(order.delivery==='Entrega'&&!order.deliveryDate)alerts.push({id:'schedule-'+order.id,area:'Entrega',icon:'calendar',title:'Agendamento pendente · #'+order.id,body:'Defina uma data para organizar a entrega ou retirada.',route:'/app/'+(isDeliveryDriverView()?'deliveries/order/':'orders/')+order.id,time:order.createdAt||order.date});
  }
  if(allowed('inventory'))for(const product of db.products.filter(product=>product.active&&available(product.id)<=Number(product.min||0)).slice(0,12))alerts.push({id:'stock-'+product.id+'-'+available(product.id),area:'Estoque',icon:'box',title:available(product.id)===0?'Produto esgotado':'Estoque baixo',body:product.name+' · '+available(product.id)+' unidade(s) disponível(is).',route:'/app/inventory',time:''});
  return alerts.slice(0,30);
