@@ -189,7 +189,7 @@ const renderBeforeAccounts = render;
 render = function () {
   if (!booted) return renderBeforeAccounts();
   if (bootError) {
-    $('#app').innerHTML = `<main class="boot-fallback"><h1>Não foi possível carregar a loja</h1><p>${esc(bootError)}</p><button class="btn" onclick="boot()">Tentar novamente</button></main>`;
+    $('#app').innerHTML = storeUnavailablePage();
     return;
   }
   const path = routePath();
@@ -321,7 +321,7 @@ async function uploadProductPhoto(file, folder = 'products') {
   await refreshAuth();
   const response = await fetch(`${backendUrl}/storage/v1/object/${photoBucket}/${path}`, {
     method: 'POST',
-    headers: { apikey: backendKey, Authorization: `Bearer ${authSession.access_token}`, 'Content-Type': file.type, 'x-upsert': 'false' },
+    headers: { apikey: backendKey, Authorization: `Bearer ${authSession.access_token}`, 'Content-Type': file.type, 'Cache-Control': 'max-age=31536000, immutable', 'x-upsert': 'false' },
     body: file
   });
   if (!response.ok) {

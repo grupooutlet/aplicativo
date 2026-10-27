@@ -174,17 +174,18 @@ function productCardAppearance(config={}) {
 }
 shopProduct = (product,config={}) => {
   const appearance=productCardAppearance(config);
-  return `<article class="shop-product card-align-${appearance.align}" style="${appearance.style}"><a class="product-card-link" href="/loja/produto/${product.id}" title="${esc(product.name)}"><div class="product-photo"><img src="${esc(product.image||'assets/product-placeholder.svg')}" alt="${esc(product.name)}" loading="lazy"></div><h3>${esc(product.name)}</h3></a>
+  return `<article class="shop-product card-align-${appearance.align}" style="${appearance.style}"><a class="product-card-link" href="/loja/produto/${product.id}" title="${esc(product.name)}"><div class="product-photo"><img src="${esc(productMediaUrl(product.image)||'assets/product-placeholder.svg')}" alt="${esc(product.name)}" loading="lazy"></div><h3>${esc(product.name)}</h3></a>
     <div class="product-card-price">${priceMarkup(product)}</div>
     <a class="btn product-card-button" href="/loja/produto/${product.id}" aria-label="${esc(appearance.label)}: ${esc(product.name)}">${esc(appearance.label)}</a></article>`;
 };
+const productMediaUrl=value=>typeof publicMediaUrl==='function'?publicMediaUrl(value):String(value||'');
 productPage = id => {
   const product = db.products.find(item => item.id === id && item.active);
   if (!product) return '<div class="empty">Este produto não está disponível. <a href="/loja/catalogo">Voltar ao catálogo</a></div>';
-  const images = productImages(product);
+  const images = productImages(product).map(productMediaUrl);
   return `<div class="store-content product-page">
     <section class="detail-product"><div class="product-gallery"><div class="product-photo-stage"><div class="product-photo-rail" tabindex="0" role="region" aria-roledescription="carrossel" aria-label="Fotos de ${esc(product.name)}. Deslize para ver a próxima foto.">${images.map((url,index)=>`<div class="product-photo-slide" role="group" aria-roledescription="slide" aria-label="Foto ${index+1} de ${images.length}"><img ${index===0?'id="main-product-photo"':''} class="detail-main-photo" src="${esc(url)}" alt="${esc(product.name)} · foto ${index+1}" draggable="false" ${index?'loading="lazy"':''}></div>`).join('')}</div>${images.length>1?`<span class="product-photo-counter" aria-live="polite" aria-atomic="true">1 / ${images.length}</span>`:''}</div>
-    ${images.length>1?`<div class="detail-thumbs" role="group" aria-label="Fotos do produto. Deslize para ver mais imagens.">${images.map((url, index) => `<button type="button" class="${index===0?'is-selected':''}" onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}" aria-pressed="${index===0}"><img src="${esc(url)}" alt="" draggable="false"></button>`).join('')}</div>`:''}</div>
+    ${images.length>1?`<div class="detail-thumbs" role="group" aria-label="Fotos do produto. Deslize para ver mais imagens.">${images.map((url, index) => `<button type="button" class="${index===0?'is-selected':''}" onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}" aria-pressed="${index===0}"><img src="${esc(url)}" alt="" draggable="false" loading="lazy" decoding="async"></button>`).join('')}</div>`:''}</div>
     <div class="product-summary"><h1>${esc(product.name)}</h1>
     <p class="product-availability ${available(product.id)>0?'in-stock':'sold-out'}"><i aria-hidden="true"></i>${available(product.id)>0?'Disponível para compra':'Indisponível no momento'}</p>
     <div class="product-price-block" aria-label="Preço do produto">${priceMarkup(product)}</div>

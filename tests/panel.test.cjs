@@ -38,6 +38,6 @@ run("role='Entregador';currentProfile={role:'driver',position:'Entregador'}");as
 assert.deepEqual(plain(run('panelMobileItems().map(item=>item[0])')),['dashboard','deliveries']);assert.doesNotMatch(run("panelMobileNavigation('deliveries')"),/Produtos|Pedidos|Clientes/);
 context.location.hash='#/loja/produto/1';run("currentProfile=null;authSession=null;isOwner=false");assert.equal(run('audienceEligible()'),true);context.navigator.doNotTrack='1';assert.equal(run('audienceEligible()'),false);context.navigator.doNotTrack=undefined;context.location.search='?storePreview=1';assert.equal(run('audienceEligible()'),false);context.location.search='';run("currentProfile={role:'admin'}");assert.equal(run('audienceEligible()'),false);
 assert.equal(run('audiencePhase()'),'product');assert.equal(Object.keys(plain(run("safeJson(sessionStore.getItem(liveVisitKey),null)"))||{}).length,0);
-assert.equal(JSON.stringify(JSON.parse(fs.readFileSync(path.join(root,'_routes.json'),'utf8')).include),'["/api/live"]');
+assert.equal(JSON.stringify(JSON.parse(fs.readFileSync(path.join(root,'_routes.json'),'utf8')).include),'["/api/live","/api/media"]');
 console.log('Panel: role-preserving navigation, isolated theme drafts/cancel/scope, private preview, city search, coordinates, driver refresh and optional audience eligibility verified.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

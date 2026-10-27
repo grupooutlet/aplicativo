@@ -5,6 +5,25 @@ const ownerEmail = 'grupooutlet.rj@gmail.com';
 const authStorageKey = 'forte-auth-v1';
 const sharedAuthMarker = 'forte-auth-shared-v1';
 const cartStorageKey = 'forte-cart-v1';
+const initialStoreSupport = /*STORE_SUPPORT*/ null;
+const supportStorageKey='forte-public-support-v1';
+function publicMediaUrl(value){
+  const raw=String(value||'');
+  if(!/^https:\/\/(?:www\.)?forteoutlet\.com\.br$/.test(location.origin)&&!/^https:\/\/(?:[a-z0-9-]+\.)?forte-outlet\.pages\.dev$/.test(location.origin))return raw;
+  const prefix='https://rwxqytomiorsrxpgtjin.supabase.co/storage/v1/object/public/product-photos/';
+  const path=raw.startsWith(prefix)?raw.slice(prefix.length):'';
+  return /^(?:products|storefront)\/[A-Za-z0-9_-]+\.(?:jpe?g|png|webp)$/i.test(path)?basePath+'api/media?path='+encodeURIComponent(path):raw;
+}
+function rememberStoreSupport(settings){
+  if(!settings)return;try{localStore.setItem(supportStorageKey,JSON.stringify({name:settings.name,phone:settings.phone,email:settings.email,verifiedAt:new Date().toISOString()}));}catch{}
+}
+function storeUnavailablePage(){
+  const stored=safeJson(localStore.getItem(supportStorageKey),null),recent=value=>value&&Number.isFinite(Date.parse(value.verifiedAt))&&Date.now()-Date.parse(value.verifiedAt)<30*86400000;
+  const contact=recent(stored)?stored:recent(initialStoreSupport)?initialStoreSupport:null;
+  const phone=contact&&typeof normalizeRegistrationPhone==='function'?normalizeRegistrationPhone(contact.phone):'';
+  const link=phone?'https://wa.me/'+phone.replace(/\D/g,'')+'?text='+encodeURIComponent('Olá! A loja online está temporariamente indisponível. Gostaria de atendimento para consultar produtos ou fazer um pedido.'):'';
+  return `<main class="outage-page"><section class="outage-card"><img class="outage-logo" src="assets/logo.webp" alt="Grupo Outlet"><span class="outage-label">ATENDIMENTO DA LOJA</span><h1>Estamos com uma indisponibilidade temporária</h1><p>O acesso à loja e ao painel está temporariamente indisponível. Nossa equipe pode atender você pelo WhatsApp para consultar produtos e combinar seu pedido.</p><div class="outage-actions">${link?`<a class="btn primary" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Falar com a loja no WhatsApp</a>`:''}<button class="btn" onclick="boot()">Tentar novamente</button></div><small>O checkout online volta a funcionar quando o serviço for restabelecido.${contact?'<br>Contato confirmado em '+esc(new Date(contact.verifiedAt).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'}))+'.':''}</small></section></main>`;
+}
 let authSession = null;
 let isOwner = false;
 let booted = false;
@@ -97,6 +116,7 @@ async function refreshSharedAuth() {
     return;
   }
   if (!response.ok) {
+    if (![400,401].includes(response.status))throw new Error('Serviço de acesso temporariamente indisponível. Tente novamente.');
     clearAuth();
     throw new Error('Sua sessão expirou. Entre novamente.');
   }
@@ -105,6 +125,7 @@ async function refreshSharedAuth() {
 async function loadCatalog() {
   const rows = await backendRequest('/rest/v1/shop_public?select=data&id=eq.1');
   if (!rows?.[0]?.data) throw new Error('O catálogo ainda não está disponível.');
+  rememberStoreSupport(rows[0].data.settings);
   const cart = safeJson(localStore.getItem(cartStorageKey), []);
   db = { ...defaults(), ...rows[0].data, orders: [], team: [], movements: [], cart: Array.isArray(cart) ? cart : [] };
   storefront.init(db);
@@ -116,6 +137,7 @@ async function loadAdminState() {
   if (!rows?.[0]?.data) throw new Error('Acesso administrativo não autorizado para esta conta.');
   stateVersion = rows[0].version;
   db = { ...rows[0].data, cart: db.cart || [] };
+  rememberStoreSupport(db.settings);
   storefront.init(db);
   const state = { ...db };
   delete state.cart;

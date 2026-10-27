@@ -68,6 +68,11 @@ const fresh = { user: { id: 'test-user', email: 'test@example.invalid' }, access
   finish({ ok: true, json: async () => fresh });
   await assert.rejects(pending, /sessão terminou/);
   assert.equal(shared.has('forte-auth-v1'), false, 'An in-flight refresh must not undo logout');
+  const restricted=tab();restricted.context.fixture=expired;restricted.run('rememberAuth(fixture)');
+  restricted.context.fetch=async()=>({ok:false,status:402});
+  await assert.rejects(restricted.run('refreshAuth()'),/temporariamente indisponível/);
+  assert.equal(JSON.parse(shared.get('forte-auth-v1')).refresh_token,expired.refresh_token,'Quota restrictions must not erase a valid saved session');
+  restricted.run('clearAuth()');
   const c = tab();
   c.context.fetch = async () => ({ ok: true, json: async () => fresh });
   c.context.boot = async () => { c.run("isOwner=true;currentProfile={role:'admin',position:'Gerente',name:'João Pedro'}"); };

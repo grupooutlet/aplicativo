@@ -93,6 +93,7 @@ localStorage.setItem('forte-auth-v1',JSON.stringify({user:{id:'qa-master',email:
 const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  const url=String(input);if(!url.includes('rwxqytomiorsrxpgtjin.supabase.co')||(url.includes('/storage/')&&['GET','HEAD'].includes(options.method||'GET')))return actualPreviewFetch(input,options);
  const body=options.body?JSON.parse(options.body):{},reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
+ if(${process.env.QA_SERVICE_RESTRICTED==='1'})return reply({message:'Service for this project is restricted: exceed_cached_egress_quota'},402);
  if(url.includes('/rest/v1/shop_public'))return reply([{data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p)}}]);
  if(url.includes('/rest/v1/profiles'))return reply(url.includes('user_id=eq.')?[fixtureProfile]:[fixtureProfile,...fixtureCustomers]);
  if(url.includes('/rpc/sales_state'))return reply({data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p),orderBumps:fixtureModel.orderBumps.map(({cost,...b})=>b)},version:fixtureVersion});

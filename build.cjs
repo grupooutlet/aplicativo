@@ -13,6 +13,7 @@ fs.writeFileSync(path.join(root, 'assets/app-icon.svg'), logoIconSvg, 'utf8');
 const icon = logo;
 const css = [read('styles.css'), read('storefront.css'), read('merchandising.css'), read('panel.css'), read('store-product.css'), read('receipts.css'), read('pickups.css')].join('\n').replace(/<\/style/gi, '<\\/style');
 const script = name => read(name).replaceAll('assets/logo.webp', logo)
+  .replace('/*STORE_SUPPORT*/ null', JSON.stringify(JSON.parse(read('content/store-support.json'))))
   .replace(/<\/script/gi, '<\\/script');
 
 const html = `<!doctype html>

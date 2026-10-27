@@ -23,7 +23,7 @@ const storefront=(()=>{
   const pageLabel=page=>typeof displayPageTitle==='function'?displayPageTitle(page):page.title;
   function sections(create=false){const model=home();if(scope()==='home')return model.sections;const cfg=model.pageSettings?.[scope()];if(!create)return cfg?.sections||[];model.pageSettings||={};model.pageSettings[scope()]||={};return model.pageSettings[scope()].sections||=[];}
   const section=()=>sections().find(s=>s.id===selected);
-  const photo=(value)=>{const url=String(value||'').trim();return /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(url)||/^https?:\/\//i.test(url)?url:''};
+  const photo=(value)=>{const url=String(value||'').trim();return /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(url)||/^https?:\/\//i.test(url)?(typeof publicMediaUrl==='function'?publicMediaUrl(url):url):''};
   const shopLink=(value)=>{const url=String(value||'').trim();return /^\/loja(?:\/|$)/.test(url)||/^https:\/\//i.test(url)?url:'/loja/catalogo'};
   const cta=(s,preview)=>!s.buttonLabel?'':preview?`<span class="btn dark">${esc(s.buttonLabel)}</span>`:`<a class="btn dark" href="${esc(shopLink(s.buttonLink))}" ${/^https:\/\//i.test(s.buttonLink||'')?'target="_blank" rel="noopener"':''}>${esc(s.buttonLabel)}</a>`;
   const newId=()=>`sec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`;
