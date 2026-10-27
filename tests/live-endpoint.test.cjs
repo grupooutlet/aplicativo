@@ -10,6 +10,9 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
   let count=calls.length;assert.equal((await request(valid,{Origin:'https://evil.example'})).status,403);assert.equal((await request(valid,{'Sec-Fetch-Site':'cross-site'})).status,403);assert.equal((await request({...valid,visit:'invalid'})).status,400);assert.equal((await request({...valid,phase:'customer-data'})).status,400);assert.equal((await request(valid,{'Content-Type':'text/plain'})).status,415);assert.equal((await request({...valid,padding:'x'.repeat(2100)})).status,413);assert.equal(calls.length,count);
   assert.equal((await request(valid,{DNT:'1'})).status,204);assert.equal((await request(valid,{'Sec-GPC':'1'})).status,204);assert.equal((await request(valid,{'User-Agent':'Googlebot'})).status,204);assert.equal(calls.length,count);
   assert.equal((await request({...valid,forget:true})).status,204);assert.equal(calls.at(-1).body.p_forget,true);
+  const visitor='22345678-1234-4234-8234-123456789012';assert.equal((await request({...valid,visitor})).status,204);assert.match(calls.at(-1).url,/record_store_audience$/);assert.equal(calls.at(-1).body.p_visitor,visitor);
+  count=calls.length;assert.equal((await request({...valid,visitor:'bad'})).status,400);assert.equal(calls.length,count);
+  assert.equal((await request({...valid,visitor,forget:true},{DNT:'1','Sec-GPC':'1'})).status,204);assert.equal(calls.at(-1).body.p_forget,true,'Privacy signals must not prevent erasure');
   backendStatus=503;assert.equal((await request()).status,502);assert.equal((await onRequest({request:new Request('https://forteoutlet.com.br/api/live')})).status,405);
   console.log('Live endpoint: same-origin gate, trusted Cloudflare geography, data minimization, UUID/input/size validation, DNT/GPC/bots, revocation and backend failures verified.');
  }finally{global.fetch=originalFetch;}
