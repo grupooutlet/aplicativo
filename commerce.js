@@ -431,6 +431,7 @@ function orderItemVisual(item){
   return `<div class="order-item-product">${item.stockTracked===false?`<span class="order-item-service" aria-hidden="true">${icon('shield')}</span>`:`<img class="order-item-photo" src="${esc(image)}" alt="" width="44" height="44" loading="lazy" onerror="this.onerror=null;this.src='assets/product-placeholder.svg'">`}<span>${esc(item.name)}</span></div>`;
 }
 const canEditOrderNotes=()=>isOwner&&canSell()&&['master','admin'].includes(currentProfile?.role);
+const canCancelOrders=()=>isOwner&&canSell()&&['master','admin'].includes(currentProfile?.role);
 function orderNotesCard(order){
   return `<section class="card order-notes-card"><div class="card-header"><h2>Observações</h2>${canEditOrderNotes()?button(order.notes?'Editar':'Adicionar',`onclick="editOrderNotes(${order.id})" aria-label="${order.notes?'Editar':'Adicionar'} observações do pedido ${order.id}"`,'small','edit'):''}</div><div class="pad"><p class="order-notes-content ${order.notes?'':'subtle'}">${esc(order.notes||'Nenhuma observação adicionada.')}</p>${order.notesUpdatedAt?`<small class="order-notes-updated">Atualizado em ${esc(momentLabel(order.notesUpdatedAt))}</small>`:''}</div></section>`;
 }
@@ -459,7 +460,7 @@ orderDetail = id => {
       <section class="card pad"><h2>Informações do Cliente</h2><p style="margin:16px 0;line-height:1.8"><strong>${esc(order.customer)}</strong><br>${esc(order.phone)}<br>${esc(order.email || '')}<br>CPF: ${esc(order.cpf)}</p><p class="subtle">Pedidos realizados: <strong>${customerOrderCount(order)}</strong></p></section>
       <section class="card pad"><h2>Responsável pela venda</h2><p style="margin-top:14px">${esc(order.seller || 'Loja online')}</p><p class="subtle" style="margin-top:8px">${esc(order.channel)}</p></section>
       ${orderNotesCard(order)}
-      <div class="actions">${canManage() && order.status !== 'cancelled' ? button('Cancelar pedido', `onclick="cancelOrderModal(${id})"`, 'danger') : ''}${mayDelete ? button('Excluir pedido', `onclick="deleteOrderModal(${id})"`, 'danger', 'trash') : ''}</div></div>
+      <div class="actions">${canCancelOrders() && order.status !== 'cancelled' ? button('Cancelar pedido', `onclick="cancelOrderModal(${id})"`, 'danger') : ''}${mayDelete ? button('Excluir pedido', `onclick="deleteOrderModal(${id})"`, 'danger', 'trash') : ''}</div></div>
       <div class="order-workflow-column">${orderSteps(order)}</div></div>`;
 };
 const dispatchBeforeCommerce = dispatchOrder;
@@ -758,12 +759,12 @@ commitFinishOrder = async (id, form) => {
   finally { if (submit) submit.disabled = false; }
 };
 cancelOrderModal = id => {
-  const order = workflowOrder(id); if (!canManage() || !order || order.status === 'cancelled') return;
+  const order = workflowOrder(id); if (!canCancelOrders() || !order || order.status === 'cancelled') return;
   modal('Cancelar pedido', `<p>Cancelar o pedido <strong>#${id}</strong>? Os produtos retornarão ao estoque disponível.${order.paid ? ' O reembolso deve ser processado separadamente.' : ''}</p>
     <div class="form-actions">${button('Manter pedido', 'onclick="closeModal()"')}${button('Cancelar pedido', `onclick="cancelOrder(${id},this)"`, 'danger')}</div>`);
 };
 cancelOrder = async (id, submit) => {
-  if (!canManage()) return; if (submit) submit.disabled = true;
+  if (!canCancelOrders()) return; if (submit) submit.disabled = true;
   try { await performOrderAction(id, 'cancel'); closeModal(); render(); toast('Pedido cancelado. Os produtos retornaram ao estoque.'); }
   catch (error) { toast(error.message); }
   finally { if (submit) submit.disabled = false; }
