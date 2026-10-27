@@ -14,7 +14,7 @@ function layoutThemeEditorControls(markup){
  if(typeof document.createElement!=='function')return markup;
  const holder=document.createElement('template');holder.innerHTML=markup;if(!holder.content)return markup;const cards=[...holder.content.children];if(cards.length<2)return markup;
  const properties=cards.pop(),announcement=cards.shift();
- const tree='<details class="builder-announcement-settings"><summary>'+icon('page')+'Barra de avisos'+icon('down')+'</summary>'+announcement.outerHTML+'</details>'+cards.map(card=>card.outerHTML).join('');
+ const tree=announcement.outerHTML+cards.map(card=>card.outerHTML).join('');
  return '<div class="builder-tree">'+tree+'</div><div class="builder-properties">'+properties.outerHTML+'</div>';
 }
 function themeCover(theme){

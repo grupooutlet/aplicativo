@@ -1,0 +1,38 @@
+begin;
+set local statement_timeout='40s';
+do $qa$
+declare actor uuid; original jsonb; config jsonb; expected jsonb; revised jsonb; renamed jsonb; result jsonb; denied boolean; category text; theme_id text;
+begin
+ select user_id into actor from public.profiles where role='master' limit 1;
+ if actor is null then raise exception 'QA requires master';end if;
+ perform set_config('request.jwt.claim.sub',actor::text,true);
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',actor,'role','authenticated')::text,true);
+ select data into original from public.app_state where id=1 for update;
+ expected:=original->'storefront';category:=original->'collections'->>0;
+ config:=jsonb_set(expected,'{pageSettings}',coalesce(expected->'pageSettings','{}')||jsonb_build_object('global',jsonb_build_object('headerBackground','#1c2228','headerText','#ffffff','footerIcon','#f3c30b','whatsappEnabled',true,'whatsappInterval',90),'product',jsonb_build_object('sections',jsonb_build_array(jsonb_build_object('id','qa-recommendations','type','recommendations','enabled',true,'limit',4,'background','#ffffff','textColor','#1c2228','position','after'))),'cart',jsonb_build_object('sections',jsonb_build_array(jsonb_build_object('id','qa-cart-collection','type','collection','enabled',true,'category',category,'limit',4)))));
+ perform private.validate_theme_config(config,original);
+ denied:=false;begin perform private.validate_theme_config(jsonb_set(config,'{pageSettings,global,headerBackground}','"red;position:fixed"'),original);exception when others then denied:=true;end;if not denied then raise exception 'QA unsafe color accepted';end if;
+ denied:=false;begin perform private.validate_theme_config(jsonb_set(config,'{pageSettings,product,sections,0,type}','"script"'),original);exception when others then denied:=true;end;if not denied then raise exception 'QA unknown block accepted';end if;
+ denied:=false;begin perform private.validate_theme_config(jsonb_set(config,'{pageSettings,product,sections,0,limit}','99'),original);exception when others then denied:=true;end;if not denied then raise exception 'QA unbounded recommendations accepted';end if;
+ execute 'set local role authenticated';
+ perform public.save_storefront(config,expected);
+ execute 'reset role';
+ select data into revised from public.app_state where id=1;
+ if revised->'storefront' is distinct from config or (revised-'storefront'-'storeThemes') is distinct from (original-'storefront'-'storeThemes') then raise exception 'QA publication changed business data or lost configuration';end if;
+ if (select data->'storefront' from public.shop_public where id=1) is distinct from config then raise exception 'QA public projection missing';end if;
+ execute 'set local role authenticated';
+ denied:=false;begin perform public.save_storefront(config,expected);exception when others then denied:=true;end;if not denied then raise exception 'QA stale save accepted';end if;
+ result:=public.manage_store_theme('create',null,'QA page blocks',config,null,null);theme_id:=result->>'id';
+ execute 'reset role';
+ if (select data->'storefront' from public.app_state where id=1) is distinct from config then raise exception 'QA draft creation changed live theme';end if;
+ renamed:=private.remap_theme_sections(config,category,'QA renamed');
+ if renamed#>>'{pageSettings,cart,sections,0,category}'<>'QA renamed' then raise exception 'QA nested rename failed';end if;
+ renamed:=private.remap_theme_sections(renamed,'QA renamed',null);
+ if renamed#>>'{pageSettings,cart,sections,0,enabled}'<>'false' then raise exception 'QA nested deletion not hidden';end if;
+ update public.app_state set data=jsonb_set(data,'{collections,0}','"QA renamed"') where id=1;
+ select data into revised from public.app_state where id=1;
+ if revised#>>'{storefront,pageSettings,cart,sections,0,category}'<>'QA renamed' then raise exception 'QA rename trigger did not update published block';end if;
+ if exists(select 1 from jsonb_array_elements(revised->'storeThemes') where value->'config'#>>'{pageSettings,cart,sections,0,category}' is distinct from 'QA renamed') then raise exception 'QA draft collection link stale';end if;
+ raise notice 'QA theme validation, atomic publication, conflict, draft isolation, public projection, reference integrity and business data preservation passed';
+end $qa$;
+rollback;

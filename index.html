@@ -344,6 +344,32 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
 }
 
 @media(max-width:650px){.collection-list-grid.is-mobile-carousel{position:relative;cursor:grab;touch-action:pan-x pan-y pinch-zoom}.collection-list-grid.is-mobile-carousel.is-dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}.collection-list-grid.is-mobile-carousel img{user-select:none;-webkit-user-drag:none}}
+/* Theme surfaces preserve the store's layout while keeping colors local to each block. */
+.store-theme-block{background:var(--block-bg,#fff);color:var(--block-text,#1c2228);border-radius:12px;min-width:0}
+.store-theme-block.has-block-colors>.storefront-collection,.store-theme-block.has-block-colors>.storefront-video,.store-theme-block.has-block-colors>.storefront-text,.store-theme-block.has-block-colors>.store-benefits{padding:24px}
+.store-theme-block.has-block-colors :is(.catalog-head h2,.catalog-head p,.eyebrow,.storefront-text h2,.storefront-text p,.storefront-image-copy h2,.storefront-image-copy p,.benefit strong,.benefit small,.shop-product h3,.shop-product .price,.shop-product .old){color:var(--block-text,#1c2228)}
+.store-theme-block.has-block-colors :is(.benefit>.icon,.hero-content>.icon){color:var(--block-icon,var(--block-text,#1c2228))}
+.store-theme-block.has-block-colors .storefront-image-copy{background:var(--block-bg,#fff);color:var(--block-text,#1c2228)}
+.store-theme-block.has-block-colors .hero-content :is(h1,p,.eyebrow){color:var(--block-text,#1c2228)}
+.page-theme-sections{min-width:0;display:grid;gap:28px}.page-theme-sections.sections-before{margin-bottom:36px}.page-theme-sections.sections-after{margin-top:44px}.page-theme-section{min-width:0}
+.store.custom-header :is(.store-header,.store-nav,.store-mobile-menu,.store-menu-head){background:var(--theme-header-background,#fff);color:var(--theme-header-text,#1c2228);border-color:color-mix(in srgb,var(--theme-header-text,#1c2228) 14%,transparent)}
+.store.custom-header :is(.store-header .account,.store-header .account small,.store-nav a,.store-nav summary,.store-menu-account a,.store-mobile-menu nav a,.store-mobile-menu nav summary,.store-menu-head button){color:var(--theme-header-text,#1c2228)}
+.store.custom-header :is(.store-header .icon,.store-nav .icon,.store-mobile-menu .icon,.store-menu-button,.store-cart){color:var(--theme-header-icon,var(--theme-header-text,#1c2228))}
+.store.custom-header :is(.store-nav .store-submenu,.store-mobile-menu .store-submenu){background:var(--theme-header-background,#fff);color:var(--theme-header-text,#1c2228)}
+.store.custom-header .store-header .search{background:color-mix(in srgb,var(--theme-header-text,#1c2228) 6%,var(--theme-header-background,#fff));border-color:color-mix(in srgb,var(--theme-header-text,#1c2228) 15%,transparent);color:var(--theme-header-text,#1c2228)}
+.store.custom-header .store-header .search input{color:inherit}.store.custom-header .store-header .search input::placeholder{color:inherit;opacity:.65}
+.store.custom-footer .store-footer-refined{background:var(--theme-footer-background,#1c2228);color:var(--theme-footer-text,#d6dde1)}
+.store.custom-footer .store-footer-refined :is(h2,p,a,small,summary,button,.store-footer-contact-row,.store-footer-company,.store-footer-last){color:var(--theme-footer-text,#d6dde1)}
+.store.custom-footer .store-footer-refined .icon{color:var(--theme-footer-icon,var(--theme-footer-text,#d6dde1))}
+.store-help{position:fixed;right:22px;bottom:calc(var(--help-bottom,18px) + env(safe-area-inset-bottom,0px));z-index:40;display:flex;flex-direction:column;align-items:end;gap:13px;max-width:calc(100vw - 32px);font-family:inherit}.store-help[hidden]{display:none}
+.store-help-launcher{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:#16bc5b;color:#fff;box-shadow:0 4px 18px #17412b25;border:1px solid #ffffff80;transition:background .2s,transform .2s}.store-help-launcher svg{width:29px;height:29px}.store-help-launcher:hover{background:#0ea64e;transform:translateY(-2px)}
+.store-help-bubble{position:relative;display:flex;align-items:start;width:272px;max-width:calc(100vw - 40px);border:1px solid #dfe6e0;border-radius:13px;background:#fff;color:#28332d;box-shadow:0 6px 24px #1c222818;animation:store-help-in .2s ease-out}.store-help-bubble[hidden]{display:none}.store-help-bubble:after{content:"";position:absolute;bottom:-7px;right:21px;width:12px;height:12px;background:#fff;border-bottom:1px solid #dfe6e0;border-right:1px solid #dfe6e0;transform:rotate(45deg)}
+.store-help-message{padding:16px 0 16px 17px;font-size:12px;line-height:1.7;flex:1;overflow-wrap:anywhere}.store-help-bubble>button{width:35px;height:35px;flex:none;color:#7b8880;font-size:20px}.store-help a:focus-visible,.store-help button:focus-visible{outline:2px solid #41664f;outline-offset:4px}
+.builder-global-groups{padding:0 16px 10px}.builder-global-group{border-bottom:1px solid #edf0ed}.builder-global-group:last-child{border:0}.builder-global-group>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 0;cursor:pointer;font-size:13px;font-weight:550;list-style:none}.builder-global-group>summary::-webkit-details-marker{display:none}.builder-global-group>summary .icon{width:14px;height:14px;color:#839088}.builder-global-group[open]>summary>.icon{transform:rotate(180deg)}.builder-global-group .builder-fields{padding:4px 0 18px}.builder-global-group .builder-card{box-shadow:none;border:0;margin:0}.builder-global-group .builder-card-head{padding:0 0 15px}.builder-global-group .builder-card-head .eyebrow{display:none}
+.builder-page-settings{display:flex;align-items:center;gap:9px;width:calc(100% - 28px);padding:12px;border:1px solid #e4e8e4;border-radius:8px;background:#f7f9f6;margin:0 14px 12px;font-size:12px;text-align:left}.builder-page-settings>.icon{width:16px;height:16px}
+@keyframes store-help-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:650px){.store-help{right:16px}.store-help-launcher{width:49px;height:49px}.store-help-launcher svg{width:27px;height:27px}.store-help-bubble{width:248px}.store-theme-block.has-block-colors>.storefront-collection,.store-theme-block.has-block-colors>.storefront-video,.store-theme-block.has-block-colors>.storefront-text,.store-theme-block.has-block-colors>.store-benefits{padding:18px 12px}.page-theme-sections{gap:20px}.page-theme-sections.sections-after{margin-top:30px}.page-theme-sections.sections-before{margin-bottom:25px}}
+@media(prefers-reduced-motion:reduce){.store-help-bubble{animation:none}.store-help-launcher{transition:none}}
 
 /* Catalog tools use the same quiet surfaces, yellow accent and spacing as the panel. */
 .collection-order-control{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}.collection-order-control select{min-width:240px}.collection-order-help{padding:0 24px 18px;color:var(--muted);font-size:12px;line-height:1.7}.collection-order-toolbar{flex-wrap:wrap;gap:16px}.collection-product-item[draggable=false]>.drag-handle{cursor:default;opacity:.3}.collection-product-item[draggable=false]>.drag-handle .icon{width:15px;height:15px}
@@ -796,7 +822,7 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
   <dialog id="modal"></dialog>
   <div id="toast" role="status"></div>
   <script>const storefront=(()=>{
-  const labels={banner:'Banner',collection:'Coleção de produtos','collection-list':'Lista de coleções',image:'Imagem com texto',video:'Vídeo',text:'Texto',benefits:'Diferenciais da loja'};
+  const labels={banner:'Banner',collection:'Coleção de produtos',recommendations:'Você também pode gostar','collection-list':'Lista de coleções',image:'Imagem com texto',video:'Vídeo',text:'Texto',benefits:'Diferenciais da loja'};
   const defaultBenefits=[
     {icon:'truck',title:'Entrega com cuidado',body:'Consulte sua região'},
     {icon:'wallet',title:'Compra do seu jeito',body:'Combine o pagamento com a loja'},
@@ -816,7 +842,9 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
   }
   const home=()=>editing()?ensureDraft():db.storefront;
   const dirty=()=>Boolean(draft&&JSON.stringify(draft)!==JSON.stringify(baseline));
-  const section=()=>home().sections.find(s=>s.id===selected);
+  const scope=()=>pageKey(previewRoute,previewCategory,previewView);
+  function sections(create=false){const model=home();if(scope()==='home')return model.sections;const cfg=model.pageSettings?.[scope()];if(!create)return cfg?.sections||[];model.pageSettings||={};model.pageSettings[scope()]||={};return model.pageSettings[scope()].sections||=[];}
+  const section=()=>sections().find(s=>s.id===selected);
   const photo=(value)=>{const url=String(value||'').trim();return /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(url)||/^https?:\/\//i.test(url)?url:''};
   const shopLink=(value)=>{const url=String(value||'').trim();return /^\/loja(?:\/|$)/.test(url)||/^https:\/\//i.test(url)?url:'/loja/catalogo'};
   const cta=(s,preview)=>!s.buttonLabel?'':preview?`<span class="btn dark">${esc(s.buttonLabel)}</span>`:`<a class="btn dark" href="${esc(shopLink(s.buttonLink))}" ${/^https:\/\//i.test(s.buttonLink||'')?'target="_blank" rel="noopener"':''}>${esc(s.buttonLabel)}</a>`;
@@ -843,7 +871,27 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
     if(/\.mp4(?:$|\?)/i.test(url.href))return `<video controls playsinline preload="metadata" src="${esc(url.href)}"></video>`;
     return '';
   }
-  function renderSection(s,preview=false){
+  function sectionProducts(s,path=routePath()){
+    const limit=Math.max(1,Math.min(24,Number(s.limit)||8));
+    if(s.type!=='recommendations')return collectionProducts(s.category||'Todos',true).slice(0,limit);
+    const productId=Number(path.split('/')[3]),isProduct=path.startsWith('/loja/produto/');
+    const excluded=new Set([...(db.cart||[]).map(line=>Number(line.id)),...(isProduct?[productId]:[])]);
+    const references=db.products.filter(p=>excluded.has(Number(p.id)));
+    const categories=new Set(references.flatMap(p=>productCollections(p)));
+    if(!references.length&&typeof catalogCategory==='string'&&catalogCategory!=='Todos')categories.add(catalogCategory);
+    const sales=collectionSales();
+    return db.products.filter(p=>p.active&&!excluded.has(Number(p.id))&&productCollections(p).some(name=>visibleCollections().includes(name))).map(p=>{
+      const shared=productCollections(p).filter(name=>categories.has(name)).length;
+      const similar=references.reduce((best,ref)=>Math.max(best,1-Math.min(1,Math.abs(salePrice(p)-salePrice(ref))/Math.max(1,salePrice(ref)))),0);
+      return {p,score:shared*10+similar};
+    }).sort((a,b)=>b.score-a.score||(Number(sales[b.p.id])||0)-(Number(sales[a.p.id])||0)||Number(a.p.id)-Number(b.p.id)).slice(0,limit).map(row=>row.p);
+  }
+  function renderSection(s,preview=false,path=routePath()){
+    const html=sectionContent(s,preview,path);if(!html||s.type==='collection-list')return html;
+    const bg=listColor(s.background,'#ffffff'),text=listColor(s.textColor,'#1c2228'),icons=listColor(s.iconColor,text);
+    return `<div class="store-theme-block ${s.background||s.textColor||s.iconColor?'has-block-colors':''} ${s.type==='banner'?'is-banner-block':''}" style="--block-bg:${bg};--block-text:${text};--block-icon:${icons}">${html}</div>`;
+  }
+  function sectionContent(s,preview=false,path=routePath()){
     if(!s.enabled)return '';
     if(s.type==='collection-list')return renderCollectionList(s);
     if(s.type==='banner'){
@@ -852,10 +900,10 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
       return `<section class="store-hero storefront-banner ${s.align==='right'?'align-right':''} ${image?'':'banner-without-image'}">${image?`<img class="hero-image" src="${esc(image)}" alt="${esc(s.imageAlt||s.title||'Banner da loja')}" loading="lazy">`:''}${showText?`<div class="hero-content">${s.eyebrow?`<span class="eyebrow">${esc(s.eyebrow)}</span>`:''}${s.title?`<h1>${esc(s.title)}</h1>`:''}${s.subtitle?`<p>${esc(s.subtitle)}</p>`:''}${cta(s,preview)}</div>`:''}</section>`;
     }
     if(s.type==='benefits')return `<div class="store-benefits">${(s.items||[]).map(item=>`<div class="benefit">${icon(item.icon||'check')}<div><strong>${esc(item.title||'')}</strong><small>${esc(item.body||'')}</small></div></div>`).join('')}</div>`;
-    if(s.type==='collection'){
+    if(s.type==='collection'||s.type==='recommendations'){
       const viewAll=productCardAppearance({productButtonColor:s.viewAllColor||'#1c2228'});
-      const category=s.category||'Todos',products=collectionProducts(category,true).slice(0,Math.max(1,Math.min(24,Number(s.limit)||8)));
-      return `<section class="storefront-collection content-align-${s.contentAlign==='center'?'center':'left'}"><div class="catalog-head"><div>${s.eyebrow?`<span class="eyebrow">${esc(s.eyebrow)}</span>`:''}<h2>${esc(s.title||category)}</h2></div></div><div class="catalog">${products.map(p=>shopProduct(p,s)).join('')}</div>${products.length?'':`<p class="subtle">Nenhum produto ativo nesta coleção.</p>`}<div class="collection-footer footer-align-${['left','right'].includes(s.viewAllAlign)?s.viewAllAlign:'center'}"><a class="btn collection-view-all" style="${viewAll.style}" href="/loja/catalogo?colecao=${encodeURIComponent(category)}">Ver todos</a></div></section>`;
+      const category=s.category||'Todos',products=sectionProducts(s,path);if(s.type==='recommendations'&&!products.length)return '';
+      return `<section class="storefront-collection content-align-${s.contentAlign==='center'?'center':'left'}"><div class="catalog-head"><div>${s.eyebrow?`<span class="eyebrow">${esc(s.eyebrow)}</span>`:''}<h2>${esc(s.title||(s.type==='recommendations'?'Você também pode gostar':category))}</h2></div></div><div class="catalog">${products.map(p=>shopProduct(p,s)).join('')}</div>${products.length?'':`<p class="subtle">Nenhum produto ativo nesta coleção.</p>`}${s.showViewAll===false?'':`<div class="collection-footer footer-align-${['left','right'].includes(s.viewAllAlign)?s.viewAllAlign:'center'}"><a class="btn collection-view-all" style="${viewAll.style}" href="/loja/catalogo?colecao=${encodeURIComponent(category)}">Ver todos</a></div>`}</section>`;
     }
     if(s.type==='image')return `<section class="storefront-image ${s.layout==='image-right'?'image-right':''}"><div class="storefront-image-photo">${photo(s.image)?`<img src="${esc(photo(s.image))}" alt="${esc(s.imageAlt||s.title||'Imagem da loja')}" loading="lazy">`:'<span>Imagem ainda não adicionada</span>'}</div><div class="storefront-image-copy"><span class="eyebrow">${esc(s.eyebrow||'FORTE OUTLET')}</span><h2>${esc(s.title||'Sua casa merece esse cuidado.')}</h2><p>${esc(s.body||'')}</p>${cta(s,preview)}</div></section>`;
     if(s.type==='video')return `<section class="storefront-video"><div class="catalog-head"><div><span class="eyebrow">${esc(s.eyebrow||'INSPIRE-SE')}</span><h2>${esc(s.title||'Veja de perto')}</h2>${s.body?`<p>${esc(s.body)}</p>`:''}</div></div><div class="storefront-video-frame">${videoEmbed(s.url)||'<span>Adicione o link do vídeo para exibi-lo aqui.</span>'}</div></section>`;
@@ -876,14 +924,14 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
     }).join('')}</ul></section>`;
   }
   function storeHome(preview=false){const visible=home().sections.map(s=>{const html=renderSection(s,preview);return html?`<div class="home-section ${s.type==='collection-list'&&s.mobileCarousel?'collection-carousel-section':''}">${html}</div>`:''}).filter(Boolean);return `<div class="store-content storefront-home">${visible.join('')||'<div class="empty">A página inicial não tem seções visíveis.</div>'}</div>`}
-  function sectionRow(s,i){return `<div class="builder-section-row ${selected===s.id?'active':''} ${s.enabled?'':'is-hidden'}"><button class="builder-section-select" onclick="storefront.select('${s.id}')"><span class="builder-section-icon">${icon(({banner:'image',image:'image',video:'eye',collection:'layers','collection-list':'layers',text:'page',benefits:'shield'})[s.type])}</span><span><strong>${esc(s.title||labels[s.type])}</strong><small>${labels[s.type]}${s.enabled?'':' · Oculta'}</small></span></button><div class="builder-section-actions"><button title="Subir" aria-label="Subir ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',-1)" ${i===0?'disabled':''}>↑</button><button title="Descer" aria-label="Descer ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',1)" ${i===home().sections.length-1?'disabled':''}>↓</button></div></div>`}
+  function sectionRow(s,i){return `<div class="builder-section-row ${selected===s.id?'active':''} ${s.enabled?'':'is-hidden'}"><button class="builder-section-select" onclick="storefront.select('${s.id}')"><span class="builder-section-icon">${icon(({banner:'image',image:'image',video:'eye',collection:'layers',recommendations:'layers','collection-list':'layers',text:'page',benefits:'shield'})[s.type])}</span><span><strong>${esc(s.title||labels[s.type])}</strong><small>${labels[s.type]}${s.enabled?'':' · Oculta'}</small></span></button><div class="builder-section-actions"><button title="Subir" aria-label="Subir ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',-1)" ${i===0?'disabled':''}>↑</button><button title="Descer" aria-label="Descer ${esc(labels[s.type])}" onclick="storefront.move('${s.id}',1)" ${i===sections().length-1?'disabled':''}>↓</button></div></div>`}
   const input=(label,key,value,type='text',extra='')=>type==='color'?colorControl(label,key,value):`<label class="field">${label}<input name="${key}" type="${type}" value="${esc(value||'')}" ${extra} oninput="storefront.change('${key}',this.value)"></label>`;
   const textarea=(label,key,value)=>`<label class="field">${label}<textarea name="${key}" oninput="storefront.change('${key}',this.value)">${esc(value||'')}</textarea></label>`;
   const choose=(label,key,value,options)=>`<label class="field">${label}<select name="${key}" onchange="storefront.change('${key}',this.value)">${options.map(([v,text])=>`<option value="${esc(v)}" ${value===v?'selected':''}>${esc(text)}</option>`).join('')}</select></label>`;
   const imageControls=(s,key='image')=>`${input('URL da imagem',key,String(s[key]||'').startsWith('data:image/')?'':s[key],'url','placeholder="https://..."')}<label class="field">Ou envie uma imagem<input type="file" accept="image/png,image/jpeg,image/webp" onchange="storefront.uploadImage(this,'${key}')"><small>JPG, PNG ou WebP · até 2 MB</small></label>${s[key]?`<div class="builder-image-preview"><img src="${esc(photo(s[key]))}" alt="Prévia da imagem"><button class="btn small" onclick="storefront.change('${key}','');storefront.render()">Remover imagem</button></div>`:''}`;
   function colorControl(label,key,value,page=false){
     const color=/^#[a-f0-9]{6}$/i.test(value||'')?value:'#1c2228';
-    return `<div class="field builder-color-field"><span>${label}</span><div class="builder-color-control"><input type="color" aria-label="${label} · seletor de cor" value="${esc(color)}" oninput="storefront.changeColor(this,'${key}',${page})"><input class="builder-color-hex" name="${key}" type="text" aria-label="${label} · código hexadecimal" value="${esc(color.toUpperCase())}" maxlength="7" spellcheck="false" autocapitalize="characters" placeholder="#1C2228" oninput="storefront.changeColor(this,'${key}',${page})" onchange="storefront.changeColor(this,'${key}',${page},true)"></div></div>`;
+    return `<div class="field builder-color-field"><span>${label}</span><div class="builder-color-control"><input type="color" aria-label="${label} · seletor de cor" value="${esc(color)}" oninput="storefront.changeColor(this,'${key}',${JSON.stringify(page).replaceAll('\"','&quot;')})"><input class="builder-color-hex" name="${key}" type="text" aria-label="${label} · código hexadecimal" value="${esc(color.toUpperCase())}" maxlength="7" spellcheck="false" autocapitalize="characters" placeholder="#1C2228" oninput="storefront.changeColor(this,'${key}',${JSON.stringify(page).replaceAll('\"','&quot;')})" onchange="storefront.changeColor(this,'${key}',${JSON.stringify(page).replaceAll('\"','&quot;')},true)"></div></div>`;
   }
   function changeColor(input,key,page=false,complete=false){
     let value=String(input.value||'').trim();if(!value.startsWith('#'))value='#'+value;
@@ -894,11 +942,11 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
     value=value.toLowerCase();
     const control=input.closest('.builder-color-control'),hex=control.querySelector('.builder-color-hex'),picker=control.querySelector('[type="color"]');
     picker.value=value;if(input!==hex||complete)hex.value=value.toUpperCase();hex.setCustomValidity('');hex.setAttribute('aria-invalid','false');
-    if(page)changePage(key,value);else change(key,value);
+    if(page==='global')changeGlobal(key,value);else if(page)changePage(key,value);else change(key,value);
   }
   function productGridControls(cfg,page=false){
     const action=page?'storefront.changePage':'storefront.change',appearance=productCardAppearance(cfg);
-    return `<div class="builder-list-divider"><h3>Grade de produtos</h3></div><label class="field">Alinhamento das informações<select name="contentAlign" onchange="${action}('contentAlign',this.value)"><option value="left" ${appearance.align==='left'?'selected':''}>À esquerda</option><option value="center" ${appearance.align==='center'?'selected':''}>Centralizado</option></select></label><label class="field">Texto do botão dos produtos<input name="productButtonLabel" maxlength="60" value="${esc(appearance.label)}" oninput="${action}('productButtonLabel',this.value)"></label>${colorControl('Cor do botão dos produtos','productButtonColor',cfg.productButtonColor||'#f3c30b',page)}<p class="builder-hint">Todos os botões abrem a página do produto. A cor do texto se adapta ao fundo do botão.</p>${page?'':`<div class="builder-list-divider"><h3>Botão “Ver todos”</h3></div>${choose('Alinhamento do botão','viewAllAlign',cfg.viewAllAlign||'center',[['left','À esquerda'],['center','Centralizado'],['right','À direita']])}${colorControl('Cor do botão Ver todos','viewAllColor',cfg.viewAllColor||'#1c2228')}`}`;
+    return `<div class="builder-list-divider"><h3>Grade de produtos</h3></div><label class="field">Alinhamento das informações<select name="contentAlign" onchange="${action}('contentAlign',this.value)"><option value="left" ${appearance.align==='left'?'selected':''}>À esquerda</option><option value="center" ${appearance.align==='center'?'selected':''}>Centralizado</option></select></label><label class="field">Texto do botão dos produtos<input name="productButtonLabel" maxlength="60" value="${esc(appearance.label)}" oninput="${action}('productButtonLabel',this.value)"></label>${colorControl('Cor do botão dos produtos','productButtonColor',cfg.productButtonColor||'#f3c30b',page)}<p class="builder-hint">Todos os botões abrem a página do produto. A cor do texto se adapta ao fundo do botão.</p>${page?'':`<label class="builder-switch"><input type="checkbox" ${cfg.showViewAll!==false?'checked':''} onchange="storefront.change('showViewAll',this.checked)"><span>Mostrar botão Ver todos</span></label><div class="builder-list-divider"><h3>Botão “Ver todos”</h3></div>${choose('Alinhamento do botão','viewAllAlign',cfg.viewAllAlign||'center',[['left','À esquerda'],['center','Centralizado'],['right','À direita']])}${colorControl('Cor do botão Ver todos','viewAllColor',cfg.viewAllColor||'#1c2228')}`}`;
   }
   function collectionListControls(s){
     const check=(label,key,defaultValue=true)=>`<label class="builder-switch"><input type="checkbox" ${(s[key]??defaultValue)?'checked':''} onchange="storefront.change('${key}',this.checked)"><span>${label}</span></label>`;
@@ -907,6 +955,7 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
   function controls(s){
     if(s.type==='collection-list')return collectionListControls(s);
     if(s.type==='banner')return `${imageControls(s)}${input('Descrição da imagem','imageAlt',s.imageAlt)}<p class="builder-hint">A imagem mantém sua proporção original, sem corte ou altura fixa.</p><label class="builder-switch"><input type="checkbox" ${s.showText===true?'checked':''} onchange="storefront.change('showText',this.checked);storefront.render()"><span>Mostrar textos e botão sobre a imagem</span></label>${s.showText===true?`${input('Texto pequeno acima do título','eyebrow',s.eyebrow)}${input('Título','title',s.title)}${textarea('Descrição','subtitle',s.subtitle)}${choose('Alinhamento do texto','align',s.align,[['left','À esquerda'],['right','À direita']])}${input('Texto do botão','buttonLabel',s.buttonLabel)}${input('Link do botão','buttonLink',s.buttonLink,'text','placeholder="/loja/catalogo"')}`:''}`;
+    if(s.type==='recommendations')return `${input('Título','title',s.title)}${input('Número de produtos','limit',s.limit,'number','min=\"1\" max=\"24\"')}<p class=\"builder-hint\">Usamos as coleções e a faixa de preço dos produtos visualizados ou do carrinho. O produto atual e os itens do carrinho não se repetem. Somente produtos ativos são exibidos.</p>${productGridControls(s)}`;
     if(s.type==='collection')return `${input('Texto pequeno acima do título','eyebrow',s.eyebrow)}${input('Título','title',s.title)}${choose('Coleção','category',s.category,[['Todos','Todos os produtos'],...db.collections.map(c=>[c,c])])}${input('Número de produtos','limit',s.limit,'number','min="1" max="24"')}${productGridControls(s)}`;
     if(s.type==='image')return `${input('Texto pequeno acima do título','eyebrow',s.eyebrow)}${input('Título','title',s.title)}${textarea('Texto','body',s.body)}${imageControls(s)}${input('Descrição da imagem','imageAlt',s.imageAlt)}${choose('Posição da imagem','layout',s.layout,[['image-left','À esquerda'],['image-right','À direita']])}${input('Texto do botão','buttonLabel',s.buttonLabel)}${input('Link do botão','buttonLink',s.buttonLink,'text','placeholder="/loja/catalogo"')}`;
     if(s.type==='video')return `${input('Texto pequeno acima do título','eyebrow',s.eyebrow)}${input('Título','title',s.title)}${textarea('Texto','body',s.body)}${input('Link do vídeo','url',s.url,'url','placeholder="YouTube, Vimeo ou .mp4"')}<p class="builder-hint">Cole um link público do YouTube, Vimeo ou de um arquivo MP4. O vídeo não reproduz sozinho.</p>`;
@@ -923,9 +972,28 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
   }
   function pageTitle(){
     const key=pageKey(previewRoute,previewCategory,previewView);
+    if(key.startsWith('info:'))return db.pages.find(p=>p.id===Number(key.slice(5)))?.title||'Página institucional';
     if(key==='product')return 'Página de vendas';
     if(key==='collection')return 'Coleção';
     return ({home:'Página inicial',catalog:'Catálogo',cart:'Carrinho',checkout:'Checkout',account:'Meus pedidos',order:'Pedido',login:'Login',signup:'Cadastro'})[key]||'Página da loja';
+  }
+  function globalControls(){
+    const cfg=home().pageSettings?.global||{};
+    const colors=(name,prefix,bg,fg)=>`<details class="builder-global-group"><summary>${name}${icon('down')}</summary><div class="builder-fields">${colorControl('Fundo · '+name,prefix+'Background',cfg[prefix+'Background']||bg,'global')}${colorControl('Texto · '+name,prefix+'Text',cfg[prefix+'Text']||fg,'global')}${colorControl('Ícones · '+name,prefix+'Icon',cfg[prefix+'Icon']||fg,'global')}<button class="btn small" onclick="storefront.changeGlobal('${prefix}Reset',true)">Restaurar cores originais</button></div></details>`;
+    return `<section class="builder-card builder-global-card"><div class="builder-card-head"><div><span class="eyebrow">EM TODA A LOJA</span><h2>Cabeçalho, rodapé e atendimento</h2></div></div><div class="builder-global-groups">${colors('Cabeçalho','header','#ffffff','#1c2228')}${colors('Rodapé','footer','#1c2228','#d6dde1')}<details class="builder-global-group"><summary>WhatsApp flutuante${icon('down')}</summary><div class="builder-fields"><label class="builder-switch"><input type="checkbox" ${cfg.whatsappEnabled!==false?'checked':''} onchange="storefront.changeGlobal('whatsappEnabled',this.checked)"><span>Mostrar botão de WhatsApp</span></label><label class="builder-switch"><input type="checkbox" ${cfg.whatsappMessages!==false?'checked':''} onchange="storefront.changeGlobal('whatsappMessages',this.checked)"><span>Mostrar sugestões de conversa</span></label><label class="field">Intervalo entre mensagens<select onchange="storefront.changeGlobal('whatsappInterval',Number(this.value))">${[[60,'1 minuto'],[90,'1 minuto e meio'],[180,'3 minutos']].map(([v,t])=>`<option value="${v}" ${Number(cfg.whatsappInterval||90)===v?'selected':''}>${t}</option>`).join('')}</select></label><p class="builder-hint">O botão usa o WhatsApp de Configurações → Dados da loja. As frases aparecem por alguns segundos e podem ser fechadas. Nenhuma mensagem é enviada automaticamente. O botão fica oculto no checkout.</p></div></details><details class="builder-global-group"><summary>Barra de avisos${icon('down')}</summary>${announcementControls()}</details></div></section>`;
+  }
+  function blockColorControls(s){return `<div class="builder-list-divider"><h3>Cores da seção</h3></div>${colorControl('Fundo da seção','background',s.background||'#ffffff')}${colorControl('Texto da seção','textColor',s.textColor||'#1c2228')}${colorControl('Ícones da seção','iconColor',s.iconColor||s.textColor||'#1c2228')}<p class="builder-hint">Use o seletor ou digite o código hexadecimal. As cores dos botões são configuradas separadamente.</p>`;}
+  function changeGlobal(key,value){
+    if(!canConfigureSite()||saving)return;const keys=['headerBackground','headerText','headerIcon','footerBackground','footerText','footerIcon','whatsappEnabled','whatsappMessages','whatsappInterval'];
+    if(!keys.includes(key)&&!['headerReset','footerReset'].includes(key))return;
+    const model=home();model.pageSettings||={};model.pageSettings.global||={};const cfg=model.pageSettings.global;
+    if(key.endsWith('Reset')){const prefix=key.replace('Reset','');for(const suffix of ['Background','Text','Icon'])delete cfg[prefix+suffix];render();return;}
+    if(key==='whatsappInterval'&&![60,90,180].includes(Number(value)))return;
+    cfg[key]=value;refresh();
+  }
+  function renderPageSections(path,position='after'){
+    const key=pageKey(path,typeof catalogCategory==='string'?catalogCategory:'Todos'),list=home().pageSettings?.[key]?.sections;
+    return (Array.isArray(list)?list:[]).filter(s=>(s.position==='before'?'before':'after')===position).map(s=>{const html=renderSection(s,false,path);return html?`<div class="page-theme-section ${s.type==='collection-list'&&s.mobileCarousel?'collection-carousel-section':''}">${html}</div>`:''}).join('');
   }
   function pageControls(){
     const key=pageKey(previewRoute,previewCategory,previewView),cfg=home().pageSettings?.[key]||{};
@@ -936,14 +1004,15 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
     return `<section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">EDITAR PÁGINA</span><h2>${esc(pageTitle())}</h2></div></div><div class="builder-fields">${fields}<p class="builder-hint">${key==='product'?'Este modelo é aplicado a todos os produtos. Cada produto mantém seu título, suas fotos e sua descrição.':key==='collection'?'Este modelo é aplicado a todas as coleções e ao catálogo. Os produtos de cada coleção são mantidos.':'Estas opções personalizam esta página. Navegue na prévia para editar outras partes da loja.'} A loja publicada só muda ao salvar.</p></div></section>`;
   }
   function editorControlsContent(){
-    if(pageKey(previewRoute,previewCategory,previewView)!=='home')return announcementControls()+pageControls();
-    const s=section()||home().sections[0];selected=s.id;
-    return announcementControls()+`<section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">PÁGINA INICIAL</span><h2>Seções da home</h2></div><span class="builder-count">${home().sections.length}</span></div><div class="builder-section-list">${home().sections.map(sectionRow).join('')}</div><button class="builder-add" onclick="storefront.addModal()">${icon('plus')} Adicionar seção</button><p class="builder-hint">Use as setas para mudar a ordem. Seções ocultas não aparecem na loja.</p></section><section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">EDITAR SEÇÃO</span><h2>${esc(labels[s.type])}</h2></div><label class="builder-switch"><input type="checkbox" ${s.enabled?'checked':''} onchange="storefront.toggle('${s.id}',this.checked)"><span>${s.enabled?'Visível':'Oculta'}</span></label></div><div class="builder-fields">${controls(s)}</div><div class="builder-card-foot"><button class="btn small" onclick="storefront.duplicate('${s.id}')">${icon('plus')} Duplicar</button><button class="btn small danger" onclick="storefront.removeModal('${s.id}')">${icon('trash')} Excluir</button></div></section>`;
+    const list=sections(),s=selected==='@page'?null:section()||list[0];selected=s?.id||'@page';
+    return globalControls()+`<section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">${esc(pageTitle())}</span><h2>Seções da página</h2></div><span class="builder-count">${list.length}</span></div><button class="builder-page-settings" onclick="storefront.selectPage()">${icon('settings')}Configurações da página</button><div class="builder-section-list">${list.map(sectionRow).join('')||'<p class="builder-hint">O conteúdo principal desta página é mantido. Adicione coleções e outros blocos antes ou depois dele.</p>'}</div><button class="builder-add" onclick="storefront.addModal()">${icon('plus')} Adicionar seção</button><p class="builder-hint">Use as setas para organizar as seções. As mudanças só aparecem na loja após salvar.</p></section>`+(s?`<section class="builder-card"><div class="builder-card-head"><div><span class="eyebrow">EDITAR SEÇÃO</span><h2>${esc(labels[s.type])}</h2></div><label class="builder-switch"><input type="checkbox" ${s.enabled?'checked':''} onchange="storefront.toggle('${s.id}',this.checked)"><span>${s.enabled?'Visível':'Oculta'}</span></label></div><div class="builder-fields">${scope()==='home'?'':choose('Posição na página','position',s.position||'after',[['before','Antes do conteúdo principal'],['after','Depois do conteúdo principal']])}${controls(s)}${s.type==='collection-list'?'':blockColorControls(s)}</div><div class="builder-card-foot"><button class="btn small" onclick="storefront.duplicate('${s.id}')">${icon('plus')} Duplicar</button><button class="btn small danger" onclick="storefront.removeModal('${s.id}')">${icon('trash')} Excluir</button></div></section>`:pageControls());
   }
+  function selectPage(){selected='@page';render();}
+
   function editorControls(){const html=editorControlsContent();return typeof layoutThemeEditorControls==='function'?layoutThemeEditorControls(html):html;}
   function saveBar(){return `<div class="builder-save-status" role="status">${uploading?'Enviando imagem…':saving?'Salvando mudanças…':dirty()?'Você tem mudanças não salvas.':'Todas as mudanças estão salvas.'}</div><div class="actions"><button class="btn" aria-label="Cancelar mudanças" onclick="storefront.cancelChanges()" ${!dirty()||saving||uploading?'disabled':''}>${window.innerWidth<=650?'Cancelar':'Cancelar mudanças'}</button><button class="btn primary" aria-label="Salvar mudanças" onclick="storefront.publish()" ${!dirty()||saving||uploading?'disabled':''}>${window.innerWidth<=650?'Salvar':'Salvar mudanças'}</button></div>`}
   function previewOptionValue(){const key=pageKey(previewRoute,previewCategory,previewView);return key==='product'?'template:product':key==='collection'?'template:collection':previewRoute;}
-  function pageOptions(){return [['/loja','Página inicial'],['template:product','Página de vendas'],['template:collection','Coleção'],['/loja/carrinho','Carrinho'],['/loja/checkout','Checkout'],['/loja/conta','Meus pedidos'],['/loja/login','Login'],['/loja/cadastro','Cadastro']].map(([value,label])=>`<option value="${value}" ${previewOptionValue()===value?'selected':''}>${label}</option>`).join('')}
+  function pageOptions(){return [['/loja','Página inicial'],['template:product','Página de vendas'],['template:collection','Coleção'],['/loja/carrinho','Carrinho'],['/loja/checkout','Checkout'],['/loja/conta','Meus pedidos'],['/loja/login','Login'],['/loja/cadastro','Cadastro'],...db.pages.filter(p=>p.active).map(p=>['/loja/pagina/'+p.id,p.title])].map(([value,label])=>`<option value="${value}" ${previewOptionValue()===value?'selected':''}>${label}</option>`).join('')}
   function editorPage(){
     ensureDraft();
     const params=new URLSearchParams(location.search);params.set('storePreview','1');params.set('channel',channel);
@@ -961,13 +1030,14 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
     const row=document.querySelector('.builder-section-row.active strong');if(row&&section())row.textContent=section().title||labels[section().type];
     sendPreview();
   }
-  function select(id){if(!home().sections.some(s=>s.id===id))return;selected=id;render()}
+  function select(id){if(!sections().some(s=>s.id===id))return;selected=id;render()}
   function change(key,value){
     if(!canConfigureSite()||saving)return;
     const s=section();if(!s)return;
     if(key.startsWith('items.')){const [,index,field]=key.split('.');if(!s.items?.[Number(index)]||!(s.type==='collection-list'?['category','title','image','imageAlt']:['title','body','icon']).includes(field))return;if(s.type==='collection-list'&&field==='category'&&(!db.collections.includes(value)||s.items.some((item,i)=>i!==Number(index)&&item.category===value))){toast('Escolha uma coleção que ainda não está nesta lista.');render();return}s.items[Number(index)][field]=value}
     else if(s.type==='collection-list'&&['shape','imageFit','columns','mobileColumns','showHeading','showTitles','showArrows','showCounts','background','textColor','cardBackground','cardTextColor','titleAlign','headingSize','mobileCarousel','padding'].includes(key)){s[key]=['columns','mobileColumns','padding'].includes(key)?Number(value):value;}
-    else if(s.type==='collection'&&['contentAlign','productButtonLabel','productButtonColor','viewAllColor','viewAllAlign'].includes(key)){s[key]=key==='productButtonLabel'?String(value).slice(0,60):value;}
+    else if(['collection','recommendations'].includes(s.type)&&['contentAlign','productButtonLabel','productButtonColor','viewAllColor','viewAllAlign','showViewAll'].includes(key)){s[key]=key==='productButtonLabel'?String(value).slice(0,60):value;}
+    else if(['background','textColor','iconColor','position'].includes(key)){if(key==='position'&&!['before','after'].includes(value))return;s[key]=value;}
     else if(['eyebrow','title','subtitle','body','image','imageAlt','url','align','layout','buttonLabel','buttonLink','category','limit','showText'].includes(key))s[key]=key==='limit'?Math.max(1,Math.min(24,Number(value)||1)):key==='showText'?Boolean(value):value;
     else return;
     if(s.type==='collection-list'&&['shape','mobileCarousel'].includes(key))render();else refresh();
@@ -990,20 +1060,20 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
   function moveCollectionItem(index,step){if(!canConfigureSite()||saving||uploading)return;const items=section()?.type==='collection-list'?section().items:[],next=index+step;if(!Number.isInteger(index)||!items?.[index]||next<0||next>=items.length)return;[items[index],items[next]]=[items[next],items[index]];render();}
   function removeCollectionItem(index){if(!canConfigureSite()||saving||uploading)return;const s=section();if(s?.type!=='collection-list'||!Number.isInteger(index)||!s.items?.[index])return;s.items.splice(index,1);render();}
   function changeAnnouncement(key,value){if(!canConfigureSite()||saving||!['enabled','text','highlight'].includes(key))return;home().announcement[key]=value;if(key==='enabled')render();else refresh()}
-  function toggle(id,enabled){if(!canConfigureSite()||saving)return;const s=home().sections.find(s=>s.id===id);if(!s)return;s.enabled=enabled;render()}
-  function move(id,step){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id),j=i+step;if(i<0||j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];render()}
-  function addModal(){modal('Adicionar seção',`<p>Escolha o conteúdo para a página inicial. A nova seção começa oculta.</p><div class="builder-add-grid">${Object.entries(labels).map(([type,label])=>`<button onclick="storefront.add('${type}')">${icon(({banner:'image',image:'image',video:'eye',collection:'layers','collection-list':'layers',text:'page',benefits:'shield'})[type])}<strong>${label}</strong></button>`).join('')}</div>`)}
+  function toggle(id,enabled){if(!canConfigureSite()||saving)return;const s=sections().find(s=>s.id===id);if(!s)return;s.enabled=enabled;render()}
+  function move(id,step){if(!canConfigureSite()||saving)return;const list=sections(),i=list.findIndex(s=>s.id===id),j=i+step;if(i<0||j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];render()}
+  function addModal(){modal('Adicionar seção',`<p>Escolha o conteúdo para ${esc(pageTitle().toLowerCase())}. A nova seção começa oculta.</p><div class="builder-add-grid">${Object.entries(labels).map(([type,label])=>`<button onclick="storefront.add('${type}')">${icon(({banner:'image',image:'image',video:'eye',collection:'layers',recommendations:'layers','collection-list':'layers',text:'page',benefits:'shield'})[type])}<strong>${label}</strong></button>`).join('')}</div>`)}
   function add(type){
     if(!canConfigureSite()||saving||!labels[type])return;
-    if(home().sections.length>=80)return toast('O limite é de 80 seções.');
-    const base={id:newId(),type,enabled:false};
-    const presets={banner:{showText:false,eyebrow:'',title:'',subtitle:'',image:'',imageAlt:'',buttonLabel:'',buttonLink:'/loja/catalogo',align:'left'},collection:{eyebrow:'EXPLORE A LOJA',title:'Nossa seleção',category:'Todos',limit:4},image:{eyebrow:'FORTE OUTLET',title:'Sua casa merece esse cuidado.',body:'',image:'',imageAlt:'',layout:'image-left',buttonLabel:'',buttonLink:'/loja/catalogo'},video:{eyebrow:'INSPIRE-SE',title:'Veja de perto',body:'',url:''},text:{eyebrow:'NOSSA HISTÓRIA',title:'Sua casa merece o melhor.',body:'',buttonLabel:'',buttonLink:'/loja/catalogo'},benefits:{items:structuredClone(defaultBenefits)}};
+    if(sections().length>=(scope()==='home'?80:20))return toast('O limite de seções desta página foi atingido.');
+    const base={id:newId(),type,enabled:false,...(scope()==='home'?{}:{position:'after'})};
+    const presets={recommendations:{title:'Você também pode gostar',limit:4,showViewAll:false},banner:{showText:false,eyebrow:'',title:'',subtitle:'',image:'',imageAlt:'',buttonLabel:'',buttonLink:'/loja/catalogo',align:'left'},collection:{eyebrow:'EXPLORE A LOJA',title:'Nossa seleção',category:'Todos',limit:4},image:{eyebrow:'FORTE OUTLET',title:'Sua casa merece esse cuidado.',body:'',image:'',imageAlt:'',layout:'image-left',buttonLabel:'',buttonLink:'/loja/catalogo'},video:{eyebrow:'INSPIRE-SE',title:'Veja de perto',body:'',url:''},text:{eyebrow:'NOSSA HISTÓRIA',title:'Sua casa merece o melhor.',body:'',buttonLabel:'',buttonLink:'/loja/catalogo'},benefits:{items:structuredClone(defaultBenefits)}};
     presets['collection-list']={title:'O que você procura?',showHeading:true,headingSize:'medium',titleAlign:'left',shape:'square',imageFit:'cover',columns:6,mobileColumns:2,mobileCarousel:false,padding:40,showTitles:true,showArrows:false,showCounts:false,background:'#ffffff',textColor:'#1c2228',cardBackground:'#f5f5f3',cardTextColor:'#1c2228',items:visibleCollections().slice(0,6).map(category=>({id:newId(),category,title:'',image:'',imageAlt:''}))};
-    Object.assign(base,presets[type]);home().sections.push(base);selected=base.id;closeModal();render();toast('Seção adicionada ao rascunho.');return base.id;
+    Object.assign(base,presets[type]);sections(true).push(base);selected=base.id;closeModal();render();toast('Seção adicionada ao rascunho.');return base.id;
   }
-  function duplicate(id){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0||list.length>=80)return;const copy=structuredClone(list[i]);copy.id=newId();copy.enabled=false;list.splice(i+1,0,copy);selected=copy.id;render()}
-  function removeModal(id){const s=home().sections.find(s=>s.id===id);if(!s)return;modal('Excluir seção',`<p>Remover <strong>${esc(s.title||labels[s.type])}</strong> do rascunho?</p><div class="form-actions"><button class="btn" onclick="closeModal()">Manter seção</button><button class="btn danger" onclick="storefront.remove('${id}')">Remover do rascunho</button></div>`)}
-  function remove(id){if(!canConfigureSite()||saving)return;const list=home().sections,i=list.findIndex(s=>s.id===id);if(i<0)return;if(list.length===1)return toast('Oculte a última seção ou adicione outra antes de excluir.');list.splice(i,1);selected=list[Math.min(i,list.length-1)]?.id||'';closeModal();render()}
+  function duplicate(id){if(!canConfigureSite()||saving)return;const list=sections(),i=list.findIndex(s=>s.id===id);if(i<0||list.length>=(scope()==='home'?80:20))return;const copy=structuredClone(list[i]);copy.id=newId();if(copy.type==='collection-list')copy.items=copy.items.map(item=>({...item,id:newId()}));copy.enabled=false;list.splice(i+1,0,copy);selected=copy.id;render()}
+  function removeModal(id){const s=sections().find(s=>s.id===id);if(!s)return;modal('Excluir seção',`<p>Remover <strong>${esc(s.title||labels[s.type])}</strong> do rascunho?</p><div class="form-actions"><button class="btn" onclick="closeModal()">Manter seção</button><button class="btn danger" onclick="storefront.remove('${id}')">Remover do rascunho</button></div>`)}
+  function remove(id){if(!canConfigureSite()||saving)return;const list=sections(),i=list.findIndex(s=>s.id===id);if(i<0)return;if(scope()==='home'&&list.length===1)return toast('Oculte a última seção ou adicione outra antes de excluir.');list.splice(i,1);selected=list[Math.min(i,list.length-1)]?.id||'';closeModal();render()}
   async function uploadImage(input,key){
     const s=section(),file=input.files?.[0];if(!canConfigureSite()||saving||uploading||!s||!file)return;
     const match=/^items\.(\d+)\.image$/.exec(key);const target=match&&s.type==='collection-list'?s.items?.[Number(match[1])]:key==='image'?s:null;if(!target)return;
@@ -1028,6 +1098,7 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
   function navigate(value){
     if(value==='template:product'){const product=db.products.find(p=>p.active);if(!product)return toast('Ative um produto para visualizar a página de vendas.');value='/loja/produto/'+product.id;}
     if(value==='template:collection'){const category=visibleCollections()[0]||'Todos';value=category==='Todos'?'/loja/catalogo':'collection:'+encodeURIComponent(category);}
+    selected='@page';
     if(value.startsWith('collection:')){previewCategory=decodeURIComponent(value.slice(11));previewRoute='/loja/catalogo'}else{previewRoute=value;previewCategory='Todos'}
     previewView=value==='/loja/login'?'login':value==='/loja/cadastro'?'signup':'';
     if(!/^\/loja(?:\/|$)/.test(previewRoute))return;
@@ -1060,6 +1131,7 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
     if(event.data.type==='storefront:route'){
       if(!/^\/loja(?:\/|$)/.test(event.data.route||''))return;
       const previousScope=pageKey(previewRoute,previewCategory,previewView);
+      if(previousScope!==pageKey(event.data.route,event.data.category,event.data.view))selected='@page';
       previewRoute=event.data.route;previewCategory=event.data.category||'Todos';previewView=event.data.view||'';
       const node=document.querySelector('#builder-controls');if(node&&previousScope!==pageKey(previewRoute,previewCategory,previewView))node.innerHTML=editorControls();
       const title=document.querySelector('#builder-preview-title');if(title)title.textContent='Prévia · '+pageTitle();
@@ -1068,7 +1140,7 @@ html:has(#app>.store)::-webkit-scrollbar{width:8px;height:8px;background:#f5f7f6
   });
   window.addEventListener('beforeunload',event=>{if(dirty()){event.preventDefault();event.returnValue=''}});
   function resetDraft(){draft=null;baseline=null;draftScope='';}
-  return {init,announcement,storeHome,editorPage,change,changePage,changeColor,changeAnnouncement,toggle,move,addModal,add,duplicate,removeModal,remove,select,uploadImage,setPreview,render,mountPreview,navigate,setIdentity,publish,cancelChanges,dirty,pageKey,setCollectionItemOpen,addCollectionItem,moveCollectionItem,removeCollectionItem,resetDraft};
+  return {init,selectPage,changeGlobal,renderPageSections,sectionProducts,announcement,storeHome,editorPage,change,changePage,changeColor,changeAnnouncement,toggle,move,addModal,add,duplicate,removeModal,remove,select,uploadImage,setPreview,render,mountPreview,navigate,setIdentity,publish,cancelChanges,dirty,pageKey,setCollectionItemOpen,addCollectionItem,moveCollectionItem,removeCollectionItem,resetDraft};
 })();
 </script>
   <script>const $=s=>document.querySelector(s);
@@ -4161,9 +4233,10 @@ function assignProductCollections(product, names) { product.categories=[...new S
 let catalogSelection = new Set(), collectionSearch = '', collectionSortDraft = null;
 let catalogWriteBusy = false;
 function remapCollectionListSections(model,previous,name=null){
-  for(const section of model.storefront?.sections||[]){
-    if(section.type!=='collection-list')continue;
-    section.items=(section.items||[]).flatMap(item=>item.category!==previous?[item]:name?[{...item,category:name}]:[]);
+  const configs=[model.storefront,...(model.storeThemes||[]).map(theme=>theme.config)].filter(Boolean);
+  for(const config of configs)for(const section of [...(config.sections||[]),...Object.values(config.pageSettings||{}).flatMap(page=>page.sections||[])]){
+    if(section.type==='collection'&&section.category===previous){section.category=name||'Todos';if(!name)section.enabled=false;}
+    if(section.type==='collection-list')section.items=(section.items||[]).flatMap(item=>item.category!==previous?[item]:name?[{...item,category:name}]:[]);
   }
 }
 function applyCollectionEdit(model,previous,name,active,sort,ids=null) {
@@ -5650,7 +5723,7 @@ function layoutThemeEditorControls(markup){
  if(typeof document.createElement!=='function')return markup;
  const holder=document.createElement('template');holder.innerHTML=markup;if(!holder.content)return markup;const cards=[...holder.content.children];if(cards.length<2)return markup;
  const properties=cards.pop(),announcement=cards.shift();
- const tree='<details class="builder-announcement-settings"><summary>'+icon('page')+'Barra de avisos'+icon('down')+'</summary>'+announcement.outerHTML+'</details>'+cards.map(card=>card.outerHTML).join('');
+ const tree=announcement.outerHTML+cards.map(card=>card.outerHTML).join('');
  return '<div class="builder-tree">'+tree+'</div><div class="builder-properties">'+properties.outerHTML+'</div>';
 }
 function themeCover(theme){
@@ -5898,11 +5971,85 @@ function closeStoreMenu(){const menu=$('#store-menu-dialog');if(menu?.open)menu.
 document.addEventListener('click',event=>{if(event.target.closest('#store-menu-dialog a'))closeStoreMenu();if(event.target.id==='store-menu-dialog'){const bounds=event.target.getBoundingClientRect();if(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom)closeStoreMenu()}});
 document.addEventListener('cancel',event=>{if(event.target.id==='store-menu-dialog'){event.preventDefault();closeStoreMenu()}},true);
 
+function applyStoreChrome(){
+  const root=document.querySelector('#app>.store');if(!root)return;
+  const cfg=db.storefront?.pageSettings?.global||{};
+  for(const part of ['header','footer']){
+    let custom=false;
+    for(const suffix of ['Background','Text','Icon']){
+      const value=cfg[part+suffix];if(/^#[a-f0-9]{6}$/i.test(value||'')){root.style.setProperty('--theme-'+part+'-'+suffix.toLowerCase(),value);custom=true;}
+      else root.style.removeProperty('--theme-'+part+'-'+suffix.toLowerCase());
+    }
+    root.classList.toggle('custom-'+part,custom);
+  }
+}
+const storeHelpState={timer:null,hideTimer:null,observer:null,widget:null,position:null,lastMessage:-1,shownAt:0,nextAt:0,dismissed:false};
+window.addEventListener('resize',()=>storeHelpState.position?.());
+window.addEventListener('scroll',()=>storeHelpState.position?.(),{passive:true});
+function storeHelpAllowed(path=routePath()){
+  return /^\/loja(?:\/|$)/.test(path)&&!/^\/loja\/(?:checkout|login|cadastro|pedido|conta)(?:\/|$)/.test(path)&&db.storefront?.pageSettings?.global?.whatsappEnabled!==false;
+}
+function storeHelpMessage(index=0,path=routePath()){
+  const hour=Number(new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'numeric',hourCycle:'h23'}).format(new Date()));
+  const greeting=hour<12?'Bom dia':hour<18?'Boa tarde':'Boa noite';
+  const messages=[`${greeting}! Vamos encontrar o próximo favorito da sua casa?`,'Ficou com alguma dúvida? Nossa equipe pode ajudar.','Sua casa, do seu jeito. Conte com a gente para escolher.','Precisa conferir uma medida ou um detalhe? Chame a loja.'];
+  if(path.startsWith('/loja/produto/'))messages.push('Gostou desse móvel? Tire suas dúvidas antes de escolher.','Cor, tecido ou tamanho? Vamos ajudar você a decidir.');
+  else if(path==='/loja/carrinho')messages.push('Quase tudo pronto! Precisa de ajuda com os itens do carrinho?');
+  return messages[((index%messages.length)+messages.length)%messages.length];
+}
+function storeHelpLink(path=routePath()){
+  let message='Olá! Estou na loja online e gostaria de ajuda.';
+  if(path.startsWith('/loja/produto/')){const p=db.products.find(p=>p.id===Number(path.split('/')[3])&&p.active);if(p)message='Olá! Gostaria de tirar uma dúvida sobre '+p.name+'.';}
+  else if(path==='/loja/carrinho')message='Olá! Gostaria de ajuda com meu carrinho na loja online.';
+  return typeof storeWhatsAppUrl==='function'?storeWhatsAppUrl(message):'';
+}
+function dismissStoreHelp(){
+  storeHelpState.dismissed=true;storeHelpState.widget?.querySelector('.store-help-bubble')?.setAttribute('hidden','');
+  try{sessionStore.setItem('forte-help-dismissed-until',String(Date.now()+30*60*1000));}catch{}
+}
+function syncStoreHelp(){
+  const state=storeHelpState;state.observer?.disconnect();state.observer=null;state.widget=null;state.position=null;
+  if(!storeHelpAllowed()||!storeHelpLink()||!document.querySelector('#app>.store')){clearTimeout(state.timer);clearTimeout(state.hideTimer);state.timer=null;document.querySelector('#store-help')?.remove();return;}
+  let widget=document.querySelector('#store-help');
+  if(!widget){widget=document.createElement('aside');widget.id='store-help';widget.className='store-help';widget.setAttribute('aria-label','Atendimento da loja');document.querySelector('#app>.store').append(widget);}
+  const url=storeHelpLink();
+  widget.innerHTML=`<div class="store-help-bubble" hidden><a class="store-help-message" href="${esc(url)}" target="_blank" rel="noopener noreferrer"></a><button type="button" aria-label="Fechar sugestão de atendimento" onclick="dismissStoreHelp()">×</button></div><a class="store-help-launcher" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Falar com a loja pelo WhatsApp"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 .8A15.1 15.1 0 0 0 3 23.5L.9 31l7.7-2A15.1 15.1 0 1 0 16 .8Zm0 27.6a12.5 12.5 0 0 1-6.4-1.8l-.5-.3-4.6 1.2 1.2-4.5-.3-.5A12.6 12.6 0 1 1 16 28.4Zm7-9.4c-.4-.2-2.2-1.1-2.6-1.2-.3-.1-.6-.2-.8.2-.3.4-1 1.2-1.2 1.4-.2.3-.4.3-.8.1-1.9-.9-3.1-1.7-4.4-3.8-.3-.5.3-.4.9-1.6.1-.3.1-.5 0-.7l-1.2-2.8c-.3-.8-.6-.7-.8-.7h-.7c-.3 0-.7.1-1 .5s-1.3 1.3-1.3 3.1 1.4 3.6 1.6 3.8c.2.3 2.7 4.1 6.5 5.7 2.4 1 3.4 1.1 4.6.9.7-.1 2.2-.9 2.5-1.8.3-.9.3-1.7.2-1.8-.1-.2-.3-.3-.7-.5Z"/></svg></a>`;
+  state.widget=widget;
+  // Avoid covering the privacy choice or any open dialog; no contact is sent by a timer.
+  const position=()=>{
+    const notice=document.querySelector('#audience-consent'),mobile=window.innerWidth<=650;
+    let bottom=notice&&mobile?Math.max(18,window.innerHeight-notice.getBoundingClientRect().top+12):18;
+    const purchase=document.querySelector('.product-purchase>.btn')||document.querySelector('.store-content a[href*="checkout"]'),box=purchase?.getBoundingClientRect();
+    if(mobile&&box&&box.top<window.innerHeight&&box.bottom>window.innerHeight-90)bottom=Math.max(bottom,window.innerHeight-box.top+12);
+    widget.style.setProperty('--help-bottom',bottom+'px');widget.hidden=Boolean(document.querySelector('dialog[open]'));
+  };
+  state.position=position;
+  position();if(typeof MutationObserver!=='undefined'){state.observer=new MutationObserver(position);state.observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open']});}
+  clearTimeout(state.hideTimer);
+  const cfg=db.storefront?.pageSettings?.global||{};
+  let dismissedUntil=0;try{dismissedUntil=Number(sessionStore.getItem('forte-help-dismissed-until'))||0;}catch{}
+  state.dismissed=dismissedUntil>Date.now();
+  if(cfg.whatsappMessages===false||state.dismissed){clearTimeout(state.timer);state.timer=null;return;}
+  const interval=([60,90,180].includes(Number(cfg.whatsappInterval))?Number(cfg.whatsappInterval):90)*1000;
+  const tick=()=>{
+    state.timer=null;const bubble=state.widget?.querySelector('.store-help-bubble');
+    if(!bubble||!storeHelpAllowed()||state.dismissed)return;
+    if(document.hidden||state.widget.hidden||state.widget.matches(':hover')||state.widget.contains(document.activeElement)){state.nextAt=Date.now()+15000;state.timer=setTimeout(tick,15000);return;}
+    const count=routePath().startsWith('/loja/produto/')?6:routePath()==='/loja/carrinho'?5:4;
+    const next=(state.lastMessage+1+Math.floor(Math.random()*(count-1)))%count;state.lastMessage=next;
+    state.widget.querySelector('.store-help-message').textContent=storeHelpMessage(next);bubble.hidden=false;state.shownAt=Date.now();
+    state.hideTimer=setTimeout(()=>{if(!state.widget?.contains(document.activeElement))state.widget?.querySelector('.store-help-bubble')?.setAttribute('hidden','');},9000);
+    state.nextAt=Date.now()+interval;state.timer=setTimeout(tick,interval);
+  };
+  clearTimeout(state.timer);const delay=state.nextAt?Math.max(1200,state.nextAt-Date.now()):12000;state.nextAt=Date.now()+delay;state.timer=setTimeout(tick,delay);
+}
 function applyStorePageSettings(){
   if(!routePath().startsWith('/loja'))return;
+  applyStoreChrome();
   const key=storefront.pageKey(routePath(),catalogCategory,storeAuthView);
-  const cfg=db.storefront?.pageSettings?.[key];if(!cfg)return;
+  const cfg=db.storefront?.pageSettings?.[key]||{};
   const root=document.querySelector('.store-content')||document.querySelector('.auth-card');if(!root)return;
+  root.querySelectorAll('.page-theme-sections').forEach(node=>node.remove());
   if(typeof cfg.title==='string'&&cfg.title.trim()&&key!=='product'){const h=root.querySelector('h1');if(h)h.textContent=cfg.title}
   if(typeof cfg.intro==='string'&&cfg.intro.trim()){
     const heading=root.querySelector('.heading>div'),auth=root.classList.contains('auth-card');
@@ -5920,6 +6067,11 @@ function applyStorePageSettings(){
     root.classList.toggle('content-align-center',cfg.contentAlign==='center');
     if([2,3,4].includes(Number(cfg.columns))){const grid=root.querySelector('.catalog');if(grid){grid.classList.add('store-custom-grid');grid.style.setProperty('--store-columns',Number(cfg.columns))}}
   }
+  if(key!=='home')for(const position of ['before','after']){
+    const html=storefront.renderPageSections(routePath(),position);
+    if(html)root.insertAdjacentHTML(position==='before'?'afterbegin':'beforeend',`<div class="page-theme-sections sections-${position}">${html}</div>`);
+  }
+  normalizeLinks();
 }
 // Buffered copies keep native touch scrolling continuous in either direction.
 const carouselModulo=(value,count)=>count>0?((value%count)+count)%count:0;
@@ -6052,12 +6204,12 @@ function setupCollectionCarousels(){
   collectionCarouselsCleanup=()=>cleanups.forEach(cleanup=>cleanup());
 }
 const authPageBeforeStoreRuntime=authPage;
-authPage=(mode='login')=>{storeAuthView=mode==='signup'?'signup':'login';authPageBeforeStoreRuntime(mode);applyStorePageSettings();setupProductGallery();setupCollectionCarousels();notifyStorePreviewRoute()};
+authPage=(mode='login')=>{storeAuthView=mode==='signup'?'signup':'login';authPageBeforeStoreRuntime(mode);applyStorePageSettings();syncStoreHelp();setupProductGallery();setupCollectionCarousels();notifyStorePreviewRoute()};
 const renderBeforeStoreRuntime=render;
 render=()=>{
   const path=routePath();storeAuthView='';
   if(booted&&!bootError&&(path==='/loja/cadastro'||path==='/loja/login'))return authPage(path==='/loja/cadastro'?'signup':'login');
-  const result=renderBeforeStoreRuntime();applyStorePageSettings();setupProductGallery();setupCollectionCarousels();
+  const result=renderBeforeStoreRuntime();applyStorePageSettings();syncStoreHelp();setupProductGallery();setupCollectionCarousels();
   if(path.startsWith('/app/store-editor'))storefront.mountPreview();
   notifyStorePreviewRoute();return result;
 };

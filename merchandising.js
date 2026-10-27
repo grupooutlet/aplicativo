@@ -19,9 +19,10 @@ function assignProductCollections(product, names) { product.categories=[...new S
 let catalogSelection = new Set(), collectionSearch = '', collectionSortDraft = null;
 let catalogWriteBusy = false;
 function remapCollectionListSections(model,previous,name=null){
-  for(const section of model.storefront?.sections||[]){
-    if(section.type!=='collection-list')continue;
-    section.items=(section.items||[]).flatMap(item=>item.category!==previous?[item]:name?[{...item,category:name}]:[]);
+  const configs=[model.storefront,...(model.storeThemes||[]).map(theme=>theme.config)].filter(Boolean);
+  for(const config of configs)for(const section of [...(config.sections||[]),...Object.values(config.pageSettings||{}).flatMap(page=>page.sections||[])]){
+    if(section.type==='collection'&&section.category===previous){section.category=name||'Todos';if(!name)section.enabled=false;}
+    if(section.type==='collection-list')section.items=(section.items||[]).flatMap(item=>item.category!==previous?[item]:name?[{...item,category:name}]:[]);
   }
 }
 function applyCollectionEdit(model,previous,name,active,sort,ids=null) {

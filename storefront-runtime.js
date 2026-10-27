@@ -13,11 +13,85 @@ function closeStoreMenu(){const menu=$('#store-menu-dialog');if(menu?.open)menu.
 document.addEventListener('click',event=>{if(event.target.closest('#store-menu-dialog a'))closeStoreMenu();if(event.target.id==='store-menu-dialog'){const bounds=event.target.getBoundingClientRect();if(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom)closeStoreMenu()}});
 document.addEventListener('cancel',event=>{if(event.target.id==='store-menu-dialog'){event.preventDefault();closeStoreMenu()}},true);
 
+function applyStoreChrome(){
+  const root=document.querySelector('#app>.store');if(!root)return;
+  const cfg=db.storefront?.pageSettings?.global||{};
+  for(const part of ['header','footer']){
+    let custom=false;
+    for(const suffix of ['Background','Text','Icon']){
+      const value=cfg[part+suffix];if(/^#[a-f0-9]{6}$/i.test(value||'')){root.style.setProperty('--theme-'+part+'-'+suffix.toLowerCase(),value);custom=true;}
+      else root.style.removeProperty('--theme-'+part+'-'+suffix.toLowerCase());
+    }
+    root.classList.toggle('custom-'+part,custom);
+  }
+}
+const storeHelpState={timer:null,hideTimer:null,observer:null,widget:null,position:null,lastMessage:-1,shownAt:0,nextAt:0,dismissed:false};
+window.addEventListener('resize',()=>storeHelpState.position?.());
+window.addEventListener('scroll',()=>storeHelpState.position?.(),{passive:true});
+function storeHelpAllowed(path=routePath()){
+  return /^\/loja(?:\/|$)/.test(path)&&!/^\/loja\/(?:checkout|login|cadastro|pedido|conta)(?:\/|$)/.test(path)&&db.storefront?.pageSettings?.global?.whatsappEnabled!==false;
+}
+function storeHelpMessage(index=0,path=routePath()){
+  const hour=Number(new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'numeric',hourCycle:'h23'}).format(new Date()));
+  const greeting=hour<12?'Bom dia':hour<18?'Boa tarde':'Boa noite';
+  const messages=[`${greeting}! Vamos encontrar o próximo favorito da sua casa?`,'Ficou com alguma dúvida? Nossa equipe pode ajudar.','Sua casa, do seu jeito. Conte com a gente para escolher.','Precisa conferir uma medida ou um detalhe? Chame a loja.'];
+  if(path.startsWith('/loja/produto/'))messages.push('Gostou desse móvel? Tire suas dúvidas antes de escolher.','Cor, tecido ou tamanho? Vamos ajudar você a decidir.');
+  else if(path==='/loja/carrinho')messages.push('Quase tudo pronto! Precisa de ajuda com os itens do carrinho?');
+  return messages[((index%messages.length)+messages.length)%messages.length];
+}
+function storeHelpLink(path=routePath()){
+  let message='Olá! Estou na loja online e gostaria de ajuda.';
+  if(path.startsWith('/loja/produto/')){const p=db.products.find(p=>p.id===Number(path.split('/')[3])&&p.active);if(p)message='Olá! Gostaria de tirar uma dúvida sobre '+p.name+'.';}
+  else if(path==='/loja/carrinho')message='Olá! Gostaria de ajuda com meu carrinho na loja online.';
+  return typeof storeWhatsAppUrl==='function'?storeWhatsAppUrl(message):'';
+}
+function dismissStoreHelp(){
+  storeHelpState.dismissed=true;storeHelpState.widget?.querySelector('.store-help-bubble')?.setAttribute('hidden','');
+  try{sessionStore.setItem('forte-help-dismissed-until',String(Date.now()+30*60*1000));}catch{}
+}
+function syncStoreHelp(){
+  const state=storeHelpState;state.observer?.disconnect();state.observer=null;state.widget=null;state.position=null;
+  if(!storeHelpAllowed()||!storeHelpLink()||!document.querySelector('#app>.store')){clearTimeout(state.timer);clearTimeout(state.hideTimer);state.timer=null;document.querySelector('#store-help')?.remove();return;}
+  let widget=document.querySelector('#store-help');
+  if(!widget){widget=document.createElement('aside');widget.id='store-help';widget.className='store-help';widget.setAttribute('aria-label','Atendimento da loja');document.querySelector('#app>.store').append(widget);}
+  const url=storeHelpLink();
+  widget.innerHTML=`<div class="store-help-bubble" hidden><a class="store-help-message" href="${esc(url)}" target="_blank" rel="noopener noreferrer"></a><button type="button" aria-label="Fechar sugestão de atendimento" onclick="dismissStoreHelp()">×</button></div><a class="store-help-launcher" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Falar com a loja pelo WhatsApp"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 .8A15.1 15.1 0 0 0 3 23.5L.9 31l7.7-2A15.1 15.1 0 1 0 16 .8Zm0 27.6a12.5 12.5 0 0 1-6.4-1.8l-.5-.3-4.6 1.2 1.2-4.5-.3-.5A12.6 12.6 0 1 1 16 28.4Zm7-9.4c-.4-.2-2.2-1.1-2.6-1.2-.3-.1-.6-.2-.8.2-.3.4-1 1.2-1.2 1.4-.2.3-.4.3-.8.1-1.9-.9-3.1-1.7-4.4-3.8-.3-.5.3-.4.9-1.6.1-.3.1-.5 0-.7l-1.2-2.8c-.3-.8-.6-.7-.8-.7h-.7c-.3 0-.7.1-1 .5s-1.3 1.3-1.3 3.1 1.4 3.6 1.6 3.8c.2.3 2.7 4.1 6.5 5.7 2.4 1 3.4 1.1 4.6.9.7-.1 2.2-.9 2.5-1.8.3-.9.3-1.7.2-1.8-.1-.2-.3-.3-.7-.5Z"/></svg></a>`;
+  state.widget=widget;
+  // Avoid covering the privacy choice or any open dialog; no contact is sent by a timer.
+  const position=()=>{
+    const notice=document.querySelector('#audience-consent'),mobile=window.innerWidth<=650;
+    let bottom=notice&&mobile?Math.max(18,window.innerHeight-notice.getBoundingClientRect().top+12):18;
+    const purchase=document.querySelector('.product-purchase>.btn')||document.querySelector('.store-content a[href*="checkout"]'),box=purchase?.getBoundingClientRect();
+    if(mobile&&box&&box.top<window.innerHeight&&box.bottom>window.innerHeight-90)bottom=Math.max(bottom,window.innerHeight-box.top+12);
+    widget.style.setProperty('--help-bottom',bottom+'px');widget.hidden=Boolean(document.querySelector('dialog[open]'));
+  };
+  state.position=position;
+  position();if(typeof MutationObserver!=='undefined'){state.observer=new MutationObserver(position);state.observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open']});}
+  clearTimeout(state.hideTimer);
+  const cfg=db.storefront?.pageSettings?.global||{};
+  let dismissedUntil=0;try{dismissedUntil=Number(sessionStore.getItem('forte-help-dismissed-until'))||0;}catch{}
+  state.dismissed=dismissedUntil>Date.now();
+  if(cfg.whatsappMessages===false||state.dismissed){clearTimeout(state.timer);state.timer=null;return;}
+  const interval=([60,90,180].includes(Number(cfg.whatsappInterval))?Number(cfg.whatsappInterval):90)*1000;
+  const tick=()=>{
+    state.timer=null;const bubble=state.widget?.querySelector('.store-help-bubble');
+    if(!bubble||!storeHelpAllowed()||state.dismissed)return;
+    if(document.hidden||state.widget.hidden||state.widget.matches(':hover')||state.widget.contains(document.activeElement)){state.nextAt=Date.now()+15000;state.timer=setTimeout(tick,15000);return;}
+    const count=routePath().startsWith('/loja/produto/')?6:routePath()==='/loja/carrinho'?5:4;
+    const next=(state.lastMessage+1+Math.floor(Math.random()*(count-1)))%count;state.lastMessage=next;
+    state.widget.querySelector('.store-help-message').textContent=storeHelpMessage(next);bubble.hidden=false;state.shownAt=Date.now();
+    state.hideTimer=setTimeout(()=>{if(!state.widget?.contains(document.activeElement))state.widget?.querySelector('.store-help-bubble')?.setAttribute('hidden','');},9000);
+    state.nextAt=Date.now()+interval;state.timer=setTimeout(tick,interval);
+  };
+  clearTimeout(state.timer);const delay=state.nextAt?Math.max(1200,state.nextAt-Date.now()):12000;state.nextAt=Date.now()+delay;state.timer=setTimeout(tick,delay);
+}
 function applyStorePageSettings(){
   if(!routePath().startsWith('/loja'))return;
+  applyStoreChrome();
   const key=storefront.pageKey(routePath(),catalogCategory,storeAuthView);
-  const cfg=db.storefront?.pageSettings?.[key];if(!cfg)return;
+  const cfg=db.storefront?.pageSettings?.[key]||{};
   const root=document.querySelector('.store-content')||document.querySelector('.auth-card');if(!root)return;
+  root.querySelectorAll('.page-theme-sections').forEach(node=>node.remove());
   if(typeof cfg.title==='string'&&cfg.title.trim()&&key!=='product'){const h=root.querySelector('h1');if(h)h.textContent=cfg.title}
   if(typeof cfg.intro==='string'&&cfg.intro.trim()){
     const heading=root.querySelector('.heading>div'),auth=root.classList.contains('auth-card');
@@ -35,6 +109,11 @@ function applyStorePageSettings(){
     root.classList.toggle('content-align-center',cfg.contentAlign==='center');
     if([2,3,4].includes(Number(cfg.columns))){const grid=root.querySelector('.catalog');if(grid){grid.classList.add('store-custom-grid');grid.style.setProperty('--store-columns',Number(cfg.columns))}}
   }
+  if(key!=='home')for(const position of ['before','after']){
+    const html=storefront.renderPageSections(routePath(),position);
+    if(html)root.insertAdjacentHTML(position==='before'?'afterbegin':'beforeend',`<div class="page-theme-sections sections-${position}">${html}</div>`);
+  }
+  normalizeLinks();
 }
 // Buffered copies keep native touch scrolling continuous in either direction.
 const carouselModulo=(value,count)=>count>0?((value%count)+count)%count:0;
@@ -167,12 +246,12 @@ function setupCollectionCarousels(){
   collectionCarouselsCleanup=()=>cleanups.forEach(cleanup=>cleanup());
 }
 const authPageBeforeStoreRuntime=authPage;
-authPage=(mode='login')=>{storeAuthView=mode==='signup'?'signup':'login';authPageBeforeStoreRuntime(mode);applyStorePageSettings();setupProductGallery();setupCollectionCarousels();notifyStorePreviewRoute()};
+authPage=(mode='login')=>{storeAuthView=mode==='signup'?'signup':'login';authPageBeforeStoreRuntime(mode);applyStorePageSettings();syncStoreHelp();setupProductGallery();setupCollectionCarousels();notifyStorePreviewRoute()};
 const renderBeforeStoreRuntime=render;
 render=()=>{
   const path=routePath();storeAuthView='';
   if(booted&&!bootError&&(path==='/loja/cadastro'||path==='/loja/login'))return authPage(path==='/loja/cadastro'?'signup':'login');
-  const result=renderBeforeStoreRuntime();applyStorePageSettings();setupProductGallery();setupCollectionCarousels();
+  const result=renderBeforeStoreRuntime();applyStorePageSettings();syncStoreHelp();setupProductGallery();setupCollectionCarousels();
   if(path.startsWith('/app/store-editor'))storefront.mountPreview();
   notifyStorePreviewRoute();return result;
 };
