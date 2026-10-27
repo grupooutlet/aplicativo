@@ -20,6 +20,7 @@ const storefront=(()=>{
   const home=()=>editing()?ensureDraft():db.storefront;
   const dirty=()=>Boolean(draft&&JSON.stringify(draft)!==JSON.stringify(baseline));
   const scope=()=>pageKey(previewRoute,previewCategory,previewView);
+  const pageLabel=page=>typeof displayPageTitle==='function'?displayPageTitle(page):page.title;
   function sections(create=false){const model=home();if(scope()==='home')return model.sections;const cfg=model.pageSettings?.[scope()];if(!create)return cfg?.sections||[];model.pageSettings||={};model.pageSettings[scope()]||={};return model.pageSettings[scope()].sections||=[];}
   const section=()=>sections().find(s=>s.id===selected);
   const photo=(value)=>{const url=String(value||'').trim();return /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(url)||/^https?:\/\//i.test(url)?url:''};
@@ -149,7 +150,7 @@ const storefront=(()=>{
   }
   function pageTitle(){
     const key=pageKey(previewRoute,previewCategory,previewView);
-    if(key.startsWith('info:'))return db.pages.find(p=>p.id===Number(key.slice(5)))?.title||'Página institucional';
+    if(key.startsWith('info:')){const page=db.pages.find(p=>p.id===Number(key.slice(5)));return page?pageLabel(page):'Página institucional';}
     if(key==='product')return 'Página de vendas';
     if(key==='collection')return 'Coleção';
     return ({home:'Página inicial',catalog:'Catálogo',cart:'Carrinho',checkout:'Checkout',account:'Meus pedidos',order:'Pedido',login:'Login',signup:'Cadastro'})[key]||'Página da loja';
@@ -189,7 +190,7 @@ const storefront=(()=>{
   function editorControls(){const html=editorControlsContent();return typeof layoutThemeEditorControls==='function'?layoutThemeEditorControls(html):html;}
   function saveBar(){return `<div class="builder-save-status" role="status">${uploading?'Enviando imagem…':saving?'Salvando mudanças…':dirty()?'Você tem mudanças não salvas.':'Todas as mudanças estão salvas.'}</div><div class="actions"><button class="btn" aria-label="Cancelar mudanças" onclick="storefront.cancelChanges()" ${!dirty()||saving||uploading?'disabled':''}>${window.innerWidth<=650?'Cancelar':'Cancelar mudanças'}</button><button class="btn primary" aria-label="Salvar mudanças" onclick="storefront.publish()" ${!dirty()||saving||uploading?'disabled':''}>${window.innerWidth<=650?'Salvar':'Salvar mudanças'}</button></div>`}
   function previewOptionValue(){const key=pageKey(previewRoute,previewCategory,previewView);return key==='product'?'template:product':key==='collection'?'template:collection':previewRoute;}
-  function pageOptions(){return [['/loja','Página inicial'],['template:product','Página de vendas'],['template:collection','Coleção'],['/loja/carrinho','Carrinho'],['/loja/checkout','Checkout'],['/loja/conta','Meus pedidos'],['/loja/login','Login'],['/loja/cadastro','Cadastro'],...db.pages.filter(p=>p.active).map(p=>['/loja/pagina/'+p.id,p.title])].map(([value,label])=>`<option value="${value}" ${previewOptionValue()===value?'selected':''}>${label}</option>`).join('')}
+  function pageOptions(){return [['/loja','Página inicial'],['template:product','Página de vendas'],['template:collection','Coleção'],['/loja/carrinho','Carrinho'],['/loja/checkout','Checkout'],['/loja/conta','Meus pedidos'],['/loja/login','Login'],['/loja/cadastro','Cadastro'],...db.pages.filter(p=>p.active).map(p=>['/loja/pagina/'+p.id,pageLabel(p)])].map(([value,label])=>`<option value="${value}" ${previewOptionValue()===value?'selected':''}>${label}</option>`).join('')}
   function editorPage(){
     ensureDraft();
     const params=new URLSearchParams(location.search);params.set('storePreview','1');params.set('channel',channel);
