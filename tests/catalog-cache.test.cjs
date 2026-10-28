@@ -13,6 +13,7 @@ const get=(headers={},method='GET',suffix='')=>onRequest({request:new Request('h
  for(const [headers,method,suffix,expected] of [[{},'POST','',405],[{'Authorization':'Bearer private'},'GET','',400],[{},'GET','?private=1',400],[{'Sec-Fetch-Site':'cross-site'},'GET','',403]])assert.equal((await get(headers,method,suffix)).status,expected);
  assert.equal(calls,2,'Invalid requests never reach Supabase');cache.clear();status=402;
  r=await get();assert.equal(r.status,503);assert.equal(r.headers.get('Cache-Control'),'no-store');assert.equal((await r.json()).code,'CATALOG_QUOTA_RESTRICTED');await Promise.all(pending);assert.equal(cache.size,0,'Restricted or expired responses never become a stale catalog');
+ status=200;global.caches.default.match=async()=>{throw Error('Cache unavailable')};global.caches.default.put=()=>{throw Error('Cache unavailable')};assert.equal((await get()).status,200,'Optional edge cache failures cannot prevent a healthy catalog response');
  console.log('Catalog edge cache: coalesced public reads, 15s expiry policy, ETag/304, HEAD, explicit fresh stock, no credentials/cookies/private cache and quota failure verified.');
  }finally{global.fetch=originalFetch;global.caches=originalCaches}
 })().catch(error=>{console.error(error);process.exitCode=1});

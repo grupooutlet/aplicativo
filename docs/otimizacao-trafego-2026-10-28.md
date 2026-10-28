@@ -1,5 +1,7 @@
 # Redução de tráfego — 28/10/2026
 
+> Atualização: o plano Pro foi ativado, o serviço foi restabelecido e as versões WebP das 1.984 imagens foram publicadas. Consulte [a conclusão da recuperação](recuperacao-publicacao-2026-10-28.md). As seções sobre bloqueio abaixo registram o estado anterior à contratação.
+
 ## Diagnóstico e mudanças
 
 O bucket público contém 1.984 imagens (213.274.720 bytes). A cota de saída do Supabase mede bytes transferidos, inclusive respostas da CDN; ela não mede a quantidade de memória ocupada por um cache.

@@ -28,7 +28,12 @@ async function main(){
  const {root,images}=validatePlan(directory);
  console.log(JSON.stringify({mode:process.argv.includes('--apply')?'apply':'dry-run',images:images.length,files:images.reduce((n,i)=>n+i.files.length,0),bytes:images.reduce((n,i)=>n+i.files.reduce((s,f)=>s+f.bytes,0),0),originalsDeleted:0}));
  if(!process.argv.includes('--apply'))return;
- const input=await new Promise((resolve,reject)=>{let body='';process.stdin.setEncoding('utf8');process.stdin.on('data',chunk=>{body+=chunk;if(body.length>10000)reject(Error('Input too large'));if(body.includes('\n'))resolve(body.split('\n')[0])});process.stdin.on('end',()=>resolve(body))});
+ const input=await new Promise((resolve,reject)=>{
+  let body='';if(process.stdin.isTTY)process.stdin.setRawMode(true);process.stdin.setEncoding('utf8');
+  const finish=()=>{process.stdin.removeListener('data',receive);process.stdin.pause();if(process.stdin.isTTY)process.stdin.setRawMode(false);process.stdin.removeListener('end',finish);resolve(body.split(/[\r\n]/)[0])};
+  const receive=chunk=>{body+=chunk;if(body.length>10000){process.stdin.pause();reject(Error('Input too large'));return}if(/[\r\n]/.test(body))finish()};
+  process.stdin.on('data',receive);process.stdin.once('end',finish);
+ });
  const credentials=JSON.parse(input);if(credentials.email!=='grupooutlet.rj@gmail.com')throw Error('Use the authorized Grupo Outlet owner account');
  const key=fs.readFileSync(path.join(__dirname,'../production.js'),'utf8').match(/const backendKey = '([^']+)'/)[1];
  const request=async(route,options={})=>{const response=await fetch(backend+route,{...options,signal:AbortSignal.timeout(60000)});if(response.status===402)throw Error('Supabase quota restriction: stopped without bypass or catalog activation');return response};
@@ -39,16 +44,26 @@ async function main(){
   return {apikey:key,Authorization:'Bearer '+session.access_token};
  };
  const verified=new Map();
- // Upload serially to avoid exhausting bandwidth/memory. Never overwrite existing originals.
- for(const image of images){
+ // Bounded parallelism; each acknowledged object is downloaded once and checksum verified.
+ const workers=Math.max(1,Math.min(6,Number(process.argv.find(arg=>arg.startsWith('--workers='))?.slice(10))||4));
+ let next=0,completed=0,uploadedFiles=0,verifiedBytes=0,failed=false;
+ const started=Date.now();
+ const uploadOne=async image=>{
   for(const file of image.files){
-   const h=await headers(),publicPath='/storage/v1/object/public/'+bucket+'/'+file.object;
-   let response=await request(publicPath,{method:'HEAD'});
-   if(response.status===404){response=await request('/storage/v1/object/'+bucket+'/'+file.object,{method:'POST',headers:{...h,'Content-Type':'image/webp','Cache-Control':'max-age=31536000, immutable','x-upsert':'false'},body:fs.readFileSync(path.join(root,file.file))});if(!response.ok)throw Error('Image upload failed: '+response.status);response=await request(publicPath,{method:'HEAD'})}
-   if(!response.ok||!response.headers.get('Content-Type')?.startsWith('image/webp')||Number(response.headers.get('Content-Length'))!==file.bytes)throw Error('Uploaded image verification failed; no catalog activation');
+   const h=await headers(),bytes=fs.readFileSync(path.join(root,file.file));
+   const response=await request('/storage/v1/object/'+bucket+'/'+file.object,{method:'POST',headers:{...h,'Content-Type':'image/webp','Cache-Control':'max-age=31536000, immutable','x-upsert':'false'},body:bytes});
+   if(!response.ok){const problem=await response.json().catch(()=>({}));if(![400,409].includes(response.status)||!(['Duplicate','ResourceAlreadyExists','KeyAlreadyExists'].includes(problem.error||problem.code)||String(problem.statusCode)==='409'))throw Error('Image upload failed: '+response.status)}
+   const checked=await request('/storage/v1/object/authenticated/'+bucket+'/'+file.object,{headers:h});
+   if(!checked.ok||!checked.headers.get('Content-Type')?.startsWith('image/webp'))throw Error('Uploaded image unavailable; no catalog activation');
+   const checkedBytes=Buffer.from(await checked.arrayBuffer());
+   if(checkedBytes.length!==file.bytes||crypto.createHash('sha256').update(checkedBytes).digest('hex')!==file.sha256)throw Error('Uploaded image checksum failed; no catalog activation');
+   uploadedFiles++;verifiedBytes+=file.bytes;
   }
-  verified.set(image.originalUrl,image.activationUrl);
- }
+  verified.set(image.originalUrl,image.activationUrl);completed++;
+  if(completed%50===0||completed===images.length)console.log(JSON.stringify({completed,total:images.length,verifiedFiles:uploadedFiles,verifiedBytes,elapsedSeconds:Math.round((Date.now()-started)/1000)}));
+ };
+ const results=await Promise.allSettled(Array.from({length:workers},async()=>{while(!failed&&next<images.length){const image=images[next++];try{await uploadOne(image)}catch(error){failed=true;throw error}}}));
+ const failure=results.find(result=>result.status==='rejected');if(failure)throw failure.reason;
  // Rebase on the latest complete private state immediately before the atomic, version-checked save.
  const stateResponse=await request('/rest/v1/app_state?select=data,version&id=eq.1',{headers:await headers()});if(!stateResponse.ok)throw Error('Could not read current catalog');
  const state=(await stateResponse.json())[0];if(!state?.data?.products)throw Error('Invalid current catalog');
@@ -68,7 +83,9 @@ async function main(){
   const response=await request('/rest/v1/rpc/manage_store_theme',{method:'POST',headers:{...await headers(),'Content-Type':'application/json'},body:JSON.stringify({p_action:'save',p_id:theme.id,p_name:null,p_config:config,p_expected:theme.config,p_expected_live:null})});
   if(!response.ok)throw Error('Theme changed in another session; previously completed changes are safe. Rerun to resume.');version=(await response.json()).version;changedThemes++;
  }
- console.log(JSON.stringify({verifiedImages:verified.size,changedProducts,changedThemes,version,ordersModified:0,originalsDeleted:0}));
+ const publication={publishedAt:new Date().toISOString(),verifiedImages:verified.size,verifiedFiles:uploadedFiles,verifiedBytes,changedProducts,changedThemes,version,ordersModified:0,originalsDeleted:0};
+ fs.writeFileSync(path.join(root,'publication.json'),JSON.stringify(publication,null,2));
+ console.log(JSON.stringify(publication));
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1});
 module.exports={rebaseProducts,rebaseThemeImages,validatePlan};
