@@ -174,18 +174,19 @@ function productCardAppearance(config={}) {
 }
 shopProduct = (product,config={}) => {
   const appearance=productCardAppearance(config);
-  return `<article class="shop-product card-align-${appearance.align}" style="${appearance.style}"><a class="product-card-link" href="/loja/produto/${product.id}" title="${esc(product.name)}"><div class="product-photo"><img src="${esc(productMediaUrl(product.image)||'assets/product-placeholder.svg')}" alt="${esc(product.name)}" loading="lazy"></div><h3>${esc(product.name)}</h3></a>
+  return `<article class="shop-product card-align-${appearance.align}" style="${appearance.style}"><a class="product-card-link" href="/loja/produto/${product.id}" title="${esc(product.name)}"><div class="product-photo"><img ${productImageAttrs(product.image,'card')} alt="${esc(product.name)}"></div><h3>${esc(product.name)}</h3></a>
     <div class="product-card-price">${priceMarkup(product)}</div>
     <a class="btn product-card-button" href="/loja/produto/${product.id}" aria-label="${esc(appearance.label)}: ${esc(product.name)}">${esc(appearance.label)}</a></article>`;
 };
+const productImageAttrs=(value,role,options={})=>typeof mediaImageAttributes==='function'?mediaImageAttributes(value,role,options):`${options.defer?'data-media-src':'src'}="${esc(productMediaUrl(value)||'assets/product-placeholder.svg')}" loading="${options.eager?'eager':'lazy'}" decoding="async"`;
 const productMediaUrl=value=>typeof publicMediaUrl==='function'?publicMediaUrl(value):String(value||'');
 productPage = id => {
   const product = db.products.find(item => item.id === id && item.active);
   if (!product) return '<div class="empty">Este produto não está disponível. <a href="/loja/catalogo">Voltar ao catálogo</a></div>';
-  const images = productImages(product).map(productMediaUrl);
+  const images = productImages(product);
   return `<div class="store-content product-page">
-    <section class="detail-product"><div class="product-gallery"><div class="product-photo-stage"><div class="product-photo-rail" tabindex="0" role="region" aria-roledescription="carrossel" aria-label="Fotos de ${esc(product.name)}. Deslize para ver a próxima foto.">${images.map((url,index)=>`<div class="product-photo-slide" role="group" aria-roledescription="slide" aria-label="Foto ${index+1} de ${images.length}"><img ${index===0?'id="main-product-photo"':''} class="detail-main-photo" src="${esc(url)}" alt="${esc(product.name)} · foto ${index+1}" draggable="false" ${index?'loading="lazy"':''}></div>`).join('')}</div>${images.length>1?`<span class="product-photo-counter" aria-live="polite" aria-atomic="true">1 / ${images.length}</span>`:''}</div>
-    ${images.length>1?`<div class="detail-thumbs" role="group" aria-label="Fotos do produto. Deslize para ver mais imagens.">${images.map((url, index) => `<button type="button" class="${index===0?'is-selected':''}" onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}" aria-pressed="${index===0}"><img src="${esc(url)}" alt="" draggable="false" loading="lazy" decoding="async"></button>`).join('')}</div>`:''}</div>
+    <section class="detail-product"><div class="product-gallery"><div class="product-photo-stage"><div class="product-photo-rail" tabindex="0" role="region" aria-roledescription="carrossel" aria-label="Fotos de ${esc(product.name)}. Deslize para ver a próxima foto.">${images.map((url,index)=>`<div class="product-photo-slide" role="group" aria-roledescription="slide" aria-label="Foto ${index+1} de ${images.length}"><img ${index===0?'id="main-product-photo"':''} class="detail-main-photo" ${productImageAttrs(url,'detail',{defer:index>0,eager:index===0})} alt="${esc(product.name)} · foto ${index+1}" draggable="false"></div>`).join('')}</div>${images.length>1?`<span class="product-photo-counter" aria-live="polite" aria-atomic="true">1 / ${images.length}</span>`:''}</div>
+    ${images.length>1?`<div class="detail-thumbs" role="group" aria-label="Fotos do produto. Deslize para ver mais imagens.">${images.map((url, index) => `<button type="button" class="${index===0?'is-selected':''}" onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}" aria-pressed="${index===0}"><img ${productImageAttrs(url,'thumb')} alt="" draggable="false"></button>`).join('')}</div>`:''}</div>
     <div class="product-summary"><h1>${esc(product.name)}</h1>
     <p class="product-availability ${available(product.id)>0?'in-stock':'sold-out'}"><i aria-hidden="true"></i>${available(product.id)>0?'Disponível para compra':'Indisponível no momento'}</p>
     <div class="product-price-block" aria-label="Preço do produto">${priceMarkup(product)}</div>
@@ -214,7 +215,7 @@ function cartConfirmationModal() {
   modal('Seu carrinho', `<div class="cart-confirmation">${db.cart.map(item => {
     const product = db.products.find(product => product.id === item.id);
     if (!product) return '';
-    return `<div class="cart-confirmation-item"><img src="${esc(product.image)}" alt="${esc(product.name)}"><div><strong>${esc(product.name)}</strong><small>${esc(optionText(item.options))}</small><small>${item.qty} × ${money(salePrice(product))}</small></div><strong>${money(item.qty * salePrice(product))}</strong></div>`;
+    return `<div class="cart-confirmation-item"><img ${productImageAttrs(product.image,'thumb')} alt="${esc(product.name)}"><div><strong>${esc(product.name)}</strong><small>${esc(optionText(item.options))}</small><small>${item.qty} × ${money(salePrice(product))}</small></div><strong>${money(item.qty * salePrice(product))}</strong></div>`;
   }).join('')}<div class="total-line final"><span>Produtos</span><strong>${money(cartTotal())}</strong></div>
   <div class="form-actions">${button('Continuar comprando', 'type="button" onclick="closeModal()"')}${button('Finalizar compra', 'type="button" onclick="closeModal();go(\'/loja/checkout\')"', 'primary', 'chevron')}</div></div>`);
 }
@@ -236,7 +237,7 @@ cartPage = () => `<div class="store-content">${heading('Seu carrinho', 'Falta po
     const product = db.products.find(value => value.id === item.id);
     if (!product) return '';
     const choices = optionText(item.options);
-    return `<div class="cart-line"><img src="${esc(product.image)}" alt="${esc(product.name)}"><div><h3>${esc(product.name)}</h3>
+    return `<div class="cart-line"><img ${productImageAttrs(product.image,'thumb')} alt="${esc(product.name)}"><div><h3>${esc(product.name)}</h3>
       ${choices ? `<small class="cart-options">${esc(choices)}</small>` : ''}
       <span class="subtle">${money(salePrice(product))} / un.</span>
       <div class="qty" style="margin-top:10px"><button onclick="changeCart(${index},-1)" aria-label="Diminuir quantidade">−</button><span>${item.qty}</span>

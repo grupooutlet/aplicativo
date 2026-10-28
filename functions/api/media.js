@@ -7,11 +7,25 @@ export async function onRequest(context){
  if(!['GET','HEAD'].includes(request.method))return failure(405);
  if(request.headers.get('Sec-Fetch-Site')==='cross-site')return failure(403);
  const path=url.searchParams.get('path')||'';
- if([...url.searchParams.keys()].length!==1||path.length>240||!/^(?:products|storefront)\/[A-Za-z0-9_-]+\.(?:jpe?g|png|webp)$/i.test(path))return failure(400);
+ if([...url.searchParams.keys()].length!==1||path.length>240||!/^(?:products|storefront)\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:jpe?g|png|webp)$/i.test(path))return failure(400);
  const key=new Request(url.origin+'/api/media?path='+encodeURIComponent(path),{method:'GET'}),cache=typeof caches!=='undefined'?caches.default:null;
  try{
   const hit=cache?await cache.match(key):null;
-  if(hit)return new Response(request.method==='HEAD'?null:hit.body,{status:200,headers:hit.headers});
+  if(hit)return mediaReply(request,hit);
+  const existing=pendingMedia.get(key.url);
+  const pending=existing||fetchMedia(context,key,path,cache);if(!existing)pendingMedia.set(key.url,pending);
+  try{return mediaReply(request,(await pending).clone())}finally{if(pendingMedia.get(key.url)===pending)pendingMedia.delete(key.url)}
+ }catch{return failure(503);}
+}
+
+const pendingMedia=new Map();
+function mediaReply(request,response){
+ const etag=response.headers.get('ETag'),condition=request.headers.get('If-None-Match');
+ if(response.status===200&&etag&&condition?.split(',').some(value=>value.trim()==='*'||value.trim().replace(/^W\//,'')===etag.replace(/^W\//,'')))return new Response(null,{status:304,headers:response.headers});
+ return new Response(request.method==='HEAD'?null:response.body,{status:response.status,headers:response.headers});
+}
+async function fetchMedia(context,key,path,cache){
+ try{
   const upstream=await fetch(source+path,{redirect:'error',signal:AbortSignal.timeout(12000)});
   if(!upstream.ok)return failure(upstream.status===404?404:503);
   const type=upstream.headers.get('Content-Type')?.split(';')[0]?.toLowerCase();
@@ -21,6 +35,6 @@ export async function onRequest(context){
   const etag=upstream.headers.get('ETag');if(etag)headers.ETag=etag;
   const response=new Response(bytes,{headers});
   if(cache)context.waitUntil(cache.put(key,response.clone()).catch(()=>{}));
-  return request.method==='HEAD'?new Response(null,{headers}):response;
- }catch{return failure(503);}
+  return response;
+ }catch{return failure(503)}
 }

@@ -10,3 +10,5 @@ source-*.html
 source-*.xml
 source-*.txt
 source-*.json
+
+test-results/

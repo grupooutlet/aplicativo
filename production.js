@@ -11,8 +11,13 @@ function publicMediaUrl(value){
   const raw=String(value||'');
   if(!/^https:\/\/(?:www\.)?forteoutlet\.com\.br$/.test(location.origin)&&!/^https:\/\/(?:[a-z0-9-]+\.)?forte-outlet\.pages\.dev$/.test(location.origin))return raw;
   const prefix='https://rwxqytomiorsrxpgtjin.supabase.co/storage/v1/object/public/product-photos/';
-  const path=raw.startsWith(prefix)?raw.slice(prefix.length):'';
-  return /^(?:products|storefront)\/[A-Za-z0-9_-]+\.(?:jpe?g|png|webp)$/i.test(path)?basePath+'api/media?path='+encodeURIComponent(path):raw;
+  const path=raw.startsWith(prefix)?raw.slice(prefix.length).split('#')[0]:'';
+  return path.length<=240&&/^(?:products|storefront)\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:jpe?g|png|webp)$/i.test(path)?basePath+'api/media?path='+encodeURIComponent(path):raw;
+}
+function mediaImageAttributes(value,role='card',options={}){
+  if(typeof responsiveMediaAttributes==='function')return responsiveMediaAttributes(value,role,options);
+  const name=options.defer?'data-media-src':'src';
+  return `${name}="${esc(publicMediaUrl(value||'assets/product-placeholder.svg'))}" loading="${options.eager?'eager':'lazy'}" decoding="async"`;
 }
 function rememberStoreSupport(settings){
   if(!settings)return;try{localStore.setItem(supportStorageKey,JSON.stringify({name:settings.name,phone:settings.phone,email:settings.email,verifiedAt:new Date().toISOString()}));}catch{}
@@ -54,18 +59,48 @@ function requestHeaders(authenticated = false) {
   if (authenticated && authSession?.access_token) headers.Authorization = `Bearer ${authSession.access_token}`;
   return headers;
 }
-async function backendRequest(path, options = {}, authenticated = false) {
-  if (authenticated) await refreshAuth();
-  const response = await fetch(backendUrl + path, {
-    ...options,
-    headers: { ...requestHeaders(authenticated), ...(options.headers || {}) }
-  });
+const pendingPublicReads = new Map();
+let publicCatalogRevision = 0, publicCatalogNeedsFresh = false;
+let publicCatalogPending = null, publicCatalogSnapshot = null;
+function invalidatePublicCatalog() {
+  publicCatalogRevision++;
+  publicCatalogNeedsFresh = true;
+}
+async function backendJson(response) {
   if (!response.ok) {
     const problem = await response.json().catch(() => ({}));
-    throw new Error(problem.message || problem.error_description || `Falha no serviço (${response.status}).`);
+    const error = new Error(problem.message || problem.error_description || `Falha no serviço (${response.status}).`);
+    error.status = response.status;
+    error.code = problem.code || problem.error || '';
+    throw error;
   }
   if (response.status === 204) return null;
   return response.json();
+}
+async function backendRequest(path, options = {}, authenticated = false) {
+  if (authenticated) await refreshAuth();
+  const method = (options.method || 'GET').toUpperCase();
+  const headers = { ...requestHeaders(authenticated), ...(options.headers || {}) };
+  // Only simultaneous, anonymous GETs are shared. Orders, sessions and writes are never cached.
+  const share = method === 'GET' && !authenticated && !options.signal && !options.body &&
+    !Object.keys(headers).some(key => key.toLowerCase() === 'authorization');
+  const key = share ? JSON.stringify([publicCatalogRevision, path, headers, options.credentials, options.cache, options.mode]) : '';
+  let pending = share && pendingPublicReads.get(key);
+  if (!pending) {
+    pending = fetch(backendUrl + path, { ...options, headers }).then(backendJson).then(value => {
+      // Conservatively invalidate after successful writes, including RPCs. A subsequent catalog
+      // refresh must reflect confirmed checkout/stock changes rather than a short-lived edge copy.
+      if (method !== 'GET' && method !== 'HEAD') invalidatePublicCatalog();
+      return value;
+    });
+    if (share) pendingPublicReads.set(key, pending);
+  }
+  try {
+    const value = await pending;
+    return share && value != null ? JSON.parse(JSON.stringify(value)) : value;
+  } finally {
+    if (share && pendingPublicReads.get(key) === pending) pendingPublicReads.delete(key);
+  }
 }
 function rememberAuth(session) {
   authSession = {
@@ -122,12 +157,42 @@ async function refreshSharedAuth() {
   }
   rememberAuth(await response.json());
 }
+function usesPagesCatalog() {
+  return /^https:\/\/(?:www\.)?forteoutlet\.com\.br$/.test(location.origin) ||
+    /^https:\/\/(?:[a-z0-9-]+\.)?forte-outlet\.pages\.dev$/.test(location.origin);
+}
+async function readPublicCatalog(revision) {
+  if (!usesPagesCatalog()) return backendRequest('/rest/v1/shop_public?select=data&id=eq.1');
+  const headers = {};
+  if (publicCatalogSnapshot?.etag) headers['If-None-Match'] = publicCatalogSnapshot.etag;
+  if (publicCatalogNeedsFresh) headers['X-Catalog-Refresh'] = '1';
+  const response = await fetch(basePath + 'api/catalog', { headers, credentials: 'omit' });
+  if (response.status === 304) {
+    if (!publicCatalogSnapshot) throw new Error('Não foi possível atualizar o catálogo. Tente novamente.');
+    return JSON.parse(JSON.stringify(publicCatalogSnapshot.rows));
+  }
+  const rows = await backendJson(response);
+  if (revision === publicCatalogRevision && rows?.[0]?.data) {
+    publicCatalogSnapshot = { etag: response.headers?.get('ETag') || '', rows: JSON.parse(JSON.stringify(rows)) };
+  }
+  return rows;
+}
 async function loadCatalog() {
-  const rows = await backendRequest('/rest/v1/shop_public?select=data&id=eq.1');
+  const revision = publicCatalogRevision;
+  if (!publicCatalogPending || publicCatalogPending.revision !== revision) {
+    publicCatalogPending = { revision, promise: readPublicCatalog(revision) };
+  }
+  const pending = publicCatalogPending;
+  let rows;
+  try { rows = await pending.promise; }
+  finally { if (publicCatalogPending === pending) publicCatalogPending = null; }
+  // A read started before a successful mutation cannot overwrite its newer stock/catalog state.
+  if (revision !== publicCatalogRevision) return loadCatalog();
   if (!rows?.[0]?.data) throw new Error('O catálogo ainda não está disponível.');
+  publicCatalogNeedsFresh = false;
   rememberStoreSupport(rows[0].data.settings);
   const cart = safeJson(localStore.getItem(cartStorageKey), []);
-  db = { ...defaults(), ...rows[0].data, orders: [], team: [], movements: [], cart: Array.isArray(cart) ? cart : [] };
+  db = { ...defaults(), ...JSON.parse(JSON.stringify(rows[0].data)), orders: [], team: [], movements: [], cart: Array.isArray(cart) ? cart : [] };
   storefront.init(db);
 }
 async function loadAdminState() {

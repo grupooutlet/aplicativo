@@ -203,7 +203,7 @@ checkoutPage = () => {
 function checkoutCartItems() {
   return db.cart.map((item, index) => {
     const product = db.products.find(product => product.id === item.id);
-    return `<div class="checkout-cart-item"><div class="cart-line"><img src="${esc(product.image)}" alt=""><div><h3>${esc(product.name)}</h3><small>${item.qty} × ${money(salePrice(product))}</small></div></div>
+    return `<div class="checkout-cart-item"><div class="cart-line"><img ${mediaImageAttributes(product.image,'thumb')} alt=""><div><h3>${esc(product.name)}</h3><small>${item.qty} × ${money(salePrice(product))}</small></div></div>
       ${productVariations(product).map(option => `<label class="field">${esc(option.name)}<select class="checkout-product-option" data-cart-index="${index}" data-option-name="${esc(option.name)}" required onchange="updateCheckoutProductOptions()">${option.values.length > 1 ? `<option value="" disabled ${!option.values.includes(item.options?.[option.name]) ? 'selected' : ''}>Selecione ${esc(option.name.toLowerCase())}</option>` : ''}${option.values.map(value => `<option value="${esc(value)}" ${option.values.length === 1 || item.options?.[option.name] === value ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select></label>`).join('')}</div>`;
   }).join('');
 }
@@ -428,7 +428,7 @@ function orderItemVisual(item){
   const product=item.stockTracked===false?null:db.products.find(p=>Number(p.id)===Number(item.id));
   const raw=product?.image||productImages(product)[0]||item.image||'';
   const image=/^https?:\/\/[^\s]+$/i.test(raw)||/^assets\/[\w./-]+$/.test(raw)||/^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/.test(raw)?raw:'assets/product-placeholder.svg';
-  return `<div class="order-item-product">${item.stockTracked===false?`<span class="order-item-service" aria-hidden="true">${icon('shield')}</span>`:`<img class="order-item-photo" src="${esc(image)}" alt="" width="44" height="44" loading="lazy" onerror="this.onerror=null;this.src='assets/product-placeholder.svg'">`}<span>${esc(item.name)}</span></div>`;
+  return `<div class="order-item-product">${item.stockTracked===false?`<span class="order-item-service" aria-hidden="true">${icon('shield')}</span>`:`<img class="order-item-photo" ${mediaImageAttributes(image,'thumb',{dimensions:false})} width="44" height="44" alt="" onerror="this.onerror=null;this.src='assets/product-placeholder.svg'">`}<span>${esc(item.name)}</span></div>`;
 }
 const canEditOrderNotes=()=>isOwner&&canSell()&&['master','admin'].includes(currentProfile?.role);
 const canCancelOrders=()=>isOwner&&canSell()&&['master','admin'].includes(currentProfile?.role);

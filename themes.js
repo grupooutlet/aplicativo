@@ -21,7 +21,7 @@ function themeCover(theme){
  const sections=theme.config?.sections||[],image=sections.find(section=>section.enabled!==false&&['banner','image'].includes(section.type)&&section.image)?.image||db.products.find(product=>product.active&&product.image)?.image||'';
  return /^https?:\/\//i.test(image)||/^data:image\/(?:png|jpeg|webp);base64,/i.test(image)?image:'';
 }
-function themeCoverMarkup(theme,large=false){const image=themeCover(theme);return '<div class="theme-cover '+(large?'theme-cover-large':'')+'">'+(image?'<img src="'+esc(image)+'" alt="Imagem de capa de '+esc(theme.name)+'" loading="lazy">':'<div class="theme-cover-empty">'+icon('palette')+'<span>Seu tema, do seu jeito</span></div>')+'</div>';}
+function themeCoverMarkup(theme,large=false){const image=themeCover(theme);return '<div class="theme-cover '+(large?'theme-cover-large':'')+'">'+(image?'<img '+mediaImageAttributes(image,'card')+' alt="Imagem de capa de '+esc(theme.name)+'">':'<div class="theme-cover-empty">'+icon('palette')+'<span>Seu tema, do seu jeito</span></div>')+'</div>';}
 function themeActions(theme,active=false){
  return '<details class="theme-more"><summary class="btn" aria-label="Mais opções de '+esc(theme.name)+'">•••</summary><div><button onclick="renameStoreThemeModal(\''+theme.id+'\')">'+icon('edit')+'Renomear</button><button onclick="duplicateStoreTheme(\''+theme.id+'\')">'+icon('layers')+'Duplicar</button><a href="/app/theme-preview/'+theme.id+'">'+icon('eye')+'Pré-visualizar</a><button class="theme-delete" onclick="deleteStoreTheme(\''+theme.id+'\')" '+(active?'disabled title="Publique outro tema antes de excluir este"':'')+'>'+icon('trash')+'Excluir</button></div></details>';
 }

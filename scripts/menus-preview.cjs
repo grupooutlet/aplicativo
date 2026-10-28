@@ -15,6 +15,11 @@ if(process.env.QA_SHIPPING==='1'){
  model.settings.shippingMode='regional';model.settings.shippingOptions=[{id:'pickup',name:'Retirada na loja',price:0,delivery:'Retirada',active:true},...require('./prepare-regional-shipping.cjs').map((o,i)=>({...o,id:'qa-region-'+i}))];
  model.settings.paymentMethods=[{id:'pix',kind:'pix',title:'Pix',active:true,installments:[{count:1,rate:0}]},{id:'credit',kind:'credit',title:'Cartão de crédito',active:true,installments:[{count:1,rate:0},{count:3,rate:5}]}];
 }
+if(process.env.QA_MEDIA_OPTIMIZATION==='1'){
+ const plan=require('../test-results/catalog-optimized-v1/upload-plan.json');
+ const examples=plan.images.filter(i=>i.recommended&&i.files.some(f=>f.profile==='detail')).slice(0,6);
+ model.products.forEach((p,i)=>{p.image=examples[i%examples.length].activationUrl;p.images=examples.slice(0,6).map(image=>image.activationUrl)});
+}
 const qaPosition=process.env.QA_STAFF_POSITION||'Principal';
 if(process.env.QA_COLLECTION_LIST==='1'){
  const names=['Sofás','Racks','Guarda-roupas','Mesas de Jantar','Poltronas','Camas e colchões'];
@@ -144,9 +149,23 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  return reply({message:'Esta é uma prévia isolada; nenhuma alteração será enviada à loja.'},400);
 };</script>`;
 const mobileWidth=[320,360,390,430].includes(Number(process.env.QA_MOBILE_WIDTH))?Number(process.env.QA_MOBILE_WIDTH):390;
-const html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace('<head>','<head>'+preload).replace("previewSize==='mobile'?390:1280","previewSize==='mobile'?"+mobileWidth+":1280");
+let html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace('<head>','<head>'+preload).replace("previewSize==='mobile'?390:1280","previewSize==='mobile'?"+mobileWidth+":1280");
+if(process.env.QA_MEDIA_OPTIMIZATION==='1')html=html.replace('function publicMediaUrl(value){',"function publicMediaUrl(value){ if(String(value).startsWith('https://rwxqytomiorsrxpgtjin.supabase.co/storage/v1/object/public/product-photos/'))return '/__qa/media?path='+encodeURIComponent(String(value).split('/product-photos/')[1].split('#')[0]);");
 const server=http.createServer((req,res)=>{
  if(req.method!=='GET')return res.writeHead(405).end();
+ const requestedUrl=new URL(req.url,'http://localhost');
+ if(requestedUrl.pathname.startsWith('/assets/')||requestedUrl.pathname==='/apple-touch-icon.png'){
+  const target=path.resolve(root,'.'+requestedUrl.pathname);if(!target.startsWith(root+path.sep)||!fs.existsSync(target))return res.writeHead(404).end();
+  return res.writeHead(200,{'Content-Type':target.endsWith('.svg')?'image/svg+xml':target.endsWith('.webp')?'image/webp':'image/png'}).end(fs.readFileSync(target));
+ }
+ if(process.env.QA_MEDIA_OPTIMIZATION==='1'&&requestedUrl.pathname==='/__qa/media'){
+  const object=requestedUrl.searchParams.get('path')||'',name=path.basename(object);
+  if(!/^[a-f0-9]{64}-\d+x\d+-(thumb|card|detail|banner)\.webp$/.test(name))return res.writeHead(404).end();
+  const target=path.join(root,'test-results/catalog-optimized-v1/images',name);
+  if(!fs.existsSync(target))return res.writeHead(404).end();
+  return res.writeHead(200,{'Content-Type':'image/webp','Cache-Control':'public,max-age=3600'}).end(fs.readFileSync(target));
+ }
+
  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});
  if(req.url.startsWith('/__qa/mobile')||req.url.startsWith('/__qa/viewport')){
   const wide=req.url.startsWith('/__qa/viewport'),params=new URL(req.url,'http://localhost').searchParams,requested=params.get('route')||'/app';const route=/^\/(?:app|loja|imprimir)(?:\/[a-z0-9-]+)*$/.test(requested)?requested:'/app',width=[320,360,390,430,...(wide?[1024,1440,1920]:[])].includes(Number(params.get('width')))?Number(params.get('width')):390;

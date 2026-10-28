@@ -282,11 +282,11 @@ productsPage = () => {
   return heading('Produtos', 'Um catálogo único para sua loja física e online.', canManage() ? button('Adicionar produto', 'onclick="productModal()"', 'primary', 'plus') : '') +
     `<section class="card"><div class="toolbar"><form class="search" onsubmit="event.preventDefault();productQuery=this.q.value;render()">${icon('search')}<input name="q" value="${esc(productQuery)}" placeholder="Buscar por nome, SKU ou coleção"><button aria-label="Buscar">${icon('chevron')}</button></form><label class="catalog-status-filter"><span class="subtle">Exibir</span><select class="control" aria-label="Filtrar produtos" onchange="productStatusFilter=this.value;render()">${[['all','Todos os produtos'],['active','Ativos'],['draft','Rascunhos'],['duplicate','Duplicatas para revisão'],['imported','Importados do site']].map(([value,label]) => `<option value="${value}" ${productStatusFilter === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label><span class="subtle">${products.length} produtos</span></div>
     <div class="tablewrap"><table><thead><tr><th>Produto</th><th>Status</th><th>Estoque</th><th>Coleção</th><th>Preço</th><th>Ações</th></tr></thead><tbody>
-    ${products.map(p => `<tr><td><div class="product-cell"><img src="${esc(p.image || 'assets/product-placeholder.svg')}" alt="" loading="lazy"><div><span class="product-title" title="${esc(p.name)}">${esc(p.name)}</span><small>${esc(p.sku)}</small></div></div></td><td><span class="badge ${p.active ? 'green' : 'gray'}">${p.active ? 'Ativo' : 'Rascunho'}</span>${productReviewNote(p) ? `<small class="product-review-note">${esc(productReviewNote(p))}</small>` : ''}</td><td>${p.stock} un.</td><td>${esc(p.category)}</td><td>${priceMarkup(p)}</td><td><div class="actions">${canManage() ? button('Editar', `onclick="productModal(${p.id})"`, 'small') : ''}${p.active ? `<a class="btn small" href="/loja/produto/${p.id}" target="_blank" rel="noopener noreferrer" aria-label="Visualizar ${esc(p.name)} na loja">${icon('eye')}Visualizar</a>` : '<button class="btn small" type="button" disabled title="Ative o produto para visualizá-lo na loja">Visualizar</button>'}${canManage() ? button('Excluir', `onclick="deleteProduct(${p.id})"`, 'small danger') : ''}</div></td></tr>`).join('') || '<tr><td colspan="6" class="empty">Nenhum produto encontrado.</td></tr>'}
+    ${products.map(p => `<tr><td><div class="product-cell"><img ${mediaImageAttributes(p.image || 'assets/product-placeholder.svg','thumb')} alt=""><div><span class="product-title" title="${esc(p.name)}">${esc(p.name)}</span><small>${esc(p.sku)}</small></div></div></td><td><span class="badge ${p.active ? 'green' : 'gray'}">${p.active ? 'Ativo' : 'Rascunho'}</span>${productReviewNote(p) ? `<small class="product-review-note">${esc(productReviewNote(p))}</small>` : ''}</td><td>${p.stock} un.</td><td>${esc(p.category)}</td><td>${priceMarkup(p)}</td><td><div class="actions">${canManage() ? button('Editar', `onclick="productModal(${p.id})"`, 'small') : ''}${p.active ? `<a class="btn small" href="/loja/produto/${p.id}" target="_blank" rel="noopener noreferrer" aria-label="Visualizar ${esc(p.name)} na loja">${icon('eye')}Visualizar</a>` : '<button class="btn small" type="button" disabled title="Ative o produto para visualizá-lo na loja">Visualizar</button>'}${canManage() ? button('Excluir', `onclick="deleteProduct(${p.id})"`, 'small danger') : ''}</div></td></tr>`).join('') || '<tr><td colspan="6" class="empty">Nenhum produto encontrado.</td></tr>'}
     </tbody></table></div></section>`;
 };
 function draftGallery() {
-  return `<div class="photo-grid">${draftImages.map((url, index) => `<div class="photo-tile"><img src="${esc(url)}" alt="Foto ${index + 1}"><button type="button" onclick="removeDraftPhoto(${index})" aria-label="Remover foto ${index + 1}">×</button></div>`).join('')}</div>`;
+  return `<div class="photo-grid">${draftImages.map((url, index) => `<div class="photo-tile"><img ${mediaImageAttributes(url,'card')} alt="Foto ${index + 1}"><button type="button" onclick="removeDraftPhoto(${index})" aria-label="Remover foto ${index + 1}">×</button></div>`).join('')}</div>`;
 }
 function removeDraftPhoto(index) {
   draftImages.splice(index, 1);
@@ -316,19 +316,22 @@ productModal = id => {
   </form>`);
 };
 async function uploadProductPhoto(file, folder = 'products') {
-  const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-  const path = `${folder === 'storefront' ? 'storefront' : 'products'}/${crypto.randomUUID()}.${ext}`;
+  const prepared=typeof preparePhotoVariants==='function'?await preparePhotoVariants(file,folder):null;
+  const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+  const originalPath=(folder==='storefront'?'storefront':'products')+'/'+crypto.randomUUID()+'.'+ext;
+  const uploads=prepared?.variants||[{path:originalPath,blob:file}];
   await refreshAuth();
-  const response = await fetch(`${backendUrl}/storage/v1/object/${photoBucket}/${path}`, {
-    method: 'POST',
-    headers: { apikey: backendKey, Authorization: `Bearer ${authSession.access_token}`, 'Content-Type': file.type, 'Cache-Control': 'max-age=31536000, immutable', 'x-upsert': 'false' },
-    body: file
-  });
-  if (!response.ok) {
-    const problem = await response.json().catch(() => ({}));
-    throw new Error(problem.message || 'Não foi possível enviar a foto.');
+  for(const item of uploads){
+    const response=await fetch(`${backendUrl}/storage/v1/object/${photoBucket}/${item.path}`,{method:'POST',headers:{apikey:backendKey,Authorization:`Bearer ${authSession.access_token}`,'Content-Type':item.blob.type,'Cache-Control':'max-age=31536000, immutable','x-upsert':'false'},body:item.blob});
+    if(response.ok)continue;
+    if(response.status===409&&prepared){
+      const existing=await fetch(`${backendUrl}/storage/v1/object/public/${photoBucket}/${item.path}`,{method:'HEAD'});
+      if(existing.ok&&existing.headers.get('Content-Type')?.startsWith('image/webp')&&Number(existing.headers.get('Content-Length'))===item.blob.size)continue;
+    }
+    const problem=await response.json().catch(()=>({}));
+    throw Error(response.status===402?'O serviço de imagens está temporariamente indisponível. Nenhuma foto foi publicada.':problem.message||'Não foi possível enviar a foto.');
   }
-  return `${backendUrl}/storage/v1/object/public/${photoBucket}/${path}`;
+  return `${backendUrl}/storage/v1/object/public/${photoBucket}/${prepared?.urlPath||originalPath}`;
 }
 async function saveProduct(form, id) {
   if (!canManage()) return;
@@ -383,7 +386,7 @@ async function deleteProduct(id) {
   render(); toast('Produto excluído do catálogo.');
 }
 
-shopProduct = p => `<article class="shop-product"><a href="/loja/produto/${p.id}"><div class="product-photo"><img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy"></div><h3>${esc(p.name)}</h3></a>${priceMarkup(p)}<small>${available(p.id) > 0 ? 'Disponível · pagamento combinado com a loja' : 'Temporariamente indisponível'}</small>${button(available(p.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque', `onclick="addToCart(${p.id})" ${available(p.id) > 0 ? '' : 'disabled'}`, '', 'plus')}</article>`;
+shopProduct = p => `<article class="shop-product"><a href="/loja/produto/${p.id}"><div class="product-photo"><img ${mediaImageAttributes(p.image,'thumb')} alt="${esc(p.name)}"></div><h3>${esc(p.name)}</h3></a>${priceMarkup(p)}<small>${available(p.id) > 0 ? 'Disponível · pagamento combinado com a loja' : 'Temporariamente indisponível'}</small>${button(available(p.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque', `onclick="addToCart(${p.id})" ${available(p.id) > 0 ? '' : 'disabled'}`, '', 'plus')}</article>`;
 function selectProductPhoto(index) {
   const rail=document.querySelector('.product-photo-rail');if(!rail)return;
   if(rail._carouselLoop){rail._carouselLoop.go(index);return;}
@@ -395,14 +398,14 @@ productPage = id => {
   const p = db.products.find(p => p.id === id && p.active);
   if (!p) return '<div class="empty">Este produto não está disponível. <a href="/loja/catalogo">Voltar ao catálogo</a></div>';
   const images = productImages(p);
-  return `<div class="store-content"><a class="text-link" href="/loja/catalogo">Loja / ${esc(p.category)}</a><section class="detail-product"><div><img id="main-product-photo" class="detail-main-photo" src="${esc(images[0])}" alt="${esc(p.name)}"><div class="detail-thumbs">${images.map((url, index) => `<button onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}"><img src="${esc(url)}" alt=""></button>`).join('')}</div></div><div><h1>${esc(p.name)}</h1><span class="subtle">Código: ${esc(p.sku)}</span><p>${esc(p.description)}</p>${priceMarkup(p)}<p style="font-size:13px">Pagamento combinado com nossa equipe pelo WhatsApp.</p><div class="actions"><label class="field" style="max-width:85px">Qtd.<input id="detail-qty" type="number" value="1" min="1" max="${available(p.id)}"></label>${button(available(p.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque', `onclick="addToCart(${id},Number($('#detail-qty').value))" ${available(p.id) > 0 ? '' : 'disabled'}`, 'primary', 'bag')}</div></div></section></div>`;
+  return `<div class="store-content"><a class="text-link" href="/loja/catalogo">Loja / ${esc(p.category)}</a><section class="detail-product"><div><img id="main-product-photo" class="detail-main-photo" src="${esc(images[0])}" alt="${esc(p.name)}"><div class="detail-thumbs">${images.map((url, index) => `<button onclick="selectProductPhoto(${index})" aria-label="Ver foto ${index + 1}"><img ${mediaImageAttributes(url,'card')} alt=""></button>`).join('')}</div></div><div><h1>${esc(p.name)}</h1><span class="subtle">Código: ${esc(p.sku)}</span><p>${esc(p.description)}</p>${priceMarkup(p)}<p style="font-size:13px">Pagamento combinado com nossa equipe pelo WhatsApp.</p><div class="actions"><label class="field" style="max-width:85px">Qtd.<input id="detail-qty" type="number" value="1" min="1" max="${available(p.id)}"></label>${button(available(p.id) > 0 ? 'Adicionar ao carrinho' : 'Sem estoque', `onclick="addToCart(${id},Number($('#detail-qty').value))" ${available(p.id) > 0 ? '' : 'disabled'}`, 'primary', 'bag')}</div></div></section></div>`;
 };
 
 cartPage = () => `<div class="store-content">${heading('Seu carrinho', 'Falta pouco para deixar sua casa do seu jeito.')}
   ${db.cart.length ? `<div class="two-col"><section class="card pad">${db.cart.map(i => {
     const p = db.products.find(product => product.id === i.id);
     if (!p) return '';
-    return `<div class="cart-line"><img src="${esc(p.image)}" alt="${esc(p.name)}"><div><h3>${esc(p.name)}</h3><span class="subtle">${money(salePrice(p))} / un.</span><div class="qty" style="margin-top:10px"><button onclick="changeCart(${i.id},-1)" aria-label="Diminuir quantidade">−</button><span>${i.qty}</span><button onclick="changeCart(${i.id},1)" aria-label="Aumentar quantidade">+</button></div></div><div class="right"><strong>${money(salePrice(p) * i.qty)}</strong><button style="display:block;margin:15px 0 0 auto" onclick="db.cart=db.cart.filter(i=>i.id!==${i.id});save();render()" aria-label="Remover produto">${icon('trash')}</button></div></div>`;
+    return `<div class="cart-line"><img ${mediaImageAttributes(p.image,'thumb')} alt="${esc(p.name)}"><div><h3>${esc(p.name)}</h3><span class="subtle">${money(salePrice(p))} / un.</span><div class="qty" style="margin-top:10px"><button onclick="changeCart(${i.id},-1)" aria-label="Diminuir quantidade">−</button><span>${i.qty}</span><button onclick="changeCart(${i.id},1)" aria-label="Aumentar quantidade">+</button></div></div><div class="right"><strong>${money(salePrice(p) * i.qty)}</strong><button style="display:block;margin:15px 0 0 auto" onclick="db.cart=db.cart.filter(i=>i.id!==${i.id});save();render()" aria-label="Remover produto">${icon('trash')}</button></div></div>`;
   }).join('')}<a href="/loja/catalogo" class="text-link" style="display:block;margin-top:23px">Continuar comprando</a></section>
   <section class="card pad" style="align-self:start"><h2>Resumo do pedido</h2><div class="total-line"><span>Produtos</span><strong>${money(cartTotal())}</strong></div><div class="total-line"><span>Frete</span><span class="subtle">A combinar</span></div><div class="total-line final"><span>Subtotal</span><span>${money(cartTotal())}</span></div><a href="/loja/checkout" class="btn primary" style="width:100%;margin-top:20px">Continuar</a></section></div>`
   : `<div class="empty">${icon('bag')}<h2 style="margin:20px 0">Seu carrinho ainda está vazio.</h2><a class="btn primary" href="/loja/catalogo">Explorar produtos</a></div>`}</div>`;

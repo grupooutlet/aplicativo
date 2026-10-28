@@ -28,7 +28,8 @@ function receiptItems(order){return (order.items||[]).map(item=>{
  const product=db.products.find(p=>p.id===item.id),service=item.stockTracked===false;
  const name=String(item.name||product?.name||'Produto'),variation=typeof optionText==='function'?optionText(item.options||{}):'';
  const extra=variation&&!name.includes(variation)?'<small>'+esc(variation)+'</small>':'';
- const image=item.image||product?.image;
+ const rawImage=item.image||product?.image;
+ const image=typeof mediaVariant==='function'?mediaVariant(rawImage,'thumb').url:typeof publicMediaUrl==='function'?publicMediaUrl(rawImage):rawImage;
  return '<tr><td class="order-sheet-sku">'+esc(service?'SERV':item.sku||product?.sku||item.id)+'</td><td><div class="order-sheet-item">'+(image&&!service?'<img src="'+esc(image)+'" width="38" height="38" alt="" onerror="this.remove()">':'')+'<div><strong>'+esc(name)+'</strong>'+extra+'</div></div></td><td class="order-sheet-qty">'+esc(item.qty)+'</td><td class="order-sheet-money">'+money(item.price)+'</td><td class="order-sheet-money"><strong>'+money(item.price*item.qty)+'</strong></td></tr>';
 }).join('');}
 function orderDocument(order,{deliveryNote=false,generatedAt=new Date()}={}){

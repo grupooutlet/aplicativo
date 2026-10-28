@@ -117,6 +117,39 @@ function applyStorePageSettings(){
 }
 // Buffered copies keep native touch scrolling continuous in either direction.
 const carouselModulo=(value,count)=>count>0?((value%count)+count)%count:0;
+// Loop buffers must not request every full-size photo just because they exist in the DOM.
+function railImages(item){return typeof item?.querySelectorAll==='function'?[...item.querySelectorAll('img')].filter(image=>typeof image.getAttribute==='function'):[]}
+function deferRailMedia(item){
+  for(const image of railImages(item)){
+    for(const name of ['src','srcset','sizes']){const value=image.getAttribute(name);if(value&&!image.getAttribute('data-media-'+name))image.setAttribute('data-media-'+name,value);image.removeAttribute(name)}
+    image.removeAttribute('data-media-loaded');image.loading='lazy';image.decoding='async';image.setAttribute('fetchpriority','low');
+  }
+}
+function hydrateRailMedia(item){
+  for(const image of railImages(item)){
+    if(image.getAttribute('data-media-loaded')==='1')continue;
+    const source=image.getAttribute('data-media-src');if(!source)continue;
+    // Set responsive candidates before the fallback so the browser chooses one request.
+    for(const name of ['sizes','srcset','src']){const value=image.getAttribute('data-media-'+name);if(value&&image.getAttribute(name)!==value)image.setAttribute(name,value)}
+    image.setAttribute('data-media-loaded','1');image.loading='eager';
+  }
+}
+function bindRailMedia(rail){
+  rail._railMedia?.destroy();
+  let disposed=false,frame=null;
+  const nearby=()=>{const box=rail.getBoundingClientRect(),height=window.innerHeight;return rail.isConnected!==false&&(!Number.isFinite(height)||!Number.isFinite(box.top)||box.bottom>=-300&&box.top<=height+300)};
+  const loadAt=(left=rail.scrollLeft)=>{
+    if(disposed||!rail.clientWidth||!nearby())return;
+    const box=rail.getBoundingClientRect(),margin=Math.min(rail.clientWidth*.65,400),start=left-margin,end=left+rail.clientWidth+margin;
+    for(const item of rail.children||[]){const bounds=item.getBoundingClientRect(),itemLeft=bounds.left-box.left+rail.scrollLeft,itemRight=bounds.right-box.left+rail.scrollLeft;if(itemRight>start&&itemLeft<end)hydrateRailMedia(item)}
+  };
+  const refresh=()=>{if(disposed||frame!==null)return;if(typeof requestAnimationFrame!=='function'){loadAt();return}frame=requestAnimationFrame(()=>{frame=null;loadAt()})};
+  const observer=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting))refresh()},{rootMargin:'300px 0px'}):null;
+  const controller={loadAt,refresh,destroy(){if(disposed)return;disposed=true;observer?.disconnect();rail.removeEventListener('scroll',refresh);window.removeEventListener('resize',refresh);if(!observer)window.removeEventListener('scroll',refresh);if(frame!==null&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(frame);if(rail._railMedia===controller)delete rail._railMedia}};
+  rail._railMedia=controller;rail.addEventListener('scroll',refresh,{passive:true});window.addEventListener('resize',refresh);
+  if(observer)observer.observe(rail);else window.addEventListener('scroll',refresh,{passive:true});
+  loadAt();return controller;
+}
 function createInfiniteRail(rail,items){
   if(items.length<2||!rail.insertBefore||!items[0]?.cloneNode)return null;
   rail._carouselLoop?.destroy();
@@ -126,7 +159,7 @@ function createInfiniteRail(rail,items){
     copy.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
     copy.querySelectorAll('a,button,input,select,textarea,[tabindex]').forEach(node=>node.setAttribute('tabindex','-1'));
     if(copy.matches('a,button,input,select,textarea,[tabindex]'))copy.setAttribute('tabindex','-1');
-    copy.querySelectorAll('img').forEach(image=>image.loading='lazy');copies.push(copy);return copy;
+    deferRailMedia(copy);copies.push(copy);return copy;
   };
   items.forEach((item,index)=>item.setAttribute('data-loop-index',String(index)));
   for(let repeat=0;repeat<2;repeat++)for(const item of items)rail.insertBefore(clone(item),items[0]);
@@ -149,12 +182,14 @@ function createInfiniteRail(rail,items){
       origin=base-first;period=after[0].getBoundingClientRect().left-base;
       offsets=items.map(item=>item.getBoundingClientRect().left-base);
       if(period>0)jump(origin+offsets[carouselModulo(index,items.length)]);
+      rail._railMedia?.refresh();
     },
     go(index,behavior='smooth'){
       if(disposed||!Number.isInteger(index)||!period)return;
       const canonical=origin+offsets[carouselModulo(index,items.length)];
       const nearest=canonical+Math.round((rail.scrollLeft-canonical)/period)*period;
-      rail.scrollTo({left:Math.max(0,Math.min(rail.scrollWidth-rail.clientWidth,nearest)),behavior});
+      const target=Math.max(0,Math.min(rail.scrollWidth-rail.clientWidth,nearest));rail._railMedia?.loadAt(target);
+      rail.scrollTo({left:target,behavior});
     },
     normalize(){if(!disposed&&period>0)jump(origin+carouselModulo(rail.scrollLeft-origin,period))},
     elements:()=>[...items,...copies],
@@ -162,6 +197,7 @@ function createInfiniteRail(rail,items){
       if(disposed)return;disposed=true;clearTimeout(settleTimer);
       if(frame!==null){if(typeof cancelAnimationFrame==='function')cancelAnimationFrame(frame);else clearTimeout(frame)}
       rail.removeEventListener('scroll',scroll);rail.removeEventListener('scrollend',settled);
+      rail._railMedia?.destroy();
       copies.forEach(copy=>copy.remove());items.forEach(item=>item.removeAttribute('data-loop-index'));
       rail.classList.remove('is-recentering');delete rail._carouselLoop;
     }
@@ -174,7 +210,7 @@ function createInfiniteRail(rail,items){
     clearTimeout(settleTimer);settleTimer=setTimeout(settled,140);
   };
   rail._carouselLoop=controller;rail.addEventListener('scroll',scroll,{passive:true});rail.addEventListener('scrollend',settled);
-  controller.measure(0);return controller;
+  controller.measure(0);bindRailMedia(rail);return controller;
 }
 // Native touch gestures are preserved; mouse dragging uses the same loop positions.
 function bindGalleryDrag(rail,snap=false,loop=null){

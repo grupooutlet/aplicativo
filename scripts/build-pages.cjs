@@ -7,6 +7,7 @@ const output = path.join(root, 'dist');
 const files = [
   'index.html',
   '_routes.json',
+  '_headers',
   'manifest.webmanifest',
   'assets/app-icon.svg',
   'assets/app-icon-192.png',

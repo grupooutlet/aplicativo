@@ -10,9 +10,9 @@ const logoBase64 = fs.existsSync(path.join(root, 'assets/logo.webp'))
 const logo = `data:image/webp;base64,${logoBase64}`;
 const logoIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#1C2228"/><image href="${logo}" x="30.72" y="30.72" width="450.56" height="450.56" preserveAspectRatio="xMidYMid meet"/></svg>`;
 fs.writeFileSync(path.join(root, 'assets/app-icon.svg'), logoIconSvg, 'utf8');
-const icon = logo;
 const css = [read('styles.css'), read('storefront.css'), read('merchandising.css'), read('panel.css'), read('store-product.css'), read('receipts.css'), read('pickups.css')].join('\n').replace(/<\/style/gi, '<\\/style');
-const script = name => read(name).replaceAll('assets/logo.webp', logo)
+const logoAsset='assets/logo.webp?v='+require('node:crypto').createHash('sha256').update(logoBase64).digest('hex').slice(0,12);
+const script = name => read(name).replaceAll('assets/logo.webp', logoAsset)
   .replace('/*STORE_SUPPORT*/ null', JSON.stringify(JSON.parse(read('content/store-support.json'))))
   .replace(/<\/script/gi, '<\\/script');
 
@@ -28,7 +28,6 @@ const html = `<!doctype html>
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="description" content="Forte Outlet: loja online e gestão em um só lugar.">
   <title>Forte Outlet · Loja online</title>
-  <link rel="icon" href="${icon}" type="image/webp">
   <script>
     const base = document.createElement('base');
     const path = location.pathname;
@@ -42,6 +41,7 @@ const html = `<!doctype html>
       document.head.append(manifest);
     }
   </script>
+  <link rel="icon" href="${logoAsset}" type="image/webp">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261019-logo">
   <style>${css}</style>
 </head>
@@ -52,6 +52,7 @@ const html = `<!doctype html>
   <script>${script('storefront-editor.js')}</script>
   <script>${script('app.js')}</script>
   <script>${script('production.js')}</script>
+  <script>${script('media.js')}</script>
   <script>${script('enhancements.js')}</script>
   <script>${script('variations.js')}</script>
   <script>${script('fulfillment.js')}</script>
@@ -74,7 +75,7 @@ const html = `<!doctype html>
 `;
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
-if (inlineScripts.length !== 21) throw new Error(`Esperados 21 scripts embutidos; encontrados ${inlineScripts.length}.`);
+if (inlineScripts.length !== 22) throw new Error(`Esperados 22 scripts embutidos; encontrados ${inlineScripts.length}.`);
 inlineScripts.forEach((match, index) => new vm.Script(match[1], { filename: `index.html:script-${index + 1}` }));
 fs.writeFileSync(path.join(root, 'index.html'), html, 'utf8');
 console.log(`index.html gerado (${Buffer.byteLength(html, 'utf8')} bytes).`);

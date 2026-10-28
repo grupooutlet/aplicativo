@@ -1,0 +1,7 @@
+/assets/*
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+/index.html
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache
