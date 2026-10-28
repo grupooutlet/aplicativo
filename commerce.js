@@ -335,6 +335,7 @@ checkout = async form => {
       : await backendRequest('/functions/v1/checkout-account', { method: 'POST', body: JSON.stringify({ request }) });
     if (!result?.id || !result?.token || !result?.order) throw new Error('A confirmação não foi recebida. Consulte a loja antes de tentar novamente.');
     confirmed = result;
+    if(typeof resetCheckoutRecovery==='function')resetCheckoutRecovery();
     try { if(typeof metaOrderPlaced==='function')metaOrderPlaced(result.order,request.meta); } catch { /* Measurement must never block a confirmed order. */ }
     if (result.session?.access_token) rememberAuth(result.session);
     const cityParts = String(fields.city || '').split(/\s*\/\s*/);
@@ -356,7 +357,7 @@ checkout = async form => {
       db.cart = []; if (typeof clearCheckoutBumps === 'function') clearCheckoutBumps();
       if (!db.orders.some(order => order.id === confirmed.id)) db.orders.unshift(confirmed.order);
       go('/loja/pedido/' + confirmed.id); toast('Pedido recebido! Número ' + confirmed.id + '.');
-    } else toast('Não foi possível concluir: ' + error.message);
+    } else { if(typeof saveCheckoutRecovery==='function')saveCheckoutRecovery(form,'error',true); toast('Não foi possível concluir: ' + error.message); }
   }
   finally { submit.disabled = false; }
 };

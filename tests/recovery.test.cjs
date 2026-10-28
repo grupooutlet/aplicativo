@@ -1,0 +1,32 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const memory=()=>{const m=new Map();return{getItem:k=>m.get(k)||null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k)}};
+let requests=[],timers=[],activeForm=null;
+const nodes={'#modal':{open:true,innerHTML:'',classList:{add(){},remove(){}}},'#app':{innerHTML:''}};
+const ctx=vm.createContext({console,URL,URLSearchParams,Date,Map,Set,Intl,structuredClone,crypto:require('node:crypto').webcrypto,
+ location:{protocol:'https:',hostname:'forteoutlet.com.br',origin:'https://forteoutlet.com.br',pathname:'/',search:'',hash:'#/loja/checkout'},
+ document:{baseURI:'https://forteoutlet.com.br/',querySelector:s=>nodes[s]||activeForm,querySelectorAll:()=>[],addEventListener(){},visibilityState:'visible',activeElement:null},window:{innerWidth:1280,addEventListener(){},scrollTo(){}},history:{pushState(){},replaceState(){}},
+ setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout(){},setInterval:()=>1,clearInterval(){},fetch:async(url,opts)=>{requests.push({url,body:JSON.parse(opts.body)});return{ok:true,json:async()=>({ok:true})}}});
+for(const name of ['storefront-editor.js','app.js','production.js','enhancements.js','variations.js','fulfillment.js','operations.js','commerce.js','merchandising.js','menus.js','shipping.js','change-history.js','business.js','receipts.js','pickups.js','panel.js','recovery.js'])vm.runInContext(fs.readFileSync(name,'utf8').replace(/boot\(\);\s*$/,''),ctx,{filename:name});
+const run=s=>vm.runInContext(s,ctx),plain=value=>JSON.parse(JSON.stringify(value));
+run(`db=defaults();booted=true;isOwner=true;role='Vendedor';currentProfile={role:'admin',position:'Vendedor'};authSession={user:{id:'qa-seller'}};db.products=[{id:1,name:'Sofá de teste',price:100,active:true,stock:10,image:'image.webp',variations:[{name:'Cor',values:['Cinza','Bege']}]}];db.cart=[{id:1,qty:1,options:{Cor:'Cinza'}}];db.settings.paymentMethods=[{id:'pix',kind:'pix',title:'Pix',active:true,installments:[{count:1,rate:0}]}];render=()=>{};toast=()=>{};`);
+for(const role of ['Vendedor','Gerente','Proprietário']){run(`role='${role}';currentProfile={role:'${role==='Proprietário'?'master':'admin'}'};`);assert.equal(run("allowed('abandoned-checkouts')"),true);assert.equal(run('canManageRecovery()'),true);}
+for(const role of ['Entregador','Estoque','Cliente']){run(`role='${role}';currentProfile={role:'${role==='Entregador'?'driver':'customer'}'};`);assert.equal(run('canManageRecovery()'),false);assert.doesNotMatch(run('recoveryPageMarkup()'),/data-recovery-search/);}
+run(`role='Vendedor';currentProfile={role:'admin',position:'Vendedor'};`);let html=run('checkoutPage()');assert.match(html,/data-recovery-consent/);assert.doesNotMatch(html,/data-recovery-consent checked/);assert.match(html,/30 dias/);assert.doesNotMatch(html,/name="recoveryConsent"[^>]*required/);
+const fields={phone:{value:'(21) 90000-0001'},firstName:{value:'Marina'},lastName:{value:'Teste'},email:{value:'marina@example.invalid'},cpf:{value:'DO NOT STORE'},street:{value:'DO NOT STORE'},number:{value:'123'},city:{value:'Nova Iguaçu / RJ'},neighborhood:{value:'Centro'},delivery:{value:'Entrega'},paymentMethodId:{value:'pix'},recoveryConsent:{checked:true}};
+const form={isConnected:true,elements:{namedItem:n=>fields[n]||null},querySelector:s=>s==='[data-recovery-consent]'?{}:null};ctx.qaForm=form;
+const draft=plain(run('recoveryDraft(qaForm)'));assert.equal(draft.phone,'+5521900000001');assert.equal(draft.consent,true);assert.ok(!JSON.stringify(draft).includes('DO NOT STORE'));assert.deepEqual(draft.items,[{id:1,qty:1,options:{Cor:'Cinza'}}]);
+const row={id:crypto.randomUUID(),recovery_token:crypto.randomUUID(),first_name:'Marina <Teste>',last_name:'Silva',phone:'+5521900000001',email:'marina@example.invalid',stage:'pending',status:'open',consent:true,created_at:new Date().toISOString(),last_seen:new Date(Date.now()-3600000).toISOString(),subtotal:100,revision:1,items:[{id:1,name:'Sofá <teste>',qty:1,price:100,options:{Cor:'Cinza'},image:'image.webp'}],events:[]};ctx.qaRow=row;
+assert.equal(run('recoveryCanContact(qaRow)'),true);for(const stage of ['active','unconsented','converted','closed','optout']){ctx.qaRow={...row,stage};assert.equal(run('recoveryCanContact(qaRow)'),false);}
+ctx.qaRow=row;html=run('recoveryListRow(qaRow)');assert.match(html,/Marina &lt;Teste&gt;/);assert.match(html,/Sofá &lt;teste&gt;/);assert.match(html,/Recuperar/);assert.match(html,/Em produtos/);
+let message=run('recoveryMessage(qaRow)');assert.match(message,/Cinza/);assert.match(message,/https:\/\/forteoutlet.com.br\/#\/loja\/recuperar\//);assert.doesNotMatch(message,/marina@example|90000|reservad|desconto|promoção/i);
+run("db.settings.name='Nome atualizado'");assert.match(run('recoveryMessage(qaRow)'),/Nome atualizado/);
+run("location.search='?storePreview=1'");assert.equal(run('recoveryCaptureEligible()'),false);assert.doesNotMatch(run('checkoutPage()'),/data-recovery-consent/);run("location.search='';recoveryTouched=true");
+(async()=>{
+ await run('saveCheckoutRecovery(qaForm)');assert.equal(requests.length,1);assert.equal(requests[0].body.data.phone,'+5521900000001');assert.ok(!JSON.stringify(requests).includes('DO NOT STORE'));
+ await run('saveCheckoutRecovery(qaForm)');assert.equal(requests.length,1,'Unchanged drafts are deduplicated');
+ fields.recoveryConsent.checked=false;await run('saveCheckoutRecovery(qaForm)');assert.equal(requests.length,2,'Permission withdrawal is not throttled');
+ run("location.search='?storePreview=1'");await run('saveCheckoutRecovery(qaForm)');assert.equal(requests.length,2,'Theme previews never ingest contacts');run("location.search='';resetCheckoutRecovery()");assert.equal(run('localStore.getItem(recoveryStorageKey)'),null);
+ run("db.cart=[];recoveryResume={items:[{id:1,qty:20,options:{Cor:'Cinza'}}]};go=path=>location.hash='#'+path;closeModal=()=>{};");run('resumeRecoveryCart(true)');assert.equal(run('db.cart[0].qty'),10,'Restoration is bounded by current availability');assert.equal(run('db.cart[0].options.Cor'),'Cinza');assert.equal(run('location.hash'),'#/loja/checkout');
+ assert.ok(run("panelNav('abandoned-checkouts')").includes('Carrinhos abandonados'));
+ console.log('Recovery UX: roles, consent defaults, preview isolation, contact validation, minimal payload, deduplication, immediate withdrawal, escaped content, current store name and stock-aware cart restoration verified.');
+})().catch(error=>{console.error(error);process.exitCode=1;});

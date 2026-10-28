@@ -4,7 +4,7 @@ let panelMenuFocus=null,panelUnreadOnly=false,panelWorkspaceCleanup=()=>{},panel
 paths.more='M4 12h.01M12 12h.01M20 12h.01';
 const panelSectionGroups=[
  {id:'dashboard',name:'Início',icon:'home'},
- {id:'orders',name:'Pedidos',icon:'bag',children:[['deliveries','Entregas','truck'],['pickups','Retiradas','store']]},
+ {id:'orders',name:'Pedidos',icon:'bag',children:[['deliveries','Entregas','truck'],['pickups','Retiradas','store'],['abandoned-checkouts','Carrinhos abandonados','bag']]},
  {id:'payments',name:'Pagamentos',icon:'wallet'},
  {id:'products',name:'Produtos',icon:'box',children:[['collections','Coleções','layers'],['inventory','Estoque','store'],['order-bumps','Order Bumps','plus']]},
  {id:'customers',name:'Clientes',icon:'users'},

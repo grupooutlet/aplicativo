@@ -10,7 +10,7 @@ const logoBase64 = fs.existsSync(path.join(root, 'assets/logo.webp'))
 const logo = `data:image/webp;base64,${logoBase64}`;
 const logoIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#1C2228"/><image href="${logo}" x="30.72" y="30.72" width="450.56" height="450.56" preserveAspectRatio="xMidYMid meet"/></svg>`;
 fs.writeFileSync(path.join(root, 'assets/app-icon.svg'), logoIconSvg, 'utf8');
-const css = [read('styles.css'), read('storefront.css'), read('merchandising.css'), read('panel.css'), read('store-product.css'), read('receipts.css'), read('pickups.css')].join('\n').replace(/<\/style/gi, '<\\/style');
+const css = [read('styles.css'), read('storefront.css'), read('merchandising.css'), read('panel.css'), read('store-product.css'), read('receipts.css'), read('pickups.css'), read('recovery.css')].join('\n').replace(/<\/style/gi, '<\\/style');
 const logoAsset='assets/logo.webp?v='+require('node:crypto').createHash('sha256').update(logoBase64).digest('hex').slice(0,12);
 const script = name => read(name).replaceAll('assets/logo.webp', logoAsset)
   .replace('/*STORE_SUPPORT*/ null', JSON.stringify(JSON.parse(read('content/store-support.json'))))
@@ -69,13 +69,14 @@ const html = `<!doctype html>
   <script>${script('themes.js')}</script>
   <script>${script('live-view.js')}</script>
   <script>${script('meta-pixel.js')}</script>
+  <script>${script('recovery.js')}</script>
   <script>${script('storefront-runtime.js')}</script>
 </body>
 </html>
 `;
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
-if (inlineScripts.length !== 22) throw new Error(`Esperados 22 scripts embutidos; encontrados ${inlineScripts.length}.`);
+if (inlineScripts.length !== 23) throw new Error(`Esperados 23 scripts embutidos; encontrados ${inlineScripts.length}.`);
 inlineScripts.forEach((match, index) => new vm.Script(match[1], { filename: `index.html:script-${index + 1}` }));
 fs.writeFileSync(path.join(root, 'index.html'), html, 'utf8');
 console.log(`index.html gerado (${Buffer.byteLength(html, 'utf8')} bytes).`);

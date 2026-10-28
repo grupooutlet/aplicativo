@@ -90,15 +90,29 @@ if(process.env.QA_AUDIT==='1'){
  const freight=model.settings.shippingOptions.find(o=>o.name==='Niterói');const before=structuredClone(freight);freight.price=220;
  qaHistory=[{id:9001,created_at:'2026-10-24T17:45:12Z',actor_name:'Bianca Melo',actor_role:'admin',actor_position:'Vendedor',areas:['shippingOptions'],summary:'Alterou: Niterói',change_count:1,reverted_at:null,changes:[{source:'state',kind:'entity',path:['settings','shippingOptions'],entityId:freight.id,before,beforeExists:true,after:structuredClone(freight),afterExists:true,label:'Niterói'}]}];
 }
+const qaRecovery=[];
+if(process.env.QA_RECOVERY==='1'){
+ const now=Date.now(),ago=minutes=>new Date(now-minutes*60000).toISOString();
+ for(const [index,name,stage] of [[1,'Marina Oliveira','pending'],[2,'João Pedro Santos','contacted'],[3,'Camila Pereira','waiting'],[4,'Rafael Almeida','active'],[5,'Lucas Ferreira','unconsented'],[6,'Carolina Silva','converted']]){
+  const [first,...last]=name.split(' '),p=model.products[index%model.products.length];
+  qaRecovery.push({id:'31000000-0000-4000-8000-00000000000'+index,recovery_token:'32000000-0000-4000-8000-00000000000'+index,phone:'+552190000000'+index,first_name:first,last_name:last.join(' '),email:'cliente'+index+'@example.invalid',items:[{id:p.id,name:p.name,image:p.image,qty:1,price:p.price,options:index===2?{Cor:'Cinza',Tecido:'Linho'}:{}}],subtotal:p.price,delivery:index===3?'Retirada':'Entrega',locality:index===3?'Nova Iguaçu / RJ':index===2?'Campo Grande · Rio de Janeiro / RJ':'Centro · Nova Iguaçu / RJ',phase:'payment',consent:stage!=='unconsented',consent_at:ago(200),consent_version:'checkout-help-v1',status:stage==='pending'||stage==='active'||stage==='unconsented'?'open':stage,stage,created_at:ago(220),last_seen:ago(stage==='active'?5:30+index*24),updated_at:ago(20),revision:1,assigned_to:index===2?'qa-master':null,assigned_name:index===2?qaProfile.name:null,last_contact_at:index===2?ago(90):null,contact_count:index===2?1:0,order_id:index===6?9001:null,notes:index===2?'Cliente quer confirmar se o tecido é fácil de limpar.':'',events:index===2?[{action:'opened',at:ago(100),by:qaProfile.name},{action:'contacted',at:ago(90),by:qaProfile.name}]:[]});
+ }
+}
 for(const order of model.orders)order.date||=String(order.createdAt||'2026-10-25').slice(0,10);
 const preload=`<script>
 let fixtureModel=${JSON.stringify(model)},fixtureVersion=1;
-let fixtureProfile=${JSON.stringify(qaProfile)},fixtureHistory=${JSON.stringify(qaHistory)},fixtureCustomers=${JSON.stringify(qaCustomers)},fixtureContacts=${JSON.stringify(qaContacts)};
+let fixtureProfile=${JSON.stringify(qaProfile)},fixtureHistory=${JSON.stringify(qaHistory)},fixtureCustomers=${JSON.stringify(qaCustomers)},fixtureContacts=${JSON.stringify(qaContacts)},fixtureRecovery=${JSON.stringify(qaRecovery)};
+if(${process.env.QA_RECOVERY==='1'})window.open=()=>({opener:null,location:{replace(){}},close(){}});
 localStorage.setItem('forte-auth-v1',JSON.stringify({user:{id:'qa-master',email:'grupooutlet.rj@gmail.com'},access_token:'qa-local-only',refresh_token:'qa-local-only',expires_at:Math.floor(Date.now()/1000)+86400}));localStorage.setItem('forte-auth-shared-v1','1');
 const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  const url=String(input);if(!url.includes('rwxqytomiorsrxpgtjin.supabase.co')||(url.includes('/storage/')&&['GET','HEAD'].includes(options.method||'GET')))return actualPreviewFetch(input,options);
  const body=options.body?JSON.parse(options.body):{},reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
  if(${process.env.QA_SERVICE_RESTRICTED==='1'})return reply({message:'Service for this project is restricted: exceed_cached_egress_quota'},402);
+ if(url.includes('/functions/v1/checkout-recovery'))return reply({ok:true});
+ if(url.includes('/rpc/list_checkout_recovery')){const q=String(body.p_query||'').toLocaleLowerCase('pt-BR'),rows=fixtureRecovery.filter(row=>(!q||JSON.stringify(row).toLocaleLowerCase('pt-BR').includes(q))&&(body.p_status==='all'||body.p_status==='pending'&&['pending','contacted','waiting'].includes(row.stage)||row.stage===body.p_status));return reply({rows:rows.slice((body.p_page-1)*30,body.p_page*30),total:rows.length,page:body.p_page,summary:{pending:fixtureRecovery.filter(r=>['pending','contacted','waiting'].includes(r.stage)).length,potential:fixtureRecovery.filter(r=>['pending','contacted','waiting'].includes(r.stage)).reduce((s,r)=>s+r.subtotal,0),contacted:1,converted:1},observedAt:new Date().toISOString()});}
+ if(url.includes('/rpc/checkout_recovery_detail'))return reply(fixtureRecovery.find(row=>row.id===body.p_id));
+ if(url.includes('/rpc/update_checkout_recovery')){const row=fixtureRecovery.find(row=>row.id===body.p_id);if(!row||row.revision!==body.p_revision)return reply({message:'Este atendimento foi atualizado. Reabra os detalhes.'},409);row.revision++;row.events.push({action:body.p_action,at:new Date().toISOString(),by:fixtureProfile.name});if(body.p_action==='note')row.notes=body.p_notes;if(['claim','opened','contacted'].includes(body.p_action)){row.assigned_to='qa-master';row.assigned_name=fixtureProfile.name;}if(body.p_action==='contacted'){row.contact_count++;row.last_contact_at=new Date().toISOString();}if(['contacted','waiting','close','reopen','optout'].includes(body.p_action))row.stage=row.status={contacted:'contacted',waiting:'waiting',close:'closed',reopen:'pending',optout:'optout'}[body.p_action];if(body.p_action==='optout')row.consent=false;return reply(row);}
+ if(url.includes('/rpc/resume_checkout_recovery'))return reply({items:fixtureRecovery.find(row=>row.recovery_token===body.p_token)?.items.map(item=>({id:item.id,qty:item.qty,options:item.options}))||[]});
  if(url.includes('/rest/v1/shop_public'))return reply([{data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p)}}]);
  if(url.includes('/rest/v1/profiles'))return reply(url.includes('user_id=eq.')?[fixtureProfile]:[fixtureProfile,...fixtureCustomers]);
  if(url.includes('/rpc/sales_state'))return reply({data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p),orderBumps:fixtureModel.orderBumps.map(({cost,...b})=>b)},version:fixtureVersion});
@@ -172,6 +186,7 @@ const server=http.createServer((req,res)=>{
   return res.end('<!doctype html><meta name="viewport" content="width=device-width"><style>body{margin:0;background:#e7e9e8;display:flex;justify-content:center;'+(wide?'width:'+width+'px':'')+'}iframe{width:'+width+'px;height:100dvh;border:0;background:#fff;max-width:'+(wide?'none':'100%')+';flex-shrink:0}</style><iframe title="Prévia de '+(wide?'desktop':'celular')+'" src="/#'+route+'"></iframe>');
  }
  const paper=new URL(req.url,'http://localhost').searchParams.get('paper')==='1';
+ if(process.env.QA_RECOVERY==='1')html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace('<head>','<head>'+preload);
  const paperStyle=paper?'<style>'+fs.readFileSync(path.join(root,'receipts.css'),'utf8').replaceAll('@media print','@media all')+'#app{width:186mm;margin:20px auto}.print-actions{display:none!important}.receipt.order-sheet{max-width:none}</style>':'';
  res.end(paper?html.replace('</head>',paperStyle+'</head>'):html);
 });
