@@ -116,6 +116,7 @@ function organizeNewOrder(form){
   const phone=form.elements.namedItem('phone');if(phone){phone.placeholder='+55 (21) 99999-9999';phone.setAttribute('onblur','this.value=formatBrazilPhone(this.value)');}
   const product=section(2,'Produto','Busque o produto e confira as opções e a quantidade.');
   move(product,form.querySelector('.presale-product-picker'),form.querySelector('#admin-variation-fields'),field('qty'));
+  setupOrderPriceControl(form,product);
   const delivery=section(3,'Entrega ou retirada','Defina o recebimento. O frete é calculado pelo endereço.');
   const deliveryField=field('delivery');deliveryField?.classList.remove('full');
   move(delivery,deliveryField,field('deliveryDate'),form.querySelector('#admin-address-fields'),form.querySelector('#admin-cep-feedback'),field('shippingOptionId'),form.querySelector('#admin-shipping-coverage'));
@@ -146,6 +147,7 @@ function setupPresaleProductPicker(form){
 }
 function searchPresaleProducts(input){
   const form=input.form;form.elements.namedItem('product').value='';
+  resetOrderPriceOverride(form);
   const selected=form.querySelector('#presale-selected-product');selected.hidden=true;selected.innerHTML='';
   input.setCustomValidity(input.value?'Selecione um produto nos resultados da busca.':'');
   updateAdminVariationFields();updateOrderEstimate();showPresaleProductResults(input);
@@ -164,8 +166,49 @@ function selectPresaleProduct(id,form){
   const results=form.querySelector('#presale-product-results');results.hidden=true;results.innerHTML='';
   const selected=form.querySelector('#presale-selected-product');selected.hidden=false;selected.innerHTML=`<div class="presale-product-selected"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><div><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${available(id)} disponíveis</small></div><button class="btn small" type="button" onclick="clearPresaleProduct(this.form)" aria-label="Remover produto selecionado">${icon('trash')}</button></div>`;
   form.querySelector('#presale-product-feedback').textContent='Confira as variações e a quantidade abaixo.';
+  resetOrderPriceOverride(form);
   updateAdminVariationFields();updateOrderEstimate();
 }
+function orderUnitPrice(form,product){
+  const change=form?.orderPriceOverride;
+  return change&&change.productId===product?.id?change.unitPrice:salePrice(product);
+}
+function validOrderPrice(value){return Number.isFinite(value)&&value>=0.01&&value<=1000000&&Math.abs(value*100-Math.round(value*100))<0.00001;}
+function setupOrderPriceControl(form,container){
+  container.insertAdjacentHTML('beforeend',`<div class="field order-price-control"><span>Preço neste pedido</span><button class="btn" type="button" data-order-price-open onclick="openOrderPriceEditor(this.form)" disabled>${icon('edit')}Personalizar preço</button><small data-order-price-status>Selecione um produto para personalizar.</small><button class="text-link order-price-reset" type="button" onclick="resetOrderPriceOverride(this.form);updateOrderEstimate()" hidden>Usar preço do catálogo</button></div><section class="order-price-editor full" hidden><header><h4>Personalizar preço unitário</h4><p>Válido apenas neste pedido. O catálogo da loja não será alterado.</p></header><div class="order-price-editor-fields"><label class="field">Novo valor unitário (R$)<input data-order-price-value type="number" min="0.01" max="1000000" step="0.01" disabled></label><label class="field full">Motivo da alteração<textarea data-order-price-reason minlength="3" maxlength="1000" rows="3" placeholder="Ex.: desconto negociado para pagamento à vista." disabled></textarea></label></div><p class="order-price-privacy">${icon('shield')}Ao criar o pedido, o sistema registrará a alteração, o responsável e o motivo em uma observação interna protegida. O cliente não verá esse registro.</p><div class="order-price-editor-actions"><button class="btn small" type="button" onclick="closeOrderPriceEditor(this.form)">Cancelar</button><button class="btn small primary" type="button" onclick="confirmOrderPrice(this.form)">Confirmar preço</button></div></section>`);
+  form.orderRequestId=crypto.randomUUID();
+}
+function refreshOrderPriceControl(form){
+  const product=db.products.find(p=>p.id===Number(form.elements.namedItem('product')?.value));
+  const button=form.querySelector('[data-order-price-open]'),status=form.querySelector('[data-order-price-status]'),reset=form.querySelector('.order-price-reset');if(!button)return;
+  button.disabled=!product;button.innerHTML=icon('edit')+(form.orderPriceOverride?money(orderUnitPrice(form,product))+' · Editar':'Personalizar preço');
+  status.textContent=product?(form.orderPriceOverride?'Preço personalizado · Catálogo: ':'Preço do catálogo: ')+money(salePrice(product)):'Selecione um produto para personalizar.';
+  reset.hidden=!form.orderPriceOverride;
+}
+function openOrderPriceEditor(form){
+  const product=db.products.find(p=>p.id===Number(form.elements.namedItem('product')?.value));if(!product)return;
+  const panel=form.querySelector('.order-price-editor'),value=panel.querySelector('[data-order-price-value]'),reason=panel.querySelector('[data-order-price-reason]');
+  panel.hidden=false;value.disabled=reason.disabled=false;value.required=reason.required=true;
+  value.value=orderUnitPrice(form,product);reason.value=form.orderPriceOverride?.reason||'';
+  form.querySelector('.new-order-sidebar .primary').disabled=true;
+  value.focus();value.select();
+}
+function closeOrderPriceEditor(form){
+  const panel=form.querySelector('.order-price-editor');if(!panel)return;panel.hidden=true;
+  panel.querySelectorAll('input,textarea').forEach(input=>{input.disabled=true;input.required=false;input.setCustomValidity('');});
+  form.querySelector('.new-order-sidebar .primary').disabled=Boolean(form.orderSaving);
+  form.querySelector('[data-order-price-open]')?.focus();
+}
+function confirmOrderPrice(form){
+  const product=db.products.find(p=>p.id===Number(form.elements.namedItem('product')?.value));if(!product)return;
+  const value=form.querySelector('[data-order-price-value]'),reason=form.querySelector('[data-order-price-reason]'),unitPrice=Number(value.value),why=reason.value.trim();
+  value.setCustomValidity(value.value&&validOrderPrice(unitPrice)?'':'Informe um valor maior que zero, com até duas casas decimais.');
+  reason.setCustomValidity(why.length>=3&&why.length<=1000?'':'Escreva o motivo da alteração, entre 3 e 1.000 caracteres.');
+  if(!value.reportValidity()||!reason.reportValidity())return;
+  form.orderPriceOverride=unitPrice===salePrice(product)?null:{productId:product.id,expectedUnitPrice:salePrice(product),unitPrice,reason:why};
+  closeOrderPriceEditor(form);refreshOrderPriceControl(form);updateOrderEstimate();
+}
+function resetOrderPriceOverride(form){form.orderPriceOverride=null;closeOrderPriceEditor(form);refreshOrderPriceControl(form);}
 function clearPresaleProduct(form){const input=form.querySelector('#presale-product-search');input.value='';searchPresaleProducts(input);form.querySelector('#presale-product-feedback').textContent='Digite o nome e selecione um produto para incluir no pedido.';input.focus();}
 const estimateBeforePresaleSearch=updateOrderEstimate;
 updateOrderEstimate=()=>{

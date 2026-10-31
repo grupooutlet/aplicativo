@@ -211,7 +211,7 @@ console.log('Payment totals and cents, checkout names, order progression, driver
 
 (async () => {
   run(`role='Proprietário';isOwner=true;currentProfile={role:'master',name:'Grupo Outlet'};masterPreviewPosition='Principal';
-    save=()=>true;closeModal=()=>{};go=path=>{location.hash='#'+path};toast=message=>{globalThis.lastToast=message};
+    save=()=>true;saveStaffOrder=order=>{db.orders.unshift(order)};closeModal=()=>{};go=path=>{location.hash='#'+path};toast=message=>{globalThis.lastToast=message};
     db.products=[{id:1,name:'Sofá',active:true,stock:10,price:1000,cost:500,image:'photo',variations:[]}];db.orders=[];
     db.settings.shippingOptions=[{id:'ship',name:'Frete normal',delivery:'Entrega',price:300,active:true},{id:'pickup',name:'Retirada',delivery:'Retirada',price:0,active:true}];`);
   const physicalData = { customer:'Ana Silva', phone:'21999998888', cpf:'11122233344', product:'1', qty:'1', delivery:'Entrega',

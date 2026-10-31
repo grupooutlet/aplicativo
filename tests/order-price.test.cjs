@@ -1,0 +1,34 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const nodes={'#app':{innerHTML:''},'#modal':{classList:{add(){},remove(){}},showModal(){},close(){}},'#toast':{}};
+const context=vm.createContext({console,URL,URLSearchParams,Date,Map,Set,structuredClone,crypto:require('node:crypto').webcrypto,
+ location:{protocol:'https:',host:'forteoutlet.com.br',origin:'https://forteoutlet.com.br',pathname:'/',hash:'#/app/orders',search:''},
+ document:{baseURI:'https://forteoutlet.com.br/',querySelector:s=>nodes[s]||null,querySelectorAll:()=>[],addEventListener(){}},window:{addEventListener(){},scrollTo(){}},history:{pushState(){},replaceState(){}},setTimeout:()=>1,clearTimeout(){},fetch:async()=>{throw Error('Unexpected network');},FormData:class{constructor(form){return Object.entries(form.data||{});}}});
+for(const file of ['storefront-editor.js','app.js','production.js','enhancements.js','variations.js','fulfillment.js','operations.js','commerce.js','merchandising.js','menus.js','shipping.js','change-history.js','business.js','receipts.js'])vm.runInContext(fs.readFileSync(file,'utf8').replace(/boot\(\);\s*$/,''),context,{filename:file});
+const run=s=>vm.runInContext(s,context);
+run("db=defaults();db.products=[{id:1,name:'Sofá',active:true,price:1000,promoPrice:900,cost:400,stock:100,variations:[]}];isOwner=true;role='Vendedor';currentProfile={user_id:'seller',role:'admin',position:'Vendedor',name:'Bianca'};authSession={user:{id:'seller'}}");
+const product=run('db.products[0]'),form={orderPriceOverride:null};
+assert.equal(context.orderUnitPrice(form,product),900);
+form.orderPriceOverride={productId:1,unitPrice:750,expectedUnitPrice:900,reason:'Desconto negociado'};
+assert.equal(context.orderUnitPrice(form,product),750);
+assert.equal(product.price,1000);assert.equal(product.promoPrice,900);
+assert.equal(context.orderUnitPrice(form,{...product,id:2}),900,'A different product must not inherit a negotiated price');
+for(const value of [-1,0,1.234,Infinity,NaN,1000001])assert.equal(context.validOrderPrice(value),false);
+for(const value of [0.01,750,999.99,1000000])assert.equal(context.validOrderPrice(value),true);
+const credit={id:'credit',title:'Crédito',kind:'credit',active:true,installments:[{count:3,rate:200,feeType:'fixed'},{count:10,rate:10}]};
+assert.equal(context.paymentQuote(credit,3,context.orderUnitPrice(form,product)*2+300).total,2000);
+assert.equal(context.paymentQuote(credit,10,context.orderUnitPrice(form,product)*2+300).total,1980);
+let focused=false;
+const input=(value)=>({value,disabled:false,required:true,message:'',setCustomValidity(s){this.message=s},reportValidity(){return !this.message},focus(){focused=true},select(){}});
+const value=input('700'),reason=input(''),submit={disabled:true},panel={hidden:false,querySelectorAll:()=>[value,reason]},open={focus(){}};
+const draftForm={elements:{namedItem:()=>({value:'1'})},querySelector:selector=>selector==='[data-order-price-value]'?value:selector==='[data-order-price-reason]'?reason:selector==='.order-price-editor'?panel:selector==='.new-order-sidebar .primary'?submit:selector==='[data-order-price-open]'?open:null};
+context.confirmOrderPrice(draftForm);assert.equal(draftForm.orderPriceOverride,undefined);assert.equal(submit.disabled,true);assert.match(reason.message,/motivo/);
+reason.value='Desconto à vista';context.qaForm=draftForm;run('updateOrderEstimate=()=>{};refreshOrderPriceControl=()=>{}');context.confirmOrderPrice(draftForm);
+assert.equal(draftForm.orderPriceOverride.unitPrice,700);assert.equal(draftForm.orderPriceOverride.reason,'Desconto à vista');assert.equal(panel.hidden,true);assert.equal(value.disabled,true);assert.equal(submit.disabled,false);
+context.resetOrderPriceOverride(draftForm);assert.equal(draftForm.orderPriceOverride,null);assert.equal(context.orderUnitPrice(draftForm,product),900);
+const internal=[{productName:'Sofá <teste>',originalPrice:900,unitPrice:750,reason:'Acordo <img src=x>',actorName:'Bianca <Equipe>',createdAt:'2026-10-31T18:00:00Z'}];
+const html=context.internalPriceNotesMarkup(internal);assert.match(html,/Somente equipe/);assert.match(html,/não pode ser editado ou removido/);assert.match(html,/Acordo &lt;img/);assert.doesNotMatch(html,/<img|onclick|textarea/);
+run("isOwner=false;currentProfile={role:'customer',user_id:'customer'}");assert.equal(context.internalOrderPriceNotes(100),'');
+run("isOwner=true;currentProfile={role:'driver',user_id:'driver'}");assert.equal(context.internalOrderPriceNotes(100),'');
+run("isOwner=true;role='Proprietário';currentProfile={role:'master',user_id:'owner'};db.orders=[{id:100,status:'pending',paid:false,customer:'Cliente QA',delivery:'Retirada',payment:'Pix',freight:0,items:[{id:1,name:'Sofá',qty:2,price:750}],notes:'Apenas orientação pública.'}]");
+const document=context.orderDocument(run('db.orders[0]'));assert.match(document,/Apenas orientação pública/);assert.doesNotMatch(document,/Acordo|Desconto à vista|Registros internos|Bianca/);
+console.log('Order pricing: scoped drafts, positive cents, catalog preservation, quantity/freight/fee totals, required reason, confirm/reset, escaped immutable notes and customer/document isolation verified.');

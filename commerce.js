@@ -131,7 +131,7 @@ function formShippingOption(form) {
 function paymentFormBase(form) {
   if (form.id === 'order-form') {
     const product = db.products.find(item => item.id === Number(form.elements.namedItem('product')?.value));
-    return salePrice(product) * Number(form.elements.namedItem('qty')?.value || 0) + Number(formShippingOption(form)?.price || 0);
+    return (typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product)) * Number(form.elements.namedItem('qty')?.value || 0) + Number(formShippingOption(form)?.price || 0);
   }
   const delivery = form.elements.namedItem('delivery')?.value;
   const selected = form.querySelector('input[name="shippingOptionId"]:checked')?.value;
@@ -306,7 +306,7 @@ updateOrderEstimate = () => {
     const product = db.products.find(item => item.id === Number(form.elements.namedItem('product')?.value));
     const products = form.querySelector('#order-products');
     const freight = form.querySelector('#order-freight');
-    if (products) products.textContent = money(salePrice(product) * Number(form.elements.namedItem('qty')?.value || 0));
+    if (products) products.textContent = money((typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product)) * Number(form.elements.namedItem('qty')?.value || 0));
     if (freight) freight.textContent = formShippingOption(form) ? money(formShippingOption(form).price) : 'Selecione um frete';
   }
   if (form?.elements.namedItem('paymentMethodId')) updatePaymentTotal(form);
@@ -455,7 +455,41 @@ function orderItemVisual(item){
 const canEditOrderNotes=()=>isOwner&&canSell()&&['master','admin'].includes(currentProfile?.role);
 const canCancelOrders=()=>isOwner&&canSell()&&['master','admin'].includes(currentProfile?.role);
 function orderNotesCard(order){
-  return `<section class="card order-notes-card"><div class="card-header"><h2>Observações</h2>${canEditOrderNotes()?button(order.notes?'Editar':'Adicionar',`onclick="editOrderNotes(${order.id})" aria-label="${order.notes?'Editar':'Adicionar'} observações do pedido ${order.id}"`,'small','edit'):''}</div><div class="pad"><p class="order-notes-content ${order.notes?'':'subtle'}">${esc(order.notes||'Nenhuma observação adicionada.')}</p>${order.notesUpdatedAt?`<small class="order-notes-updated">Atualizado em ${esc(momentLabel(order.notesUpdatedAt))}</small>`:''}</div></section>`;
+  return `<section class="card order-notes-card"><div class="card-header"><h2>Observações</h2>${canEditOrderNotes()?button(order.notes?'Editar':'Adicionar',`onclick="editOrderNotes(${order.id})" aria-label="${order.notes?'Editar':'Adicionar'} observações do pedido ${order.id}"`,'small','edit'):''}</div><div class="pad"><p class="order-notes-content ${order.notes?'':'subtle'}">${esc(order.notes||'Nenhuma observação adicionada.')}</p>${order.notesUpdatedAt?`<small class="order-notes-updated">Atualizado em ${esc(momentLabel(order.notesUpdatedAt))}</small>`:''}</div>${internalOrderPriceNotes(order.id)}</section>`;
+}
+const internalPriceNoteCache=new Map(),internalPriceNoteRequests=new Map();
+function internalPriceNoteKey(id){return String(currentProfile?.user_id||authSession?.user?.id||'')+':'+id;}
+function internalPriceNotesMarkup(rows){
+  return rows.length?`<div class="internal-price-notes"><div class="internal-price-note-label">${icon('shield')}Registros internos do sistema <span>Somente equipe</span></div>${rows.map(row=>`<article><h3>Preço do produto alterado</h3><p class="internal-price-note-product">${esc(row.productName)}</p><p>De <strong>${money(row.originalPrice)}</strong> para <strong>${money(row.unitPrice)}</strong> por unidade.</p><p class="internal-price-note-reason"><strong>Motivo:</strong> ${esc(row.reason)}</p><small>${esc(momentLabel(row.createdAt))} · ${esc(row.actorName)}<br>Registro protegido · não pode ser editado ou removido.</small></article>`).join('')}</div>`:'';
+}
+function internalOrderPriceNotes(id){
+  if(!isOwner||!['master','admin'].includes(currentProfile?.role))return '';
+  const key=internalPriceNoteKey(id),cached=internalPriceNoteCache.get(key);
+  if(!cached&&!internalPriceNoteRequests.has(key)){
+    const request=Promise.resolve().then(()=>loadInternalOrderPriceNotes(id,key));internalPriceNoteRequests.set(key,request);
+  }
+  return `<div id="internal-price-notes-${Number(id)}" class="internal-price-notes-host">${cached?internalPriceNotesMarkup(cached):''}</div>`;
+}
+async function loadInternalOrderPriceNotes(id,key){
+  try{
+    if(!document.querySelector('#internal-price-notes-'+Number(id))||internalPriceNoteKey(id)!==key||!isOwner||!['master','admin'].includes(currentProfile?.role))return;
+    const rows=await backendRequest('/rest/v1/rpc/order_price_notes',{method:'POST',body:JSON.stringify({p_order_id:id})},true);
+    if(internalPriceNoteKey(id)!==key||!isOwner||!['master','admin'].includes(currentProfile?.role))return;
+    internalPriceNoteCache.set(key,Array.isArray(rows)?rows:[]);
+    const target=document.querySelector('#internal-price-notes-'+Number(id));if(target)target.innerHTML=internalPriceNotesMarkup(internalPriceNoteCache.get(key));
+  }catch{const target=document.querySelector('#internal-price-notes-'+Number(id));if(target&&internalPriceNoteKey(id)===key)target.innerHTML=`<p class="subtle internal-price-notes-error">Não foi possível carregar os registros internos. <button class="text-link" type="button" onclick="loadInternalOrderPriceNotes(${Number(id)},internalPriceNoteKey(${Number(id)}))">Tentar novamente</button></p>`;}
+  finally{internalPriceNoteRequests.delete(key);}
+}
+async function saveStaffOrder(order,form){
+  const submit=form.querySelector('.new-order-sidebar .primary');if(form.orderSaving||submit?.disabled)return;form.orderSaving=true;if(submit)submit.disabled=true;
+  let committed=false;
+  try{
+    await settleAdminWrites();
+    form.orderRequestId ||= crypto.randomUUID();
+    const result=await backendRequest('/rest/v1/rpc/create_staff_order',{method:'POST',body:JSON.stringify({p_order:order,p_request_id:form.orderRequestId})},true);committed=true;
+    await loadAdminState();closeModal();go('/app/orders/'+result.id);toast('Pedido criado. Produtos reservados.');
+  }catch(error){toast(committed?'Pedido criado. Atualize a página para carregar a versão mais recente.':error.message);}
+  finally{form.orderSaving=false;if(submit)submit.disabled=false;}
 }
 
 orderDetail = id => {

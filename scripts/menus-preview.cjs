@@ -102,7 +102,7 @@ if(process.env.QA_RECOVERY==='1'){
 }
 for(const order of model.orders)order.date||=String(order.createdAt||'2026-10-25').slice(0,10);
 const preload=`<script>
-let fixtureModel=${JSON.stringify(model)},fixtureVersion=1;
+let fixtureModel=${JSON.stringify(model)},fixtureVersion=1;let fixturePriceNotes=[],fixtureStaffRequests=new Map();
 let fixtureProfile=${JSON.stringify(qaProfile)},fixtureHistory=${JSON.stringify(qaHistory)},fixtureCustomers=${JSON.stringify(qaCustomers)},fixtureContacts=${JSON.stringify(qaContacts)},fixtureRecovery=${JSON.stringify(qaRecovery)},fixturePresaleSellers=${JSON.stringify(qaPresaleSellers)};
 if(${process.env.QA_RECOVERY==='1'})window.open=()=>({opener:null,location:{replace(){}},close(){}});
 localStorage.setItem('forte-auth-v1',JSON.stringify({user:{id:'qa-master',email:'grupooutlet.rj@gmail.com'},access_token:'qa-local-only',refresh_token:'qa-local-only',expires_at:Math.floor(Date.now()/1000)+86400}));localStorage.setItem('forte-auth-shared-v1','1');
@@ -116,7 +116,7 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  if(url.includes('/rpc/update_checkout_recovery')){const row=fixtureRecovery.find(row=>row.id===body.p_id);if(!row||row.revision!==body.p_revision)return reply({message:'Este atendimento foi atualizado. Reabra os detalhes.'},409);row.revision++;row.events.push({action:body.p_action,at:new Date().toISOString(),by:fixtureProfile.name});if(body.p_action==='note')row.notes=body.p_notes;if(['claim','opened','contacted'].includes(body.p_action)){row.assigned_to='qa-master';row.assigned_name=fixtureProfile.name;}if(body.p_action==='contacted'){row.contact_count++;row.last_contact_at=new Date().toISOString();}if(['contacted','waiting','close','reopen','optout'].includes(body.p_action))row.stage=row.status={contacted:'contacted',waiting:'waiting',close:'closed',reopen:'pending',optout:'optout'}[body.p_action];if(body.p_action==='optout')row.consent=false;return reply(row);}
  if(url.includes('/rpc/resume_checkout_recovery'))return reply({items:fixtureRecovery.find(row=>row.recovery_token===body.p_token)?.items.map(item=>({id:item.id,qty:item.qty,options:item.options}))||[]});
  if(url.includes('/rest/v1/shop_public'))return reply([{data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p)}}]);
- if(url.includes('/rest/v1/profiles'))return reply(url.includes('position=eq.Vendedor')?fixturePresaleSellers.filter(p=>p.role==='admin'&&p.position==='Vendedor'):url.includes('user_id=eq.')?[fixtureProfile]:[fixtureProfile,...fixtureCustomers,...fixturePresaleSellers]);
+ if(url.includes('/rest/v1/profiles'))return reply(url.includes('position=eq.Vendedor')?[fixtureProfile,...fixturePresaleSellers].filter(p=>p.role==='admin'&&p.position==='Vendedor'):url.includes('user_id=eq.')?[fixtureProfile]:[fixtureProfile,...fixtureCustomers,...fixturePresaleSellers]);
  if(url.includes('/rpc/remove_team_member')){const person=fixturePresaleSellers.find(p=>p.user_id===body.p_user_id);if(!person)return reply({message:'Integrante não encontrado.'},400);person.role='customer';person.position=null;return reply(null);}
  if(url.includes('/rpc/sales_state'))return reply({data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p),orderBumps:fixtureModel.orderBumps.map(({cost,...b})=>b)},version:fixtureVersion});
  if(url.includes('/rest/v1/customer_contacts'))return reply(fixtureContacts);
@@ -135,6 +135,18 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
   const reserved=fixtureModel.orders.filter(o=>['pending','ready'].includes(o.status)).reduce((n,o)=>n+o.items.filter(i=>i.id===product.id&&i.stockTracked!==false).reduce((sum,i)=>sum+i.qty,0),0),qty=Number(body.p_quantity),delta=body.p_type==='out'?-qty:qty;
   if(!Number.isInteger(qty)||qty<1||!body.p_reason||body.p_type==='out'&&qty>product.stock-reserved)return reply({message:'Confira a quantidade e o saldo disponível.'},400);
   product.stock+=delta;const movement={id:Date.now(),productId:product.id,product:product.name,qty:delta,reason:body.p_reason,date:new Date().toLocaleString('pt-BR'),by:fixtureProfile.name,actorId:fixtureProfile.user_id,requestId:body.p_request_id};fixtureModel.movements.unshift(movement);return reply({id:movement.id,stock:product.stock,reserved,available:product.stock-reserved,version:++fixtureVersion});
+ }
+ if(url.includes('/rpc/order_price_notes'))return reply(fixturePriceNotes.filter(n=>n.orderId===body.p_order_id));
+ if(url.includes('/rpc/create_staff_order')){
+  if(fixtureStaffRequests.has(body.p_request_id))return reply(fixtureStaffRequests.get(body.p_request_id));
+  const requested=body.p_order,items=[],decisions=[];
+  for(const line of requested.items){const product=fixtureModel.products.find(p=>p.id===line.id);if(!product)return reply({message:'Produto indisponível.'},400);const original=product.promoPrice&&product.promoPrice<product.price?product.promoPrice:product.price;let unit=original;
+   if(line.priceOverride){if(!line.priceOverride.reason||line.priceOverride.reason.trim().length<3)return reply({message:'Informe o motivo da alteração.'},400);unit=line.priceOverride.unitPrice;decisions.push({productName:line.name,originalPrice:original,unitPrice:unit,reason:line.priceOverride.reason,actorName:fixtureProfile.name,createdAt:new Date().toISOString()});}
+   const {priceOverride,...safe}=line;items.push({...safe,price:unit});
+  }
+  const shipping=fixtureModel.settings.shippingOptions.find(o=>o.id===requested.shippingOptionId),method=fixtureModel.settings.paymentMethods.find(m=>m.id===requested.paymentMethodId),quote=paymentQuote(method,requested.installments,items.reduce((n,i)=>n+i.price*i.qty,0)+Number(shipping.price));
+  const id=Math.max(1000,...fixtureModel.orders.map(o=>o.id))+1,order={...requested,...quote,id,createdAt:new Date().toISOString(),date:new Date().toLocaleDateString('en-CA'),items};
+  fixtureModel.orders.unshift(order);for(const note of decisions)fixturePriceNotes.push({...note,id:fixturePriceNotes.length+1,orderId:id});const response={id,version:++fixtureVersion};fixtureStaffRequests.set(body.p_request_id,response);return reply(response);
  }
  if(url.includes('/rpc/save_order_notes')){const order=fixtureModel.orders.find(item=>item.id===body.p_order_id);if(!order)return reply({message:'Pedido não encontrado.'},400);if((order.notes||'')!==body.p_expected_notes)return reply({message:'A observação foi alterada em outra sessão.'},409);order.notes=body.p_notes;order.notesUpdatedAt=new Date().toISOString();return reply({version:++fixtureVersion});}
  if(url.includes('/rpc/save_catalog')){if(body.p_expected_version!==fixtureVersion)return reply({message:'O catálogo mudou em outra sessão.'},409);Object.assign(fixtureModel,body.p_changes);return reply({version:++fixtureVersion});}

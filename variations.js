@@ -274,6 +274,7 @@ function updateAdminVariationFields() {
 }
 createAdminOrder = form => {
   if (!canSell()) return;
+  if(form.querySelector?.('.order-price-editor')&&!form.querySelector('.order-price-editor').hidden)return toast('Confirme ou cancele a personalização do preço antes de criar o pedido.');
   const sellerProfile=typeof presaleSelectedSeller==='function'?presaleSelectedSeller(form):null;
   if(typeof presaleSelectedSeller==='function'&&!sellerProfile)return toast('Selecione um perfil de vendedor responsável pelo pedido.');
   const data = Object.fromEntries(new FormData(form));
@@ -293,18 +294,18 @@ createAdminOrder = form => {
   const shipping = formShippingOption(form);
   if (!shipping) return toast('Selecione um frete ou retirada disponível.');
   let payment;
-  try { payment = paymentFromFields(data, salePrice(product) * qty + Number(shipping.price)); }
+  const unitPrice=typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product);
+  try { payment = paymentFromFields(data, unitPrice * qty + Number(shipping.price)); }
   catch (error) { return toast(error.message); }
   const order = { ...data, addressParts, address: data.delivery === 'Retirada' ? db.settings.address : formatAddress(addressParts),
     id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: Number(shipping.price), freightPending: false,
     shippingOptionId: shipping.id, shippingOptionName: shipping.name,
-    items: [{ id: product.id, name: product.name + (detail ? ' · ' + detail : ''), options, price: salePrice(product), cost: product.cost, qty }],
+    items: [{ id: product.id, name: product.name + (detail ? ' · ' + detail : ''), options, price: unitPrice, cost: product.cost, qty,
+      ...(form.orderPriceOverride?{priceOverride:{expectedUnitPrice:form.orderPriceOverride.expectedUnitPrice,unitPrice:form.orderPriceOverride.unitPrice,reason:form.orderPriceOverride.reason}}:{}) }],
     status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: sellerProfile?sellerProfile.name:role === 'Vendedor' ? currentSeller : data.seller,
     ...(sellerProfile?{seller_id:sellerProfile.user_id}:{}),
     paymentTiming: data.paymentTiming || (data.delivery === 'Entrega' ? 'Na entrega' : 'Na retirada'), ...payment };
-  if (currentProfile?.role === 'admin' && currentProfile.position === 'Vendedor') return saveSellerOrder(order);
-  db.orders.unshift(order);
-  if (save()) { closeModal(); go('/app/orders/' + order.id); toast('Pedido criado. Produtos reservados.'); }
+  return saveStaffOrder(order,form);
 };
 
 // Startup is called after fulfillment extensions are installed.
