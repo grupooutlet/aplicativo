@@ -79,11 +79,12 @@ function freightSettingsPage() {
 }
 function deliveriesPage() {
   const configure = canConfigureFreight();
+  if(configure&&/[?&]tab=freight(?:&|$)/.test(location.hash))deliveryTab='freight';
   if (!configure && deliveryTab === 'freight') deliveryTab = 'board';
   return heading('Entregas', 'Organize as entregas por dia e acompanhe a saída dos pedidos.',
       currentProfile?.role === 'driver' ? button('Atualizar', 'onclick="refreshDriverDeliveries()"') : '') +
-    `<div class="delivery-tabs"><button class="btn ${deliveryTab === 'board' ? 'primary' : ''}" onclick="deliveryTab='board';render()">Esteira de entregas</button>
-      ${configure ? `<button class="btn ${deliveryTab === 'freight' ? 'primary' : ''}" onclick="deliveryTab='freight';render()">Fretes</button>` : ''}</div>` +
+    `<div class="delivery-tabs"><button class="btn ${deliveryTab === 'board' ? 'primary' : ''}" onclick="deliveryTab='board';go('/app/deliveries')">Esteira de entregas</button>
+      ${configure ? `<button class="btn ${deliveryTab === 'freight' ? 'primary' : ''}" onclick="deliveryTab='freight';go('/app/deliveries?tab=freight')">Fretes</button>` : ''}</div>` +
     (deliveryTab === 'freight' ? freightSettingsPage() : deliveryBoard());
 }
 // Rates belong to the Entregas module, outside the pre-sale and store settings forms.

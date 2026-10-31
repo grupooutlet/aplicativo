@@ -507,6 +507,11 @@ dialog.business-confirmation{width:min(490px,calc(100% - 32px));max-height:calc(
 @media print{.information-aside,.information-print,.store-footer,.store-header,.store-links,.store-announcement,.store-mobile-menu{display:none!important}.information-layout{display:block}.information-page{max-width:none;padding:0}.information-copy{color:#222;font-size:11pt}.information-heading h1{font-size:22pt}.information-copy h2{break-after:avoid}.information-copy p,.information-copy li{orphans:3;widows:3}}
 @media(min-width:651px) and (max-width:1300px){.dashboard-metrics>.metrics:has(.metric:nth-child(5)){grid-template-columns:repeat(6,minmax(0,1fr))}.dashboard-metrics>.metrics:has(.metric:nth-child(5))>.metric{grid-column:span 2}.dashboard-metrics>.metrics:has(.metric:nth-child(5))>.metric:nth-child(n+4){grid-column:span 3}}
 
+/* Product lookup in staff pre-sales: results appear only after a name is entered. */
+.presale-product-picker{min-width:0;gap:9px}.presale-product-picker>label{font-size:12px}.presale-search-input{position:relative;min-width:0}.presale-search-input>input{width:100%;padding-left:40px}.presale-search-input>.icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#82909a;pointer-events:none;width:17px;height:17px}.presale-product-results{max-height:290px;overflow-y:auto;border:1px solid #dde2e5;border-radius:9px;background:#fff;overscroll-behavior:contain}.presale-product-result{display:grid;grid-template-columns:42px minmax(0,1fr) 18px;align-items:center;gap:12px;width:100%;text-align:left;padding:12px;border:0;border-bottom:1px solid #edf0f2;border-radius:0;background:#fff;color:#1c2228}.presale-product-result:last-child{border-bottom:0}.presale-product-result:hover,.presale-product-result:focus-visible{background:#f5f6f7}.presale-product-result:focus-visible{outline:2px solid #1c2228;outline-offset:-3px}.presale-product-result img,.presale-product-selected img{object-fit:cover;border-radius:6px;width:42px;height:42px}.presale-product-result>span,.presale-product-selected>div{min-width:0;display:flex;flex-direction:column;gap:5px}.presale-product-result strong{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;line-height:1.6}.presale-product-result small,.presale-product-selected small,.presale-product-picker>small,#presale-seller-feedback{font-size:11px;color:#7a8793;line-height:1.6}.presale-product-selected{display:flex;align-items:center;gap:12px;padding:13px;background:#f6f8f7;border:1px solid #dfe6e2;border-radius:9px}.presale-product-selected>div{flex:1}.presale-product-selected strong{font-size:12px;line-height:1.6;overflow-wrap:anywhere}.presale-product-selected .btn{flex-shrink:0}.presale-no-results{padding:18px;font-size:12px;color:#7a8793}.presale-shipping-alert{max-width:none}.presale-shipping-alert p{margin-top:0}.presale-shipping-alert>small{display:block;color:#7a8793;line-height:1.7;margin:10px 0 7px}.presale-shipping-alert>.text-link{font-size:12px;text-align:left}.presale-product-result>.icon{width:16px;height:16px}
+@media(max-width:600px){.presale-product-results{max-height:235px}.presale-product-result{gap:10px;padding:11px}.presale-product-result strong{font-size:12px}.presale-product-selected{padding:11px;gap:10px}.presale-shipping-alert .btn{max-width:100%}}
+#order-form .presale-search-input>input{padding-left:40px}
+
 /* Administrative design system. Public storefront styles are intentionally outside this scope. */
 .admin-panel{--panel-side:224px;--panel-ink:#20262d;--panel-muted:#69717a;--panel-line:#e3e6e8;--panel-surface:#f6f7f8;background:#1c2228;color:var(--panel-ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;line-height:1.5}
 .admin-panel button,.admin-panel input,.admin-panel select,.admin-panel textarea{font-family:inherit}
@@ -1388,7 +1393,7 @@ function addressFields(prefix='',values={}){const v=parseAddress(values),n=key=>
 function addressFromForm(data,prefix=''){const n=key=>prefix?prefix+key[0].toUpperCase()+key.slice(1):key;return Object.fromEntries(['cep','street','number','neighborhood','city','state','complement'].map(key=>[key,String(data[n(key)]||'').trim()]))}
 function formatAddress(a){return `${a.street}, ${a.number}${a.complement?' · '+a.complement:''} · ${a.neighborhood} · ${a.city} / ${a.state.toUpperCase()}${a.cep?' · CEP '+a.cep:''}`}
 function toggleAdminDelivery(value){const group=$('#admin-address-fields');if(!group)return;const pickup=value==='Retirada';group.classList.toggle('disabled',pickup);group.querySelectorAll('input').forEach(input=>{input.disabled=pickup;input.required=!pickup&&input.name!=='complement'})}
-function newOrder(){if(!canSell())return toast('Seu perfil não pode cadastrar pedidos.');modal('Nova pré-venda',`<form id="order-form" onsubmit="event.preventDefault();createAdminOrder(this)"><div class="notice">A mercadoria será reservada. A venda será contabilizada após o pagamento e a saída para entrega.</div><div class="form-grid">${field('Nome do cliente','customer','','text','required')}${field('Telefone / WhatsApp','phone','','tel','required')}${field('CPF','cpf','','text','required')}${field('E-mail (opcional)','email','','email')}<label class="field full">Recebimento<select name="delivery" onchange="toggleAdminDelivery(this.value)"><option>Entrega</option><option>Retirada</option></select></label>${addressFields()}<label class="field full">Produto<select name="product" required oninput="updateOrderEstimate()">${db.products.filter(p=>p.active&&available(p.id)>0).map(p=>`<option value="${p.id}">${esc(p.name)} · ${money(p.price)} · ${available(p.id)} disponíveis</option>`).join('')}</select></label>${field('Quantidade','qty',1,'number','min="1" max="99" required oninput="updateOrderEstimate()"')}<label class="field">Vendedor<select name="seller">${(role==='Vendedor'?[{name:currentSeller}]:db.team.filter(t=>t.active&&['Vendedor','Gerente','Proprietário'].includes(t.role))).map(t=>`<option>${esc(t.name)}</option>`).join('')}</select></label><label class="field">Pagamento<select name="payment"><option>Pix</option><option>Cartão de crédito</option><option>Cartão de débito</option><option>Dinheiro</option></select></label>${field('Data da entrega','deliveryDate','','date','required')}<label class="field full">Observações<textarea name="notes" placeholder="Preferência de entrega, referência do endereço…"></textarea></label></div><div class="total-line final"><span>Total</span><span id="order-estimate">${money(db.products.find(p=>p.active&&available(p.id)>0)?.price)}</span></div><div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary">Criar pré-venda</button></div></form>`)}
+function newOrder(){if(!canSell())return toast('Seu perfil não pode cadastrar pedidos.');modal('Nova pré-venda',`<form id="order-form" onsubmit="event.preventDefault();createAdminOrder(this)"><div class="notice">A mercadoria será reservada. A venda será contabilizada após o pagamento e a saída para entrega.</div><div class="form-grid">${field('Nome do cliente','customer','','text','required')}${field('Telefone / WhatsApp','phone','','tel','required')}${field('CPF','cpf','','text','required')}${field('E-mail (opcional)','email','','email')}<label class="field full">Recebimento<select name="delivery" onchange="toggleAdminDelivery(this.value)"><option>Entrega</option><option>Retirada</option></select></label>${addressFields()}<label class="field full">Produto<select name="product" required oninput="updateOrderEstimate()"><option value="">Selecione um produto pela busca</option></select></label>${field('Quantidade','qty',1,'number','min="1" max="99" required oninput="updateOrderEstimate()"')}<label class="field">Vendedor<select name="seller">${(role==='Vendedor'?[{name:currentSeller}]:db.team.filter(t=>t.active&&['Vendedor','Gerente','Proprietário'].includes(t.role))).map(t=>`<option>${esc(t.name)}</option>`).join('')}</select></label><label class="field">Pagamento<select name="payment"><option>Pix</option><option>Cartão de crédito</option><option>Cartão de débito</option><option>Dinheiro</option></select></label>${field('Data da entrega','deliveryDate','','date','required')}<label class="field full">Observações<textarea name="notes" placeholder="Preferência de entrega, referência do endereço…"></textarea></label></div><div class="total-line final"><span>Total</span><span id="order-estimate">${money(db.products.find(p=>p.active&&available(p.id)>0)?.price)}</span></div><div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary">Criar pré-venda</button></div></form>`)}
 function updateOrderEstimate(){const f=$('#order-form');const p=db.products.find(p=>p.id===Number(f.product.value));$('#order-estimate').textContent=money((p?.price||0)*Number(f.qty.value)+Number(f.freight.value))}
 function createAdminOrder(form){if(!canSell())return;const f=Object.fromEntries(new FormData(form));const p=db.products.find(p=>p.id===Number(f.product));const qty=Number(f.qty);if(!p||!Number.isInteger(qty)||qty<1||qty>available(p.id))return toast('Quantidade indisponível em estoque.');const addressParts=f.delivery==='Retirada'?(db.settings.addressParts||parseAddress(db.settings.address)):addressFromForm(f);const o={...f,addressParts,address:f.delivery==='Retirada'?db.settings.address:formatAddress(addressParts),id:Math.max(1000,...db.orders.map(o=>o.id))+1,date:new Date().toLocaleDateString('en-CA'),freight:Number(f.freight),items:[{id:p.id,name:p.name,price:p.price,cost:p.cost,qty}],status:'pending',paid:false,receipt:null,channel:'Loja física',seller:role==='Vendedor'?currentSeller:f.seller};db.orders.unshift(o);if(save()){closeModal();go('/app/orders/'+o.id);toast('Pré-venda criada. Produtos reservados.')}}
 function paymentModal(id){const o=visibleOrders().find(o=>o.id===id);if(!o||!canPay()||o.status!=='pending')return;if(o.freightPending)return toast('Confirme o frete em Editar dados antes de receber o pagamento.');modal('Confirmar pagamento',`<form onsubmit="event.preventDefault();confirmPayment(${id},this)"><p>Pedido <strong>#${id}</strong> · ${esc(o.customer)}<br>Total a confirmar: <strong>${money(orderTotal(o))}</strong></p><label class="field">Foto do comprovante<input type="file" name="receipt" accept="image/png,image/jpeg,image/webp" required></label><p class="subtle" style="margin-top:10px">PNG, JPG ou WebP · até 2 MB. Use um arquivo de teste.</p><label style="display:flex;gap:9px;font-size:13px;line-height:1.6"><input type="checkbox" required>Conferi o valor recebido e o comprovante deste pedido.</label><div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary">Confirmar pagamento</button></div></form>`)}
@@ -2759,12 +2764,14 @@ function updateAdminVariationFields() {
 }
 createAdminOrder = form => {
   if (!canSell()) return;
+  const sellerProfile=typeof presaleSelectedSeller==='function'?presaleSelectedSeller(form):null;
+  if(typeof presaleSelectedSeller==='function'&&!sellerProfile)return toast('Selecione um perfil de vendedor responsável pela pré-venda.');
   const data = Object.fromEntries(new FormData(form));
   if (data.delivery === 'Entrega' && !isDeliveryDate(data.deliveryDate, true))
     return toast('Selecione uma data válida para a entrega.');
   const product = db.products.find(item => item.id === Number(data.product));
   const qty = Number(data.qty);
-  if (!product || !Number.isInteger(qty) || qty < 1 || qty > available(product.id))
+  if (!product || product.active === false || !Number.isInteger(qty) || qty < 1 || qty > available(product.id))
     return toast('Quantidade indisponível em estoque.');
   let options;
   try {
@@ -2782,7 +2789,8 @@ createAdminOrder = form => {
     id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: Number(shipping.price), freightPending: false,
     shippingOptionId: shipping.id, shippingOptionName: shipping.name,
     items: [{ id: product.id, name: product.name + (detail ? ' · ' + detail : ''), options, price: salePrice(product), cost: product.cost, qty }],
-    status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: role === 'Vendedor' ? currentSeller : data.seller,
+    status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: sellerProfile?sellerProfile.name:role === 'Vendedor' ? currentSeller : data.seller,
+    ...(sellerProfile?{seller_id:sellerProfile.user_id}:{}),
     paymentTiming: data.paymentTiming || (data.delivery === 'Entrega' ? 'Na entrega' : 'Na retirada'), ...payment };
   if (currentProfile?.role === 'admin' && currentProfile.position === 'Vendedor') return saveSellerOrder(order);
   db.orders.unshift(order);
@@ -3435,11 +3443,12 @@ function freightSettingsPage() {
 }
 function deliveriesPage() {
   const configure = canConfigureFreight();
+  if(configure&&/[?&]tab=freight(?:&|$)/.test(location.hash))deliveryTab='freight';
   if (!configure && deliveryTab === 'freight') deliveryTab = 'board';
   return heading('Entregas', 'Organize as entregas por dia e acompanhe a saída dos pedidos.',
       currentProfile?.role === 'driver' ? button('Atualizar', 'onclick="refreshDriverDeliveries()"') : '') +
-    `<div class="delivery-tabs"><button class="btn ${deliveryTab === 'board' ? 'primary' : ''}" onclick="deliveryTab='board';render()">Esteira de entregas</button>
-      ${configure ? `<button class="btn ${deliveryTab === 'freight' ? 'primary' : ''}" onclick="deliveryTab='freight';render()">Fretes</button>` : ''}</div>` +
+    `<div class="delivery-tabs"><button class="btn ${deliveryTab === 'board' ? 'primary' : ''}" onclick="deliveryTab='board';go('/app/deliveries')">Esteira de entregas</button>
+      ${configure ? `<button class="btn ${deliveryTab === 'freight' ? 'primary' : ''}" onclick="deliveryTab='freight';go('/app/deliveries?tab=freight')">Fretes</button>` : ''}</div>` +
     (deliveryTab === 'freight' ? freightSettingsPage() : deliveryBoard());
 }
 // Rates belong to the Entregas module, outside the pre-sale and store settings forms.
@@ -5279,6 +5288,17 @@ function regionalShippingNotice(address){
   const url=shippingSupportUrl(address);
   return `<div class="regional-shipping-alert" role="status"><strong>Vamos consultar a entrega para sua região</strong><p>Ainda não há frete disponível para ${esc(address.neighborhood)}, ${esc(address.city)} / ${esc(address.state)}. Fale com nossa equipe antes de finalizar com entrega.</p>${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Consultar entrega pelo WhatsApp</a>`:'<p>Entre em contato com o atendimento da loja para consultar a entrega.</p>'}</div>`;
 }
+function adminRegionalShippingNotice(address){
+  if(!address.city||!address.state||!address.neighborhood)return '<div class="regional-shipping-prompt">Preencha o CEP, a cidade e o bairro para consultar o frete deste pedido.</div>';
+  return `<div class="regional-shipping-alert presale-shipping-alert" role="status"><p>Ainda não há frete disponível para <strong>${esc(address.neighborhood)}, ${esc(address.city)} / ${esc(address.state)}</strong>. Configure um frete para essa região em <strong>Entregas → Fretes</strong>.</p><button class="btn small" type="button" onclick="openPresaleFreightSettings()">${icon('external')}Configurar frete</button><small>As configurações abrem em outra aba. Depois de salvar, atualize os fretes deste pedido.</small><button class="text-link" type="button" onclick="reloadPresaleFreight(this)">Atualizar fretes</button></div>`;
+}
+function openPresaleFreightSettings(){window.open(basePath+'#/app/deliveries?tab=freight','_blank','noopener,noreferrer');}
+async function reloadPresaleFreight(button){
+  const form=button.closest('form');button.disabled=true;
+  try{await settleAdminWrites();await loadAdminState();if(form.isConnected){refreshRegionalShipping(form,true);toast('Fretes atualizados para este endereço.');}}
+  catch{toast('Não foi possível atualizar os fretes. Tente novamente.');}
+  finally{button.disabled=false;}
+}
 const shippingChoicesBeforeRegions=shippingChoices;
 shippingChoices=(delivery,address)=>{
   if(!regionalShippingEnabled()||delivery!=='Entrega')return shippingChoicesBeforeRegions(delivery);
@@ -5315,7 +5335,7 @@ updateAdminShippingOptions=form=>{
   select.innerHTML=options.length?options.map(option=>`<option value="${esc(option.id)}">${esc(option.name)} · ${money(option.price)}</option>`).join(''):'<option value="">Preencha um endereço atendido</option>';
   let notice=form.querySelector('#admin-shipping-coverage');
   if(!notice){select.closest('label').insertAdjacentHTML('afterend','<div id="admin-shipping-coverage" class="full"></div>');notice=form.querySelector('#admin-shipping-coverage');}
-  if(notice){const option=options[0];notice.innerHTML=delivery!=='Entrega'?'':!option?regionalShippingNotice(address):`${option.note?`<p class="regional-shipping-note">${esc(option.note)}</p>`:''}${option.confirmationRequired?'<label class="regional-shipping-confirm"><input type="checkbox" name="shippingRestrictionConfirmed" required value="true">Endereço dentro da área atendida indicada.</label>':''}`;}
+  if(notice){const option=options[0];notice.innerHTML=delivery!=='Entrega'?'':!option?adminRegionalShippingNotice(address):`${option.note?`<p class="regional-shipping-note">${esc(option.note)}</p>`:''}${option.confirmationRequired?'<label class="regional-shipping-confirm"><input type="checkbox" name="shippingRestrictionConfirmed" required value="true">Endereço dentro da área atendida indicada.</label>':''}`;}
 };
 function refreshRegionalShipping(form,force=false){
   if(!form||!regionalShippingEnabled())return;
@@ -5330,7 +5350,82 @@ lookupCep=async input=>{await lookupCepBeforeRegions(input);refreshRegionalShipp
 const lookupAdminCepBeforeRegions=lookupAdminCep;
 lookupAdminCep=async input=>{await lookupAdminCepBeforeRegions(input);refreshRegionalShipping(input.form);};
 const newOrderBeforeRegions=newOrder;
-newOrder=()=>{newOrderBeforeRegions();refreshRegionalShipping(document.querySelector('#order-form'),true);};
+newOrder=()=>{newOrderBeforeRegions();const form=document.querySelector('#order-form');if(!form)return;setupPresaleProductPicker(form);setupPresaleSellers(form);refreshRegionalShipping(form,true);};
+
+function presaleProductMatches(query){
+  return searchText(query)?db.products.filter(product=>product.active&&available(product.id)>0&&matchesSearch(product.name,query)).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
+}
+function setupPresaleProductPicker(form){
+  const old=form.elements.namedItem('product');if(!old)return;
+  old.closest('label').outerHTML=`<div class="field full presale-product-picker"><label for="presale-product-search">Produto</label><div class="presale-search-input">${icon('search')}<input id="presale-product-search" type="search" placeholder="Busque pelo nome do produto" autocomplete="off" required aria-autocomplete="list" aria-controls="presale-product-results" oninput="searchPresaleProducts(this)" onfocus="showPresaleProductResults(this)" onkeydown="presaleSearchKey(event,this)"></div><input type="hidden" name="product" value=""><div id="presale-product-results" class="presale-product-results" hidden aria-label="Produtos encontrados"></div><div id="presale-selected-product" hidden></div><small id="presale-product-feedback" role="status">Digite o nome e selecione um produto para incluir na pré-venda.</small></div>`;
+  updateAdminVariationFields();updateOrderEstimate();
+}
+function searchPresaleProducts(input){
+  const form=input.form;form.elements.namedItem('product').value='';
+  const selected=form.querySelector('#presale-selected-product');selected.hidden=true;selected.innerHTML='';
+  input.setCustomValidity(input.value?'Selecione um produto nos resultados da busca.':'');
+  updateAdminVariationFields();updateOrderEstimate();showPresaleProductResults(input);
+}
+function showPresaleProductResults(input){
+  const form=input.form,target=form.querySelector('#presale-product-results');if(!target)return;
+  if(form.elements.namedItem('product').value||!searchText(input.value)){target.hidden=true;target.innerHTML='';return;}
+  const matches=presaleProductMatches(input.value),rows=matches.slice(0,15);
+  target.innerHTML=rows.map(product=>`<button class="presale-product-result" type="button" onclick="selectPresaleProduct(${Number(product.id)},this.form)" onkeydown="presaleResultKey(event,this)"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><span><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${available(product.id)} disponíveis</small></span>${icon('plus')}</button>`).join('')||'<p class="presale-no-results">Nenhum produto disponível com esse nome.</p>';
+  target.hidden=false;
+  form.querySelector('#presale-product-feedback').textContent=matches.length>15?`${matches.length} produtos encontrados. Exibindo os primeiros 15; refine o nome para encontrar o produto.`:matches.length?`${matches.length} produto(s) encontrado(s). Selecione uma opção.`:'Tente outro nome para buscar no catálogo.';
+}
+function selectPresaleProduct(id,form){
+  const product=db.products.find(item=>item.id===id&&item.active&&available(id)>0);if(!product)return;
+  form.elements.namedItem('product').value=String(id);const input=form.querySelector('#presale-product-search');input.value=product.name;input.setCustomValidity('');
+  const results=form.querySelector('#presale-product-results');results.hidden=true;results.innerHTML='';
+  const selected=form.querySelector('#presale-selected-product');selected.hidden=false;selected.innerHTML=`<div class="presale-product-selected"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><div><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${available(id)} disponíveis</small></div><button class="btn small" type="button" onclick="clearPresaleProduct(this.form)" aria-label="Remover produto selecionado">${icon('trash')}</button></div>`;
+  form.querySelector('#presale-product-feedback').textContent='Confira as variações e a quantidade abaixo.';
+  updateAdminVariationFields();updateOrderEstimate();
+}
+function clearPresaleProduct(form){const input=form.querySelector('#presale-product-search');input.value='';searchPresaleProducts(input);form.querySelector('#presale-product-feedback').textContent='Digite o nome e selecione um produto para incluir na pré-venda.';input.focus();}
+const estimateBeforePresaleSearch=updateOrderEstimate;
+updateOrderEstimate=()=>{
+  const form=document.querySelector('#order-form');
+  if(form&&!form.elements.namedItem('product')?.value){
+    const products=form.querySelector('#order-products'),total=form.querySelector('#order-estimate'),quote=form.querySelector('.payment-preview');
+    if(products)products.textContent='—';if(total)total.textContent='Selecione um produto';if(quote)quote.innerHTML='';return;
+  }
+  return estimateBeforePresaleSearch();
+};
+function presaleSearchKey(event,input){
+  if(event.key==='Escape'){input.form.querySelector('#presale-product-results').hidden=true;return;}
+  if(['ArrowDown','Enter'].includes(event.key)&&!input.form.elements.namedItem('product').value){const first=input.form.querySelector('.presale-product-result');event.preventDefault();if(first){if(event.key==='Enter')first.click();else first.focus();}}
+}
+function presaleResultKey(event,button){
+  const rows=[...button.form.querySelectorAll('.presale-product-result')],index=rows.indexOf(button);
+  if(event.key==='Escape'){event.preventDefault();button.form.querySelector('#presale-product-search').focus();button.form.querySelector('#presale-product-results').hidden=true;}
+  if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();rows[(index+(event.key==='ArrowDown'?1:rows.length-1))%rows.length]?.focus();}
+}
+document.addEventListener('click',event=>{const picker=document.querySelector('.presale-product-picker');if(picker&&!picker.contains(event.target)){const results=picker.querySelector('#presale-product-results');if(results)results.hidden=true;}});
+
+function presaleSellerProfiles(profiles=accountProfiles){
+  return profiles.filter(profile=>profile.role==='admin'&&profile.position==='Vendedor'&&String(profile.name||'').trim()&&(currentProfile?.role!=='admin'||currentProfile.position!=='Vendedor'||profile.user_id===currentProfile.user_id))
+    .sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+}
+function fillPresaleSellers(form,profiles){
+  const select=form.elements.namedItem('seller'),previous=select.value;
+  form.presaleSellers=presaleSellerProfiles(profiles);
+  const own=currentProfile?.role==='admin'&&currentProfile.position==='Vendedor'?currentProfile.user_id:'';
+  select.innerHTML='<option value="">Selecione o vendedor responsável</option>'+form.presaleSellers.map(profile=>`<option value="${esc(profile.user_id)}">${esc(profile.name)}</option>`).join('');
+  select.value=form.presaleSellers.some(profile=>profile.user_id===previous)?previous:own;
+  select.required=true;select.disabled=!form.presaleSellers.length;
+  const hint=form.querySelector('#presale-seller-feedback');if(hint)hint.textContent=form.presaleSellers.length?'Selecione o perfil responsável por esta venda na loja física.':'Nenhum perfil de vendedor disponível. Cadastre um integrante com o cargo Vendedor em Equipe e permissões.';
+}
+function presaleSelectedSeller(form){return form.presaleSellers?.find(profile=>profile.user_id===form.elements.namedItem('seller').value)||null;}
+function setupPresaleSellers(form){
+  const select=form.elements.namedItem('seller');if(!select)return;
+  select.closest('label').insertAdjacentHTML('beforeend','<small id="presale-seller-feedback" role="status"></small>');
+  fillPresaleSellers(form,accountProfiles);loadPresaleSellers(form);
+}
+async function loadPresaleSellers(form){
+  try{const profiles=await backendRequest('/rest/v1/profiles?select=user_id,name,role,position&role=eq.admin&position=eq.Vendedor&order=name.asc',{},true);if(form.isConnected)fillPresaleSellers(form,profiles);}
+  catch{if(form.isConnected){const hint=form.querySelector('#presale-seller-feedback');hint.textContent='Não foi possível atualizar os vendedores. Feche e abra a pré-venda para tentar novamente.';}}
+}
 const createAdminBeforeRegions=createAdminOrder;
 createAdminOrder=form=>{const option=formShippingOption(form);if(!checkShippingRestriction(form,option))return;return createAdminBeforeRegions(form);};
 const renderBeforeRegions=render;

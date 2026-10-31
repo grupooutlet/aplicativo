@@ -49,6 +49,7 @@ if(process.env.QA_COLLECTION_FILTERS==='1'){
 }
 const qaProfile={user_id:'qa-master',name:qaPosition==='Principal'?'Grupo Outlet':'Bianca QA',email:qaPosition==='Principal'?'grupooutlet.rj@gmail.com':'vendedor-qa@example.invalid',role:qaPosition==='Principal'?'master':'admin',position:qaPosition==='Principal'?null:qaPosition};
 const qaCustomers=[],qaContacts=[];
+const qaPresaleSellers=process.env.QA_PRESALE==='1'?[{user_id:'qa-seller-one',role:'admin',position:'Vendedor',name:'Bianca Melo'},{user_id:'qa-seller-two',role:'admin',position:'Vendedor',name:'Eduardo Thales'}]:[];
 if(process.env.QA_CUSTOMERS==='1'){
  qaCustomers.push({user_id:'qa-customer',role:'customer',name:'Marina Oliveira',email:'marina@example.invalid',created_at:'2026-10-19T13:30:00Z'},{user_id:'qa-no-orders',role:'customer',name:'Pedro Santos',email:'pedro@example.invalid',created_at:'2026-10-23T15:15:00Z'});
  qaContacts.push({id:'qa-contact',name:'Marina Oliveira',email:'marina@example.invalid',phone:'21999998888',created_at:'2026-10-19T13:30:00Z',address:'Rua das Flores, 100 · Centro · Nova Iguaçu / RJ · CEP 26000-000'});
@@ -101,7 +102,7 @@ if(process.env.QA_RECOVERY==='1'){
 for(const order of model.orders)order.date||=String(order.createdAt||'2026-10-25').slice(0,10);
 const preload=`<script>
 let fixtureModel=${JSON.stringify(model)},fixtureVersion=1;
-let fixtureProfile=${JSON.stringify(qaProfile)},fixtureHistory=${JSON.stringify(qaHistory)},fixtureCustomers=${JSON.stringify(qaCustomers)},fixtureContacts=${JSON.stringify(qaContacts)},fixtureRecovery=${JSON.stringify(qaRecovery)};
+let fixtureProfile=${JSON.stringify(qaProfile)},fixtureHistory=${JSON.stringify(qaHistory)},fixtureCustomers=${JSON.stringify(qaCustomers)},fixtureContacts=${JSON.stringify(qaContacts)},fixtureRecovery=${JSON.stringify(qaRecovery)},fixturePresaleSellers=${JSON.stringify(qaPresaleSellers)};
 if(${process.env.QA_RECOVERY==='1'})window.open=()=>({opener:null,location:{replace(){}},close(){}});
 localStorage.setItem('forte-auth-v1',JSON.stringify({user:{id:'qa-master',email:'grupooutlet.rj@gmail.com'},access_token:'qa-local-only',refresh_token:'qa-local-only',expires_at:Math.floor(Date.now()/1000)+86400}));localStorage.setItem('forte-auth-shared-v1','1');
 const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
@@ -114,7 +115,7 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  if(url.includes('/rpc/update_checkout_recovery')){const row=fixtureRecovery.find(row=>row.id===body.p_id);if(!row||row.revision!==body.p_revision)return reply({message:'Este atendimento foi atualizado. Reabra os detalhes.'},409);row.revision++;row.events.push({action:body.p_action,at:new Date().toISOString(),by:fixtureProfile.name});if(body.p_action==='note')row.notes=body.p_notes;if(['claim','opened','contacted'].includes(body.p_action)){row.assigned_to='qa-master';row.assigned_name=fixtureProfile.name;}if(body.p_action==='contacted'){row.contact_count++;row.last_contact_at=new Date().toISOString();}if(['contacted','waiting','close','reopen','optout'].includes(body.p_action))row.stage=row.status={contacted:'contacted',waiting:'waiting',close:'closed',reopen:'pending',optout:'optout'}[body.p_action];if(body.p_action==='optout')row.consent=false;return reply(row);}
  if(url.includes('/rpc/resume_checkout_recovery'))return reply({items:fixtureRecovery.find(row=>row.recovery_token===body.p_token)?.items.map(item=>({id:item.id,qty:item.qty,options:item.options}))||[]});
  if(url.includes('/rest/v1/shop_public'))return reply([{data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p)}}]);
- if(url.includes('/rest/v1/profiles'))return reply(url.includes('user_id=eq.')?[fixtureProfile]:[fixtureProfile,...fixtureCustomers]);
+ if(url.includes('/rest/v1/profiles'))return reply(url.includes('position=eq.Vendedor')?fixturePresaleSellers:url.includes('user_id=eq.')?[fixtureProfile]:[fixtureProfile,...fixtureCustomers,...fixturePresaleSellers]);
  if(url.includes('/rpc/sales_state'))return reply({data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p),orderBumps:fixtureModel.orderBumps.map(({cost,...b})=>b)},version:fixtureVersion});
  if(url.includes('/rest/v1/customer_contacts'))return reply(fixtureContacts);
  if(url.includes('/rest/v1/app_state'))return reply([{data:fixtureModel,version:fixtureVersion}]);

@@ -274,12 +274,14 @@ function updateAdminVariationFields() {
 }
 createAdminOrder = form => {
   if (!canSell()) return;
+  const sellerProfile=typeof presaleSelectedSeller==='function'?presaleSelectedSeller(form):null;
+  if(typeof presaleSelectedSeller==='function'&&!sellerProfile)return toast('Selecione um perfil de vendedor responsável pela pré-venda.');
   const data = Object.fromEntries(new FormData(form));
   if (data.delivery === 'Entrega' && !isDeliveryDate(data.deliveryDate, true))
     return toast('Selecione uma data válida para a entrega.');
   const product = db.products.find(item => item.id === Number(data.product));
   const qty = Number(data.qty);
-  if (!product || !Number.isInteger(qty) || qty < 1 || qty > available(product.id))
+  if (!product || product.active === false || !Number.isInteger(qty) || qty < 1 || qty > available(product.id))
     return toast('Quantidade indisponível em estoque.');
   let options;
   try {
@@ -297,7 +299,8 @@ createAdminOrder = form => {
     id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: Number(shipping.price), freightPending: false,
     shippingOptionId: shipping.id, shippingOptionName: shipping.name,
     items: [{ id: product.id, name: product.name + (detail ? ' · ' + detail : ''), options, price: salePrice(product), cost: product.cost, qty }],
-    status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: role === 'Vendedor' ? currentSeller : data.seller,
+    status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: sellerProfile?sellerProfile.name:role === 'Vendedor' ? currentSeller : data.seller,
+    ...(sellerProfile?{seller_id:sellerProfile.user_id}:{}),
     paymentTiming: data.paymentTiming || (data.delivery === 'Entrega' ? 'Na entrega' : 'Na retirada'), ...payment };
   if (currentProfile?.role === 'admin' && currentProfile.position === 'Vendedor') return saveSellerOrder(order);
   db.orders.unshift(order);

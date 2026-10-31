@@ -36,6 +36,17 @@ function regionalShippingNotice(address){
   const url=shippingSupportUrl(address);
   return `<div class="regional-shipping-alert" role="status"><strong>Vamos consultar a entrega para sua região</strong><p>Ainda não há frete disponível para ${esc(address.neighborhood)}, ${esc(address.city)} / ${esc(address.state)}. Fale com nossa equipe antes de finalizar com entrega.</p>${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Consultar entrega pelo WhatsApp</a>`:'<p>Entre em contato com o atendimento da loja para consultar a entrega.</p>'}</div>`;
 }
+function adminRegionalShippingNotice(address){
+  if(!address.city||!address.state||!address.neighborhood)return '<div class="regional-shipping-prompt">Preencha o CEP, a cidade e o bairro para consultar o frete deste pedido.</div>';
+  return `<div class="regional-shipping-alert presale-shipping-alert" role="status"><p>Ainda não há frete disponível para <strong>${esc(address.neighborhood)}, ${esc(address.city)} / ${esc(address.state)}</strong>. Configure um frete para essa região em <strong>Entregas → Fretes</strong>.</p><button class="btn small" type="button" onclick="openPresaleFreightSettings()">${icon('external')}Configurar frete</button><small>As configurações abrem em outra aba. Depois de salvar, atualize os fretes deste pedido.</small><button class="text-link" type="button" onclick="reloadPresaleFreight(this)">Atualizar fretes</button></div>`;
+}
+function openPresaleFreightSettings(){window.open(basePath+'#/app/deliveries?tab=freight','_blank','noopener,noreferrer');}
+async function reloadPresaleFreight(button){
+  const form=button.closest('form');button.disabled=true;
+  try{await settleAdminWrites();await loadAdminState();if(form.isConnected){refreshRegionalShipping(form,true);toast('Fretes atualizados para este endereço.');}}
+  catch{toast('Não foi possível atualizar os fretes. Tente novamente.');}
+  finally{button.disabled=false;}
+}
 const shippingChoicesBeforeRegions=shippingChoices;
 shippingChoices=(delivery,address)=>{
   if(!regionalShippingEnabled()||delivery!=='Entrega')return shippingChoicesBeforeRegions(delivery);
@@ -72,7 +83,7 @@ updateAdminShippingOptions=form=>{
   select.innerHTML=options.length?options.map(option=>`<option value="${esc(option.id)}">${esc(option.name)} · ${money(option.price)}</option>`).join(''):'<option value="">Preencha um endereço atendido</option>';
   let notice=form.querySelector('#admin-shipping-coverage');
   if(!notice){select.closest('label').insertAdjacentHTML('afterend','<div id="admin-shipping-coverage" class="full"></div>');notice=form.querySelector('#admin-shipping-coverage');}
-  if(notice){const option=options[0];notice.innerHTML=delivery!=='Entrega'?'':!option?regionalShippingNotice(address):`${option.note?`<p class="regional-shipping-note">${esc(option.note)}</p>`:''}${option.confirmationRequired?'<label class="regional-shipping-confirm"><input type="checkbox" name="shippingRestrictionConfirmed" required value="true">Endereço dentro da área atendida indicada.</label>':''}`;}
+  if(notice){const option=options[0];notice.innerHTML=delivery!=='Entrega'?'':!option?adminRegionalShippingNotice(address):`${option.note?`<p class="regional-shipping-note">${esc(option.note)}</p>`:''}${option.confirmationRequired?'<label class="regional-shipping-confirm"><input type="checkbox" name="shippingRestrictionConfirmed" required value="true">Endereço dentro da área atendida indicada.</label>':''}`;}
 };
 function refreshRegionalShipping(form,force=false){
   if(!form||!regionalShippingEnabled())return;
@@ -87,7 +98,82 @@ lookupCep=async input=>{await lookupCepBeforeRegions(input);refreshRegionalShipp
 const lookupAdminCepBeforeRegions=lookupAdminCep;
 lookupAdminCep=async input=>{await lookupAdminCepBeforeRegions(input);refreshRegionalShipping(input.form);};
 const newOrderBeforeRegions=newOrder;
-newOrder=()=>{newOrderBeforeRegions();refreshRegionalShipping(document.querySelector('#order-form'),true);};
+newOrder=()=>{newOrderBeforeRegions();const form=document.querySelector('#order-form');if(!form)return;setupPresaleProductPicker(form);setupPresaleSellers(form);refreshRegionalShipping(form,true);};
+
+function presaleProductMatches(query){
+  return searchText(query)?db.products.filter(product=>product.active&&available(product.id)>0&&matchesSearch(product.name,query)).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
+}
+function setupPresaleProductPicker(form){
+  const old=form.elements.namedItem('product');if(!old)return;
+  old.closest('label').outerHTML=`<div class="field full presale-product-picker"><label for="presale-product-search">Produto</label><div class="presale-search-input">${icon('search')}<input id="presale-product-search" type="search" placeholder="Busque pelo nome do produto" autocomplete="off" required aria-autocomplete="list" aria-controls="presale-product-results" oninput="searchPresaleProducts(this)" onfocus="showPresaleProductResults(this)" onkeydown="presaleSearchKey(event,this)"></div><input type="hidden" name="product" value=""><div id="presale-product-results" class="presale-product-results" hidden aria-label="Produtos encontrados"></div><div id="presale-selected-product" hidden></div><small id="presale-product-feedback" role="status">Digite o nome e selecione um produto para incluir na pré-venda.</small></div>`;
+  updateAdminVariationFields();updateOrderEstimate();
+}
+function searchPresaleProducts(input){
+  const form=input.form;form.elements.namedItem('product').value='';
+  const selected=form.querySelector('#presale-selected-product');selected.hidden=true;selected.innerHTML='';
+  input.setCustomValidity(input.value?'Selecione um produto nos resultados da busca.':'');
+  updateAdminVariationFields();updateOrderEstimate();showPresaleProductResults(input);
+}
+function showPresaleProductResults(input){
+  const form=input.form,target=form.querySelector('#presale-product-results');if(!target)return;
+  if(form.elements.namedItem('product').value||!searchText(input.value)){target.hidden=true;target.innerHTML='';return;}
+  const matches=presaleProductMatches(input.value),rows=matches.slice(0,15);
+  target.innerHTML=rows.map(product=>`<button class="presale-product-result" type="button" onclick="selectPresaleProduct(${Number(product.id)},this.form)" onkeydown="presaleResultKey(event,this)"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><span><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${available(product.id)} disponíveis</small></span>${icon('plus')}</button>`).join('')||'<p class="presale-no-results">Nenhum produto disponível com esse nome.</p>';
+  target.hidden=false;
+  form.querySelector('#presale-product-feedback').textContent=matches.length>15?`${matches.length} produtos encontrados. Exibindo os primeiros 15; refine o nome para encontrar o produto.`:matches.length?`${matches.length} produto(s) encontrado(s). Selecione uma opção.`:'Tente outro nome para buscar no catálogo.';
+}
+function selectPresaleProduct(id,form){
+  const product=db.products.find(item=>item.id===id&&item.active&&available(id)>0);if(!product)return;
+  form.elements.namedItem('product').value=String(id);const input=form.querySelector('#presale-product-search');input.value=product.name;input.setCustomValidity('');
+  const results=form.querySelector('#presale-product-results');results.hidden=true;results.innerHTML='';
+  const selected=form.querySelector('#presale-selected-product');selected.hidden=false;selected.innerHTML=`<div class="presale-product-selected"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><div><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${available(id)} disponíveis</small></div><button class="btn small" type="button" onclick="clearPresaleProduct(this.form)" aria-label="Remover produto selecionado">${icon('trash')}</button></div>`;
+  form.querySelector('#presale-product-feedback').textContent='Confira as variações e a quantidade abaixo.';
+  updateAdminVariationFields();updateOrderEstimate();
+}
+function clearPresaleProduct(form){const input=form.querySelector('#presale-product-search');input.value='';searchPresaleProducts(input);form.querySelector('#presale-product-feedback').textContent='Digite o nome e selecione um produto para incluir na pré-venda.';input.focus();}
+const estimateBeforePresaleSearch=updateOrderEstimate;
+updateOrderEstimate=()=>{
+  const form=document.querySelector('#order-form');
+  if(form&&!form.elements.namedItem('product')?.value){
+    const products=form.querySelector('#order-products'),total=form.querySelector('#order-estimate'),quote=form.querySelector('.payment-preview');
+    if(products)products.textContent='—';if(total)total.textContent='Selecione um produto';if(quote)quote.innerHTML='';return;
+  }
+  return estimateBeforePresaleSearch();
+};
+function presaleSearchKey(event,input){
+  if(event.key==='Escape'){input.form.querySelector('#presale-product-results').hidden=true;return;}
+  if(['ArrowDown','Enter'].includes(event.key)&&!input.form.elements.namedItem('product').value){const first=input.form.querySelector('.presale-product-result');event.preventDefault();if(first){if(event.key==='Enter')first.click();else first.focus();}}
+}
+function presaleResultKey(event,button){
+  const rows=[...button.form.querySelectorAll('.presale-product-result')],index=rows.indexOf(button);
+  if(event.key==='Escape'){event.preventDefault();button.form.querySelector('#presale-product-search').focus();button.form.querySelector('#presale-product-results').hidden=true;}
+  if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();rows[(index+(event.key==='ArrowDown'?1:rows.length-1))%rows.length]?.focus();}
+}
+document.addEventListener('click',event=>{const picker=document.querySelector('.presale-product-picker');if(picker&&!picker.contains(event.target)){const results=picker.querySelector('#presale-product-results');if(results)results.hidden=true;}});
+
+function presaleSellerProfiles(profiles=accountProfiles){
+  return profiles.filter(profile=>profile.role==='admin'&&profile.position==='Vendedor'&&String(profile.name||'').trim()&&(currentProfile?.role!=='admin'||currentProfile.position!=='Vendedor'||profile.user_id===currentProfile.user_id))
+    .sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+}
+function fillPresaleSellers(form,profiles){
+  const select=form.elements.namedItem('seller'),previous=select.value;
+  form.presaleSellers=presaleSellerProfiles(profiles);
+  const own=currentProfile?.role==='admin'&&currentProfile.position==='Vendedor'?currentProfile.user_id:'';
+  select.innerHTML='<option value="">Selecione o vendedor responsável</option>'+form.presaleSellers.map(profile=>`<option value="${esc(profile.user_id)}">${esc(profile.name)}</option>`).join('');
+  select.value=form.presaleSellers.some(profile=>profile.user_id===previous)?previous:own;
+  select.required=true;select.disabled=!form.presaleSellers.length;
+  const hint=form.querySelector('#presale-seller-feedback');if(hint)hint.textContent=form.presaleSellers.length?'Selecione o perfil responsável por esta venda na loja física.':'Nenhum perfil de vendedor disponível. Cadastre um integrante com o cargo Vendedor em Equipe e permissões.';
+}
+function presaleSelectedSeller(form){return form.presaleSellers?.find(profile=>profile.user_id===form.elements.namedItem('seller').value)||null;}
+function setupPresaleSellers(form){
+  const select=form.elements.namedItem('seller');if(!select)return;
+  select.closest('label').insertAdjacentHTML('beforeend','<small id="presale-seller-feedback" role="status"></small>');
+  fillPresaleSellers(form,accountProfiles);loadPresaleSellers(form);
+}
+async function loadPresaleSellers(form){
+  try{const profiles=await backendRequest('/rest/v1/profiles?select=user_id,name,role,position&role=eq.admin&position=eq.Vendedor&order=name.asc',{},true);if(form.isConnected)fillPresaleSellers(form,profiles);}
+  catch{if(form.isConnected){const hint=form.querySelector('#presale-seller-feedback');hint.textContent='Não foi possível atualizar os vendedores. Feche e abra a pré-venda para tentar novamente.';}}
+}
 const createAdminBeforeRegions=createAdminOrder;
 createAdminOrder=form=>{const option=formShippingOption(form);if(!checkShippingRestriction(form,option))return;return createAdminBeforeRegions(form);};
 const renderBeforeRegions=render;
