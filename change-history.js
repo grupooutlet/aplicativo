@@ -140,7 +140,7 @@ const businessActionRules={
  saveStock:['Confirmar movimentação de estoque','A quantidade disponível para novas vendas será alterada e a movimentação ficará registrada.'],
  saveAttribute:['Salvar atributo','O catálogo compartilhado de atributos será atualizado para os próximos cadastros.'],
  claimDriverDelivery:['Assumir entrega','Este pedido será atribuído a você na rota de entregas.'],
- createAdminOrder:['Criar pré-venda','O pedido será criado e as unidades dos produtos serão reservadas.'],
+ createAdminOrder:['Criar pedido','O pedido será criado e as unidades dos produtos serão reservadas.'],
  scheduleDelivery:['Confirmar agendamento','A data de entrega e a modalidade de frete deste pedido serão atualizadas.'],
  saveOrderData:['Alterar dados do pedido','As informações do cliente, da entrega e as observações deste pedido serão atualizadas.'],
  saveOrderNotes:['Salvar observação do pedido','A observação ficará disponível para a equipe no pedido.'],

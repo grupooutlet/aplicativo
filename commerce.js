@@ -16,16 +16,28 @@ function paymentQuote(method, count, base) {
   const option = method?.installments.find(item => Number(item.count) === Number(count));
   if (!option || !Number.isInteger(Number(count)) || count < 1 || count > 24 ||
       !Number.isFinite(base) || base < 0) throw new Error('Selecione uma opção de pagamento e parcelas disponíveis.');
-  const rate = method.kind === 'credit' ? Number(option.rate) : 0;
-  if (!Number.isFinite(rate) || rate < 0 || rate > 100) throw new Error('Taxa de pagamento inválida.');
+  const feeType = method.kind === 'credit' ? option.feeType || 'percent' : 'percent';
+  const feeValue = method.kind === 'credit' ? Number(option.rate) : 0;
+  if (!validPaymentFee(feeType, feeValue)) throw new Error('Taxa de pagamento inválida.');
   const baseCents = Math.round(base * 100);
-  const feeCents = Math.round(baseCents * rate / 100);
+  const feeCents = feeType === 'fixed' ? Math.round(feeValue * 100) : Math.round(baseCents * feeValue / 100);
   const totalCents = baseCents + feeCents;
   const eachCents = Math.floor(totalCents / count);
   return { payment: method.title, paymentMethodId: method.id, paymentKind: method.kind,
-    paymentRate: rate, paymentFee: feeCents / 100, paymentBase: baseCents / 100,
+    paymentRate: feeType === 'percent' ? feeValue : 0, paymentFeeType: feeType, paymentFeeValue: feeValue,
+    paymentFee: feeCents / 100, paymentBase: baseCents / 100,
     installments: Number(count), installmentAmount: eachCents / 100,
     lastInstallmentAmount: (totalCents - eachCents * (count - 1)) / 100, total: totalCents / 100 };
+}
+function validPaymentFee(type, value) {
+  return ['percent', 'fixed'].includes(type) && Number.isFinite(value) && value >= 0 &&
+    value <= (type === 'fixed' ? 1000000 : 100) && Math.abs(value * 100 - Math.round(value * 100)) < 0.00001;
+}
+function paymentFeeLabel(quote) {
+  return quote.paymentFeeType === 'fixed' ? 'Taxa fixa' : 'Taxa' + (Number(quote.paymentRate) ? ` (${String(quote.paymentRate).replace('.', ',')}%)` : '');
+}
+function paymentOptionFeeText(option) {
+  return Number(option.rate) ? option.feeType === 'fixed' ? money(option.rate) + ' por pedido' : String(option.rate).replace('.', ',') + '%' : 'sem taxa';
 }
 function paymentFromFields(fields, base) {
   const method = activePayments().find(item => item.id === fields.paymentMethodId || item.id === fields.payment);
@@ -37,7 +49,7 @@ function installmentText(quote) {
   return `${quote.installments} parcelas de ${money(quote.installmentAmount)}${quote.lastInstallmentAmount !== quote.installmentAmount ? ` (última de ${money(quote.lastInstallmentAmount)})` : ''}`;
 }
 function quoteMarkup(quote) {
-  return `<div class="payment-quote"><div class="total-line"><span>Taxa ${Number(quote.paymentRate) ? `(${String(quote.paymentRate).replace('.', ',')}%)` : ''}</span><strong>${money(quote.paymentFee)}</strong></div>
+  return `<div class="payment-quote"><div class="total-line"><span>${esc(paymentFeeLabel(quote))}</span><strong>${money(quote.paymentFee)}</strong></div>
     <div class="total-line"><span>Pagamento</span><strong>${esc(installmentText(quote))}</strong></div></div>`;
 }
 navigation.splice(navigation.findIndex(item => item[0] === 'deliveries') + 1, 0, ['payments', 'Pagamentos', 'wallet']);
@@ -46,15 +58,23 @@ function paymentsPage() {
   return heading('Pagamentos', 'Ative as formas de pagamento da loja. Taxas e parcelamento são exclusivos do cartão de crédito.') +
     `<div class="payment-methods">${paymentMethods().map((method, index) => `<section class="card pad payment-method-card">
       <div class="payment-method-heading"><span class="task-symbol">${icon('wallet')}</span><div><h2>${esc(method.title)}</h2><p class="subtle">${esc(paymentKinds[method.kind])}</p></div><span class="badge ${method.active === false ? 'gray' : 'green'}">${method.active === false ? 'Desativado' : 'Ativo'}</span></div>
-      <div class="payment-rate-tags">${method.installments.map(option => `<span>${method.kind === 'credit' ? option.count + 'x' : 'À vista'} · ${option.rate ? String(option.rate).replace('.', ',') + '%' : 'sem taxa'}</span>`).join('')}</div>
+      <div class="payment-rate-tags">${method.installments.map(option => `<span>${method.kind === 'credit' ? option.count + 'x' : 'À vista'} · ${paymentOptionFeeText(option)}</span>`).join('')}</div>
       <div class="actions">${button('Personalizar', `onclick="paymentMethodModal(${index})"`, 'small', 'edit')}${button(method.active === false ? 'Ativar' : 'Desativar', `onclick="togglePaymentMethod(${index})"`, 'small')}</div>
     </section>`).join('') || '<section class="card pad empty">Cadastre uma forma de pagamento.</section>'}</div>`;
 }
-function paymentRateRow(count = 1, rate = 0, credit = true) {
+function paymentRateRow(count = 1, rate = 0, credit = true, feeType = 'percent') {
   if (!credit) return '';
   return `<div class="payment-rate-row"><label class="field">Parcelas<input name="counts" type="number" value="${count}" min="1" max="24" step="1" required></label>
-    <label class="field">Taxa total (%)<input name="rates" type="number" value="${rate}" min="0" max="100" step="0.01" required></label>
+    <label class="field">Tipo de taxa<select name="feeTypes" onchange="updatePaymentFeeType(this)"><option value="percent" ${feeType !== 'fixed' ? 'selected' : ''}>Porcentagem (%)</option><option value="fixed" ${feeType === 'fixed' ? 'selected' : ''}>Valor fixo (R$)</option></select></label>
+    <label class="field"><span class="payment-fee-input-label">${feeType === 'fixed' ? 'Valor por pedido (R$)' : 'Taxa total (%)'}</span><input name="rates" type="number" value="${rate}" min="0" max="${feeType === 'fixed' ? '1000000' : '100'}" step="0.01" required></label>
     <button class="btn small danger" type="button" aria-label="Remover parcela" onclick="this.closest('.payment-rate-row').remove()">${icon('trash')}</button></div>`;
+}
+function updatePaymentFeeType(select) {
+  const row = select.closest('.payment-rate-row'), fixed = select.value === 'fixed', input = row.querySelector('[name="rates"]');
+  row.querySelector('.payment-fee-input-label').textContent = fixed ? 'Valor por pedido (R$)' : 'Taxa total (%)';
+  input.max = fixed ? '1000000' : '100';
+  // A different unit needs an explicit new value, rather than reinterpreting 200 reais as 200%.
+  input.value = ''; input.focus();
 }
 function paymentMethodModal(index = -1) {
   if (!canConfigurePayments()) return;
@@ -62,8 +82,8 @@ function paymentMethodModal(index = -1) {
   if (!method) return;
   modal('Personalizar ' + paymentKinds[method.kind], `<form onsubmit="event.preventDefault();savePaymentMethod(this,${index})">
     ${field('Título no checkout', 'title', method.title, 'text', 'required maxlength="60"')}
-    ${method.kind === 'credit' ? `<h3 style="margin:24px 0 8px">Parcelas e taxas</h3><p class="subtle">A taxa será aplicada sobre produtos e frete; zero significa sem taxa.</p>
-    <div id="payment-rate-editor">${method.installments.map(option => paymentRateRow(option.count, option.rate)).join('')}</div>
+    ${method.kind === 'credit' ? `<h3 style="margin:24px 0 8px">Parcelas e taxas</h3><p class="payment-fee-help">Escolha a taxa de cada parcelamento. <strong>Porcentagem</strong> incide sobre produtos e frete. <strong>Valor fixo</strong> é somado uma única vez ao pedido, antes de dividir as parcelas. Use zero para não cobrar taxa.</p>
+    <div id="payment-rate-editor">${method.installments.map(option => paymentRateRow(option.count, option.rate, true, option.feeType || 'percent')).join('')}</div>
     <button id="add-payment-rate" class="btn small" type="button" onclick="addPaymentRate()">${icon('plus')}Adicionar parcelamento</button>` : '<p class="subtle" style="margin-top:18px">Pagamento à vista, sem taxa adicional.</p>'}
     <div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Salvar pagamento</button></div></form>`);
 }
@@ -82,10 +102,11 @@ function savePaymentMethod(form, index) {
   const kind = method.kind;
   const counts = [...form.querySelectorAll('input[name="counts"]')];
   const rates = [...form.querySelectorAll('input[name="rates"]')];
-  const installments = kind === 'credit' ? counts.map((input, position) => ({ count: Number(input.value), rate: Number(rates[position]?.value) })) : [{ count: 1, rate: 0 }];
+  const feeTypes = [...form.querySelectorAll('select[name="feeTypes"]')];
+  const installments = kind === 'credit' ? counts.map((input, position) => ({ count: Number(input.value), rate: Number(rates[position]?.value), feeType: feeTypes[position]?.value || 'percent' })) : [{ count: 1, rate: 0 }];
   if (!title || title.length > 60 || !paymentKinds[kind] || !installments.length ||
       (kind === 'credit' && installments.some((option, position) => !counts[position].value || !rates[position].value || !Number.isInteger(option.count) || option.count < 1 || option.count > 24 ||
-        !Number.isFinite(option.rate) || option.rate < 0 || option.rate > 100)) ||
+        !validPaymentFee(option.feeType, option.rate))) ||
       new Set(installments.map(option => option.count)).size !== installments.length)
     return toast('Confira o título, as parcelas e as taxas. Cada quantidade de parcelas deve aparecer uma vez.');
   const methods = [...paymentMethods()];
@@ -134,7 +155,7 @@ function updatePaymentTotal(form) {
   try {
     const fields = Object.fromEntries(new FormData(form));
     const quote = paymentFromFields(fields, paymentFormBase(form));
-    if (preview) preview.innerHTML = `<div class="total-line"><span>Valor sem taxa</span><strong>${money(quote.paymentBase)}</strong></div>` + quoteMarkup(quote);
+    if (preview) preview.innerHTML = (form.id === 'order-form' ? '' : `<div class="total-line"><span>Valor sem taxa</span><strong>${money(quote.paymentBase)}</strong></div>`) + quoteMarkup(quote);
     if (total) total.textContent = money(quote.total);
   } catch {
     if (preview) preview.innerHTML = '';
@@ -578,9 +599,26 @@ teamPage = () => {
   return heading('Equipe e permissões', 'Sua equipe organizada por função.') + `<div class="stack">${groups.map(group => {
     const people = profiles.filter(profile => (profile.role === 'master' ? 'Principal' : profile.position || 'Outro') === group);
     return `<section class="card"><div class="card-header"><h2>${esc(titles[group] || group)}</h2><span class="badge gray">${people.length}</span></div>
-    <div class="tablewrap"><table><thead><tr><th>Pessoa</th><th>E-mail</th><th>Cargo</th></tr></thead><tbody>${people.map(profile => `<tr><td><div class="customer"><span class="avatar">${esc(initials(profile.name || profile.email))}</span>${esc(profile.name || 'Pessoa da equipe')}</div></td><td>${esc(profile.email)}</td><td>${esc(group)}</td></tr>`).join('')}</tbody></table></div></section>`;
+    <div class="tablewrap"><table><thead><tr><th>Pessoa</th><th>E-mail</th><th>Cargo</th><th class="right">Ações</th></tr></thead><tbody>${people.map(profile => `<tr><td><div class="customer"><span class="avatar">${esc(initials(profile.name || profile.email))}</span>${esc(profile.name || 'Pessoa da equipe')}</div></td><td>${esc(profile.email)}</td><td>${esc(group)}</td><td class="right">${canRemoveTeamMember(profile) ? button('Remover da equipe', `onclick="removeTeamMemberModal('${esc(profile.user_id)}')"`, 'small danger') : '<span class="subtle">'+(profile.role === 'master' ? 'Conta protegida' : profile.user_id === currentProfile?.user_id ? 'Seu perfil' : '—')+'</span>'}</td></tr>`).join('')}</tbody></table></div></section>`;
   }).join('') || '<section class="card pad empty">Nenhuma pessoa na equipe.</section>'}</div>`;
 };
+function canRemoveTeamMember(profile){
+  return typeof canDeleteCustomers === 'function' && canDeleteCustomers() && profile &&
+    ['admin','driver'].includes(profile.role) && profile.user_id !== currentProfile?.user_id;
+}
+function removeTeamMemberModal(id){
+  const profile=accountProfiles.find(person=>person.user_id===id);if(!canRemoveTeamMember(profile))return;
+  modal('Remover da equipe',`<div class="notice">${icon('users')}<p><strong>${esc(profile.name || profile.email)}</strong> perderá o acesso ao painel. A conta de cliente e o histórico dos pedidos serão preservados.</p></div><form onsubmit="event.preventDefault();removeTeamMember(this,'${esc(id)}')"><label class="team-removal-confirm"><input type="checkbox" required>Confirmo a remoção desta pessoa da equipe.</label><div class="form-actions">${button('Manter na equipe','type="button" onclick="closeModal()"')}<button class="btn danger">Remover da equipe</button></div></form>`);
+}
+async function removeTeamMember(form,id){
+  const profile=accountProfiles.find(person=>person.user_id===id);if(!canRemoveTeamMember(profile))return;
+  const submit=form.querySelector('button:not([type])');if(submit.disabled)return;submit.disabled=true;
+  try{
+    await backendRequest('/rest/v1/rpc/remove_team_member',{method:'POST',body:JSON.stringify({p_user_id:id})},true);
+    Object.assign(profile,{role:'customer',position:null});
+    closeModal();render();toast('Integrante removido da equipe. O histórico dos pedidos foi preservado.');
+  }catch(error){toast(error.message);submit.disabled=false;}
+}
 function brazilPhoneDigits(value) {
   const digits = String(value || '').replace(/\D/g, '');
   return digits.length === 10 || digits.length === 11 ? '55' + digits : digits;
@@ -697,7 +735,7 @@ async function saveSellerOrder(order, id = null) {
   try {
     const result = await backendRequest('/rest/v1/rpc/sales_order', { method: 'POST', body: JSON.stringify({ p_order: order, p_order_id: id }) }, true);
     await loadAdminState(); closeModal(); go('/app/orders/' + result.id);
-    toast(id ? 'Dados do pedido atualizados.' : 'Pré-venda criada. Produtos reservados.');
+    toast(id ? 'Dados do pedido atualizados.' : 'Pedido criado. Produtos reservados.');
   } catch (error) { toast(error.message); }
   finally { if (submit) submit.disabled = false; }
 }

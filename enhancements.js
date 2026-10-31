@@ -500,6 +500,6 @@ createAdminOrder = form => {
     items: [{ id: product.id, name: product.name, price: salePrice(product), cost: product.cost, qty }],
     status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: role === 'Vendedor' ? currentSeller : f.seller };
   db.orders.unshift(order);
-  if (save()) { closeModal(); go('/app/orders/' + order.id); toast('Pré-venda criada. Produtos reservados.'); }
+  if (save()) { closeModal(); go('/app/orders/' + order.id); toast('Pedido criado. Produtos reservados.'); }
 };
 

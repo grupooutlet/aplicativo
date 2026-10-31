@@ -275,7 +275,7 @@ function updateAdminVariationFields() {
 createAdminOrder = form => {
   if (!canSell()) return;
   const sellerProfile=typeof presaleSelectedSeller==='function'?presaleSelectedSeller(form):null;
-  if(typeof presaleSelectedSeller==='function'&&!sellerProfile)return toast('Selecione um perfil de vendedor responsável pela pré-venda.');
+  if(typeof presaleSelectedSeller==='function'&&!sellerProfile)return toast('Selecione um perfil de vendedor responsável pelo pedido.');
   const data = Object.fromEntries(new FormData(form));
   if (data.delivery === 'Entrega' && !isDeliveryDate(data.deliveryDate, true))
     return toast('Selecione uma data válida para a entrega.');
@@ -304,7 +304,7 @@ createAdminOrder = form => {
     paymentTiming: data.paymentTiming || (data.delivery === 'Entrega' ? 'Na entrega' : 'Na retirada'), ...payment };
   if (currentProfile?.role === 'admin' && currentProfile.position === 'Vendedor') return saveSellerOrder(order);
   db.orders.unshift(order);
-  if (save()) { closeModal(); go('/app/orders/' + order.id); toast('Pré-venda criada. Produtos reservados.'); }
+  if (save()) { closeModal(); go('/app/orders/' + order.id); toast('Pedido criado. Produtos reservados.'); }
 };
 
 // Startup is called after fulfillment extensions are installed.

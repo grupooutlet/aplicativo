@@ -32,6 +32,34 @@ const quote = run("paymentQuote(paymentMethods().find(method=>method.kind==='cre
 assert.equal(quote.paymentFee, 65);
 assert.equal(quote.total, 1365);
 assert.equal(quote.installmentAmount, 455);
+assert.equal(quote.paymentFeeType, 'percent');
+assert.equal(quote.paymentFeeValue, 5);
+const fixedQuote = run("paymentQuote({id:'c',kind:'credit',title:'Crédito',installments:[{count:3,rate:200,feeType:'fixed'}]},3,1300)");
+assert.equal(fixedQuote.total, 1500);
+assert.equal(fixedQuote.paymentFee, 200, 'A fixed fee is charged once per order, not once per installment');
+assert.equal(fixedQuote.installmentAmount, 500);
+assert.equal(fixedQuote.paymentRate, 0);
+assert.equal(fixedQuote.paymentFeeValue, 200);
+assert.match(context.quoteMarkup(fixedQuote), /Taxa fixa/);
+assert.match(context.paymentRateRow(3,200,true,'fixed'), /name="feeTypes"[\s\S]*value="fixed" selected/);
+assert.match(context.paymentOptionFeeText({rate:200,feeType:'fixed'}), /200,00 por pedido/);
+for (const [type,value] of [['percent',101],['fixed',-1],['fixed',1000001],['fixed',1.234],['invalid',10]]) {
+  assert.throws(()=>run(`paymentQuote({id:'c',kind:'credit',title:'Crédito',installments:[{count:1,rate:${value},feeType:'${type}'}]},1,100)`));
+}
+const fixedRounding = run("paymentQuote({id:'c',kind:'credit',title:'Crédito',installments:[{count:3,rate:0.01,feeType:'fixed'}]},3,100)");
+assert.equal(fixedRounding.total,100.01);
+assert.equal(fixedRounding.installmentAmount,33.33);
+assert.equal(fixedRounding.lastInstallmentAmount,33.35);
+run("qaPriorRole=role;qaPriorProfile=currentProfile;currentProfile={role:'admin',position:'Gerente',user_id:'manager'};role='Gerente';isOwner=true");
+assert.equal(context.canRemoveTeamMember({role:'admin',position:'Vendedor',user_id:'vendor'}),true);
+assert.equal(context.canRemoveTeamMember({role:'admin',position:'Gerente',user_id:'other-manager'}),true);
+assert.equal(context.canRemoveTeamMember({role:'driver',user_id:'driver'}),true);
+assert.equal(context.canRemoveTeamMember({role:'master',user_id:'owner'}),false);
+assert.equal(context.canRemoveTeamMember({role:'admin',user_id:'manager'}),false);
+assert.equal(context.canRemoveTeamMember({role:'customer',user_id:'customer'}),false);
+run("role='Vendedor';currentProfile={role:'admin',position:'Vendedor',user_id:'vendor'}");
+assert.equal(context.canRemoveTeamMember({role:'admin',user_id:'another-vendor'}),false);
+run('role=qaPriorRole;currentProfile=qaPriorProfile');
 assert.throws(() => run("paymentFromFields({paymentMethodId:'disabled'},100)"));
 assert.throws(() => run("paymentQuote(paymentMethods().find(method=>method.kind==='credit'),12,100)"));
 const rounding = run("paymentQuote({title:'Crédito',id:'c',kind:'credit',installments:[{count:3,rate:0}]},3,100)");

@@ -15,6 +15,7 @@ if(process.env.QA_SHIPPING==='1'){
  model.settings.shippingMode='regional';model.settings.shippingOptions=[{id:'pickup',name:'Retirada na loja',price:0,delivery:'Retirada',active:true},...require('./prepare-regional-shipping.cjs').map((o,i)=>({...o,id:'qa-region-'+i}))];
  model.settings.paymentMethods=[{id:'pix',kind:'pix',title:'Pix',active:true,installments:[{count:1,rate:0}]},{id:'credit',kind:'credit',title:'Cartão de crédito',active:true,installments:[{count:1,rate:0},{count:3,rate:5}]}];
 }
+if(process.env.QA_FIXED_FEES==='1'){model.settings.paymentMethods.find(p=>p.kind==='credit').installments=[{count:1,rate:0},{count:3,rate:200,feeType:'fixed'},{count:10,rate:10,feeType:'percent'}];}
 if(process.env.QA_MEDIA_OPTIMIZATION==='1'){
  const plan=require('../test-results/catalog-optimized-v1/upload-plan.json');
  const examples=plan.images.filter(i=>i.recommended&&i.files.some(f=>f.profile==='detail')).slice(0,6);
@@ -115,7 +116,8 @@ const actualPreviewFetch=window.fetch;window.fetch=async(input,options={})=>{
  if(url.includes('/rpc/update_checkout_recovery')){const row=fixtureRecovery.find(row=>row.id===body.p_id);if(!row||row.revision!==body.p_revision)return reply({message:'Este atendimento foi atualizado. Reabra os detalhes.'},409);row.revision++;row.events.push({action:body.p_action,at:new Date().toISOString(),by:fixtureProfile.name});if(body.p_action==='note')row.notes=body.p_notes;if(['claim','opened','contacted'].includes(body.p_action)){row.assigned_to='qa-master';row.assigned_name=fixtureProfile.name;}if(body.p_action==='contacted'){row.contact_count++;row.last_contact_at=new Date().toISOString();}if(['contacted','waiting','close','reopen','optout'].includes(body.p_action))row.stage=row.status={contacted:'contacted',waiting:'waiting',close:'closed',reopen:'pending',optout:'optout'}[body.p_action];if(body.p_action==='optout')row.consent=false;return reply(row);}
  if(url.includes('/rpc/resume_checkout_recovery'))return reply({items:fixtureRecovery.find(row=>row.recovery_token===body.p_token)?.items.map(item=>({id:item.id,qty:item.qty,options:item.options}))||[]});
  if(url.includes('/rest/v1/shop_public'))return reply([{data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p)}}]);
- if(url.includes('/rest/v1/profiles'))return reply(url.includes('position=eq.Vendedor')?fixturePresaleSellers:url.includes('user_id=eq.')?[fixtureProfile]:[fixtureProfile,...fixtureCustomers,...fixturePresaleSellers]);
+ if(url.includes('/rest/v1/profiles'))return reply(url.includes('position=eq.Vendedor')?fixturePresaleSellers.filter(p=>p.role==='admin'&&p.position==='Vendedor'):url.includes('user_id=eq.')?[fixtureProfile]:[fixtureProfile,...fixtureCustomers,...fixturePresaleSellers]);
+ if(url.includes('/rpc/remove_team_member')){const person=fixturePresaleSellers.find(p=>p.user_id===body.p_user_id);if(!person)return reply({message:'Integrante não encontrado.'},400);person.role='customer';person.position=null;return reply(null);}
  if(url.includes('/rpc/sales_state'))return reply({data:{...fixtureModel,products:fixtureModel.products.map(({cost,...p})=>p),orderBumps:fixtureModel.orderBumps.map(({cost,...b})=>b)},version:fixtureVersion});
  if(url.includes('/rest/v1/customer_contacts'))return reply(fixtureContacts);
  if(url.includes('/rest/v1/app_state'))return reply([{data:fixtureModel,version:fixtureVersion}]);

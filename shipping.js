@@ -98,14 +98,50 @@ lookupCep=async input=>{await lookupCepBeforeRegions(input);refreshRegionalShipp
 const lookupAdminCepBeforeRegions=lookupAdminCep;
 lookupAdminCep=async input=>{await lookupAdminCepBeforeRegions(input);refreshRegionalShipping(input.form);};
 const newOrderBeforeRegions=newOrder;
-newOrder=()=>{newOrderBeforeRegions();const form=document.querySelector('#order-form');if(!form)return;setupPresaleProductPicker(form);setupPresaleSellers(form);refreshRegionalShipping(form,true);};
+newOrder=()=>{newOrderBeforeRegions();const form=document.querySelector('#order-form');if(!form)return;setupPresaleProductPicker(form);setupPresaleSellers(form);refreshRegionalShipping(form,true);organizeNewOrder(form);};
+
+function organizeNewOrder(form){
+  if(form.classList.contains('new-order-form'))return;
+  form.classList.add('new-order-form');
+  const grid=form.querySelector('.form-grid'), summary=form.querySelector('.order-summary'), actions=form.querySelector('.form-actions');
+  const intro=form.querySelector(':scope > .notice');
+  if(intro){intro.className='new-order-intro';intro.textContent='Crie o pedido da loja física. Os produtos serão reservados após a confirmação.';}
+  const layout=document.createElement('div');layout.className='new-order-layout';
+  const main=document.createElement('div');main.className='new-order-main';layout.append(main);
+  const section=(number,title,description)=>{const node=document.createElement('section');node.className='new-order-section';node.innerHTML=`<header><span class="new-order-step">${number}</span><div><h3>${title}</h3><p>${description}</p></div></header><div class="new-order-fields"></div>`;main.append(node);return node.lastElementChild;};
+  const field=name=>form.elements.namedItem(name)?.closest('.field');
+  const move=(target,...nodes)=>nodes.filter(Boolean).forEach(node=>target.append(node));
+  const customer=section(1,'Cliente','Dados para contato e identificação.');
+  move(customer,field('customer'),field('phone'),field('cpf'),field('email'));
+  const phone=form.elements.namedItem('phone');if(phone){phone.placeholder='+55 (21) 99999-9999';phone.setAttribute('onblur','this.value=formatBrazilPhone(this.value)');}
+  const product=section(2,'Produto','Busque o produto e confira as opções e a quantidade.');
+  move(product,form.querySelector('.presale-product-picker'),form.querySelector('#admin-variation-fields'),field('qty'));
+  const delivery=section(3,'Entrega ou retirada','Defina o recebimento. O frete é calculado pelo endereço.');
+  const deliveryField=field('delivery');deliveryField?.classList.remove('full');
+  move(delivery,deliveryField,field('deliveryDate'),form.querySelector('#admin-address-fields'),form.querySelector('#admin-cep-feedback'),field('shippingOptionId'),form.querySelector('#admin-shipping-coverage'));
+  const payment=section(4,'Pagamento e responsável','Confira a condição combinada com o cliente.');
+  move(payment,field('paymentMethodId'),form.querySelector('.payment-choice-details'),field('paymentTiming'),field('seller'));
+  const notes=section(5,'Observações','Informações úteis para a equipe e para a entrega.');
+  const notesField=field('notes');if(notesField){notesField.firstChild.textContent='';form.elements.namedItem('notes').setAttribute('aria-label','Observações do pedido');}move(notes,notesField);
+  const aside=document.createElement('aside');aside.className='new-order-sidebar';
+  summary.querySelector('.final > span').textContent='Total do pedido';
+  move(aside,summary,actions);layout.append(aside);form.append(layout);grid?.remove();
+  actions.querySelector('.primary').textContent='Criar pedido';
+}
+const toggleDeliveryBeforeNewOrderLayout=toggleAdminDelivery;
+toggleAdminDelivery=value=>{
+  toggleDeliveryBeforeNewOrderLayout(value);
+  const form=document.querySelector('#order-form');if(!form?.classList.contains('new-order-form'))return;
+  const pickup=value==='Retirada';
+  for(const selector of ['#admin-address-fields','#admin-cep-feedback']){const element=form.querySelector(selector);if(element)element.hidden=pickup;}
+};
 
 function presaleProductMatches(query){
   return searchText(query)?db.products.filter(product=>product.active&&available(product.id)>0&&matchesSearch(product.name,query)).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
 }
 function setupPresaleProductPicker(form){
   const old=form.elements.namedItem('product');if(!old)return;
-  old.closest('label').outerHTML=`<div class="field full presale-product-picker"><label for="presale-product-search">Produto</label><div class="presale-search-input">${icon('search')}<input id="presale-product-search" type="search" placeholder="Busque pelo nome do produto" autocomplete="off" required aria-autocomplete="list" aria-controls="presale-product-results" oninput="searchPresaleProducts(this)" onfocus="showPresaleProductResults(this)" onkeydown="presaleSearchKey(event,this)"></div><input type="hidden" name="product" value=""><div id="presale-product-results" class="presale-product-results" hidden aria-label="Produtos encontrados"></div><div id="presale-selected-product" hidden></div><small id="presale-product-feedback" role="status">Digite o nome e selecione um produto para incluir na pré-venda.</small></div>`;
+  old.closest('label').outerHTML=`<div class="field full presale-product-picker"><label for="presale-product-search">Produto</label><div class="presale-search-input">${icon('search')}<input id="presale-product-search" type="search" placeholder="Busque pelo nome do produto" autocomplete="off" required aria-autocomplete="list" aria-controls="presale-product-results" oninput="searchPresaleProducts(this)" onfocus="showPresaleProductResults(this)" onkeydown="presaleSearchKey(event,this)"></div><input type="hidden" name="product" value=""><div id="presale-product-results" class="presale-product-results" hidden aria-label="Produtos encontrados"></div><div id="presale-selected-product" hidden></div><small id="presale-product-feedback" role="status">Digite o nome e selecione um produto para incluir no pedido.</small></div>`;
   updateAdminVariationFields();updateOrderEstimate();
 }
 function searchPresaleProducts(input){
@@ -130,13 +166,13 @@ function selectPresaleProduct(id,form){
   form.querySelector('#presale-product-feedback').textContent='Confira as variações e a quantidade abaixo.';
   updateAdminVariationFields();updateOrderEstimate();
 }
-function clearPresaleProduct(form){const input=form.querySelector('#presale-product-search');input.value='';searchPresaleProducts(input);form.querySelector('#presale-product-feedback').textContent='Digite o nome e selecione um produto para incluir na pré-venda.';input.focus();}
+function clearPresaleProduct(form){const input=form.querySelector('#presale-product-search');input.value='';searchPresaleProducts(input);form.querySelector('#presale-product-feedback').textContent='Digite o nome e selecione um produto para incluir no pedido.';input.focus();}
 const estimateBeforePresaleSearch=updateOrderEstimate;
 updateOrderEstimate=()=>{
   const form=document.querySelector('#order-form');
   if(form&&!form.elements.namedItem('product')?.value){
     const products=form.querySelector('#order-products'),total=form.querySelector('#order-estimate'),quote=form.querySelector('.payment-preview');
-    if(products)products.textContent='—';if(total)total.textContent='Selecione um produto';if(quote)quote.innerHTML='';return;
+    if(products)products.textContent='—';if(total)total.textContent='—';const freight=form.querySelector('#order-freight');if(freight)freight.textContent='A calcular';if(quote)quote.innerHTML='';return;
   }
   return estimateBeforePresaleSearch();
 };
@@ -172,7 +208,7 @@ function setupPresaleSellers(form){
 }
 async function loadPresaleSellers(form){
   try{const profiles=await backendRequest('/rest/v1/profiles?select=user_id,name,role,position&role=eq.admin&position=eq.Vendedor&order=name.asc',{},true);if(form.isConnected)fillPresaleSellers(form,profiles);}
-  catch{if(form.isConnected){const hint=form.querySelector('#presale-seller-feedback');hint.textContent='Não foi possível atualizar os vendedores. Feche e abra a pré-venda para tentar novamente.';}}
+  catch{if(form.isConnected){const hint=form.querySelector('#presale-seller-feedback');hint.textContent='Não foi possível atualizar os vendedores. Feche e abra o formulário de pedido para tentar novamente.';}}
 }
 const createAdminBeforeRegions=createAdminOrder;
 createAdminOrder=form=>{const option=formShippingOption(form);if(!checkShippingRestriction(form,option))return;return createAdminBeforeRegions(form);};
