@@ -4484,11 +4484,20 @@ commitFinishOrder = async (id, form) => {
 cancelOrderModal = id => {
   const order = workflowOrder(id); if (!canCancelOrders() || !order || order.status === 'cancelled') return;
   modal('Cancelar pedido', `<p>Cancelar o pedido <strong>#${id}</strong>? Os produtos retornarão ao estoque disponível.${order.paid ? ' O reembolso deve ser processado separadamente.' : ''}</p>
-    <div class="form-actions">${button('Manter pedido', 'onclick="closeModal()"')}${button('Cancelar pedido', `onclick="cancelOrder(${id},this)"`, 'danger')}</div>`);
+    <form onsubmit="event.preventDefault();cancelOrder(${id},this)" style="margin-top:20px"><label class="field">Motivo do cancelamento<select name="cancelReason" required onchange="toggleCancellationReason(this.form)"><option value="">Selecione um motivo</option><option>Produto sem estoque</option><option>Cliente desistiu da compra</option><option>Outro motivo</option></select></label><label class="field" data-cancel-other hidden style="display:none;margin-top:16px">Descreva o motivo<textarea name="cancelOther" disabled minlength="3" maxlength="1000" rows="3" placeholder="Explique por que este pedido está sendo cancelado."></textarea></label><p class="subtle" style="margin-top:14px">O motivo ficará registrado nas Observações do pedido, junto com a data e o responsável.</p><div class="form-actions">${button('Manter pedido', 'type="button" onclick="closeModal()"')}<button class="btn danger" type="submit">Confirmar cancelamento</button></div></form>`);
 };
-cancelOrder = async (id, submit) => {
-  if (!canCancelOrders()) return; if (submit) submit.disabled = true;
-  try { await performOrderAction(id, 'cancel'); closeModal(); render(); toast('Pedido cancelado. Os produtos retornaram ao estoque.'); }
+function toggleCancellationReason(form) {
+  const other=form.elements.namedItem('cancelReason').value==='Outro motivo',input=form.elements.namedItem('cancelOther');
+  form.querySelector('[data-cancel-other]').hidden=!other;form.querySelector('[data-cancel-other]').style.display=other?'flex':'none';input.disabled=!other;input.required=other;
+  if(other)input.focus();
+}
+cancelOrder = async (id, form) => {
+  if (!canCancelOrders()) return;
+  const selected=form?.elements?.namedItem('cancelReason')?.value,detail=String(form?.elements?.namedItem('cancelOther')?.value||'').trim();
+  const reason=['Produto sem estoque','Cliente desistiu da compra'].includes(selected)?selected:selected==='Outro motivo'&&detail.length>=3&&detail.length<=1000?'Outro motivo: '+detail:'';
+  if(!reason)return toast('Selecione o motivo e, em Outro motivo, escreva uma descrição com pelo menos 3 caracteres.');
+  const submit=form.querySelector('button[type="submit"]'); if (submit) submit.disabled = true;
+  try { await performOrderAction(id, 'cancel',reason); closeModal(); render(); toast('Pedido cancelado. Motivo registrado nas observações e produtos devolvidos ao estoque.'); }
   catch (error) { toast(error.message); }
   finally { if (submit) submit.disabled = false; }
 };
