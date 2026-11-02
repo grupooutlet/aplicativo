@@ -5649,7 +5649,7 @@ function presaleResultKey(event,button){
 document.addEventListener('click',event=>{const picker=document.querySelector('.presale-product-picker');if(picker&&!picker.contains(event.target)){const results=picker.querySelector('#presale-product-results');if(results)results.hidden=true;}});
 
 function presaleSellerProfiles(profiles=accountProfiles){
-  return profiles.filter(profile=>profile.role==='admin'&&profile.position==='Vendedor'&&String(profile.name||'').trim()&&(currentProfile?.role!=='admin'||currentProfile.position!=='Vendedor'||profile.user_id===currentProfile.user_id))
+  return profiles.filter(profile=>['admin','driver'].includes(profile.role)&&String(profile.name||'').trim())
     .sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
 }
 function fillPresaleSellers(form,profiles){
@@ -5659,7 +5659,7 @@ function fillPresaleSellers(form,profiles){
   select.innerHTML='<option value="">Selecione o vendedor responsável</option>'+form.presaleSellers.map(profile=>`<option value="${esc(profile.user_id)}">${esc(profile.name)}</option>`).join('');
   select.value=form.presaleSellers.some(profile=>profile.user_id===previous)?previous:own;
   select.required=true;select.disabled=!form.presaleSellers.length;
-  const hint=form.querySelector('#presale-seller-feedback');if(hint)hint.textContent=form.presaleSellers.length?'Selecione o perfil responsável por esta venda na loja física.':'Nenhum perfil de vendedor disponível. Cadastre um integrante com o cargo Vendedor em Equipe e permissões.';
+  const hint=form.querySelector('#presale-seller-feedback');if(hint)hint.textContent=form.presaleSellers.length?'Selecione o integrante responsável por esta venda.':'Nenhum integrante disponível. Cadastre uma pessoa em Equipe e permissões.';
 }
 function presaleSelectedSeller(form){return form.presaleSellers?.find(profile=>profile.user_id===form.elements.namedItem('seller').value)||null;}
 function setupPresaleSellers(form){
@@ -5668,7 +5668,7 @@ function setupPresaleSellers(form){
   fillPresaleSellers(form,accountProfiles);loadPresaleSellers(form);
 }
 async function loadPresaleSellers(form){
-  try{const profiles=await backendRequest('/rest/v1/profiles?select=user_id,name,role,position&role=eq.admin&position=eq.Vendedor&order=name.asc',{},true);if(form.isConnected)fillPresaleSellers(form,profiles);}
+  try{const profiles=await backendRequest('/rest/v1/rpc/order_responsibles',{method:'POST',body:'{}'},true);if(form.isConnected)fillPresaleSellers(form,profiles);}
   catch{if(form.isConnected){const hint=form.querySelector('#presale-seller-feedback');hint.textContent='Não foi possível atualizar os vendedores. Feche e abra o formulário de pedido para tentar novamente.';}}
 }
 const createAdminBeforeRegions=createAdminOrder;
