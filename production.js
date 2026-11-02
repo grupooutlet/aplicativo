@@ -1,6 +1,14 @@
 // The publishable key identifies the project. All private data is protected by Supabase RLS.
 const backendUrl = 'https://rwxqytomiorsrxpgtjin.supabase.co';
 const backendKey = 'sb_publishable_blKM9wQxpyILSjEn1RnTmw_sLcoanYo';
+// Strip Auth recovery credentials before analytics or any later script can inspect the URL.
+let recoveryPasswordInitialHash='';
+{
+ if(/(?:^#|&)type=recovery(?:&|$)|(?:^#|&)error_code=/.test(String(location.hash||''))){
+  recoveryPasswordInitialHash=location.hash.replace(/^#/,'');
+  history.replaceState({},'',basePath+'#/loja/redefinir-senha');
+ }
+}
 const ownerEmail = 'grupooutlet.rj@gmail.com';
 const authStorageKey = 'forte-auth-v1';
 const sharedAuthMarker = 'forte-auth-shared-v1';

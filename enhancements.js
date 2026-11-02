@@ -119,6 +119,7 @@ function authPage(mode = 'login') {
       ${signup ? '<label class="field">Confirmar senha<input type="password" name="passwordConfirm" autocomplete="new-password" minlength="8" required></label>' : ''}
       <button class="btn primary auth-submit">${signup ? 'Criar conta' : 'Entrar'}</button>
     </form>
+    ${signup?'':'<a class="text-link auth-switch" href="/loja/recuperar-senha">Esqueci minha senha</a>'}
     <button class="text-link auth-switch" onclick="authPage('${signup ? 'login' : 'signup'}')">${signup ? 'Já tenho conta · Fazer login' : 'Não tenho conta · Cadastrar'}</button>
     <a class="text-link" href="/loja">Voltar à loja</a>
   </section></main>`;
@@ -503,3 +504,63 @@ createAdminOrder = form => {
   if (save()) { closeModal(); go('/app/orders/' + order.id); toast('Pedido criado. Produtos reservados.'); }
 };
 
+// Password recovery credentials stay in memory and are removed from the URL immediately.
+let recoveryPasswordToken='',recoveryPasswordView='',recoveryPasswordBusy=false;
+function passwordRecoveryPage(){
+ const setting=recoveryPasswordView==='ready';
+ const body=setting?`<p>Digite sua nova senha duas vezes para confirmar.</p><form onsubmit="event.preventDefault();saveRecoveredPassword(this)"><label class="field">Nova senha<input name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128"></label><label class="field">Confirmar nova senha<input name="passwordConfirm" type="password" autocomplete="new-password" required minlength="8" maxlength="128"></label><button class="btn primary auth-submit">Salvar nova senha</button></form>`:recoveryPasswordView==='validating'?'<p>Verificando seu link de recuperação…</p>':recoveryPasswordView==='done'?'<p>Sua senha foi atualizada. Entre usando a nova senha.</p><a class="btn primary" href="/loja/login">Entrar na minha conta</a>':`<p>${recoveryPasswordView==='expired'?'Este link expirou ou não é válido. Solicite um novo link abaixo.':'Informe o e-mail da sua conta para receber um link de redefinição de senha.'}</p><form onsubmit="event.preventDefault();requestPasswordRecovery(this)"><label class="field">E-mail<input name="email" type="email" autocomplete="email" required maxlength="254"></label><button class="btn primary auth-submit">Enviar link de recuperação</button></form>`;
+ $('#app').innerHTML=`<main class="auth-page"><section class="card pad auth-card"><img src="assets/logo.webp" alt="Grupo Outlet" class="auth-logo"><h1>${setting?'Definir nova senha':'Recuperar acesso'}</h1>${body}<p data-password-recovery-status role="status" style="font-size:13px;line-height:1.6;margin-top:18px"></p><a class="text-link" href="/loja/login">Voltar ao login</a></section></main>`;normalizeLinks();document.title='Recuperar acesso · Grupo Outlet';
+}
+async function requestPasswordRecovery(form){
+ if(recoveryPasswordBusy||!form.reportValidity())return;
+ const button=form.querySelector('button'),feedback=form.parentElement.querySelector('[data-password-recovery-status]');
+ recoveryPasswordBusy=true;button.disabled=true;feedback.textContent='Enviando solicitação…';
+ try{
+  const redirect=location.origin+basePath;
+  const response=await fetch(backendUrl+'/auth/v1/recover?redirect_to='+encodeURIComponent(redirect),{method:'POST',headers:requestHeaders(),body:JSON.stringify({email:form.elements.namedItem('email').value.trim().toLowerCase()}),credentials:'omit',cache:'no-store'});
+  if(!response.ok)throw Error(response.status===429?'Aguarde alguns minutos antes de solicitar outro link.':'Não foi possível solicitar o link. Tente novamente em instantes.');
+  feedback.textContent='Se este e-mail estiver cadastrado, você receberá o link para criar uma nova senha. Confira também o spam.';
+ }catch(error){feedback.textContent=error.message;}
+ finally{recoveryPasswordBusy=false;button.disabled=false;}
+}
+async function saveRecoveredPassword(form){
+ if(recoveryPasswordBusy||!recoveryPasswordToken||recoveryPasswordView!=='ready'||!form.reportValidity())return;
+ const password=form.elements.namedItem('password').value,confirm=form.elements.namedItem('passwordConfirm').value;
+ const feedback=form.parentElement.querySelector('[data-password-recovery-status]');
+ if(password!==confirm){feedback.textContent='As senhas não coincidem. Confira os dois campos.';return;}
+ const button=form.querySelector('button');recoveryPasswordBusy=true;button.disabled=true;
+ try{
+  const headers={...requestHeaders(),Authorization:'Bearer '+recoveryPasswordToken};
+  const response=await fetch(backendUrl+'/auth/v1/user',{method:'PUT',headers,body:JSON.stringify({password}),credentials:'omit',cache:'no-store'});
+  if(!response.ok)throw Error(response.status===401||response.status===403?'O link expirou. Solicite um novo link de recuperação.':'Não foi possível alterar a senha. Use uma senha diferente e tente novamente.');
+  try{await fetch(backendUrl+'/auth/v1/logout',{method:'POST',headers,credentials:'omit',cache:'no-store'});}catch{}
+  recoveryPasswordToken='';recoveryPasswordView='done';form.reset();passwordRecoveryPage();
+ }catch(error){feedback.textContent=error.message;}
+ finally{recoveryPasswordBusy=false;button.disabled=false;}
+}
+const renderBeforePasswordRecovery=render;
+render=()=>{
+ if(routePath()==='/loja/recuperar-senha'||routePath()==='/loja/redefinir-senha')return passwordRecoveryPage();
+ recoveryPasswordToken='';recoveryPasswordView='';
+ return renderBeforePasswordRecovery();
+};
+const bootBeforePasswordRecovery=boot;
+boot=async()=>{
+ const recoveryHash=recoveryPasswordInitialHash||location.hash.replace(/^#/,'');
+ if(!/(?:^|&)type=recovery(?:&|$)|(?:^|&)error_code=/.test(recoveryHash))return bootBeforePasswordRecovery();
+ const fragment=new URLSearchParams(recoveryHash);
+ recoveryPasswordInitialHash='';
+ if(fragment.get('type')==='recovery'||fragment.has('error_code')){
+  const token=fragment.get('type')==='recovery'?fragment.get('access_token'):null;
+  history.replaceState({},'',basePath+'#/loja/redefinir-senha');
+  recoveryPasswordView='validating';passwordRecoveryPage();
+  try{
+   if(!token)throw Error();
+   const response=await fetch(backendUrl+'/auth/v1/user',{headers:{...requestHeaders(),Authorization:'Bearer '+token},credentials:'omit',cache:'no-store'});
+   if(!response.ok||!(await response.json())?.id)throw Error();
+   recoveryPasswordToken=token;recoveryPasswordView='ready';
+  }catch{recoveryPasswordToken='';recoveryPasswordView='expired';}
+  passwordRecoveryPage();return;
+ }
+ return bootBeforePasswordRecovery();
+};
