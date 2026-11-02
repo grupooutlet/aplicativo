@@ -221,7 +221,8 @@ checkoutPage = () => {
   html = html.replace(/(<h2>Seu pedido<\/h2>)[\s\S]*?(<div class="total-line"><span>Frete<\/span>)/,
     '$1' + checkoutCartItems() + '$2');
   html = html.replace(/(<input[^>]*name="phone"[^>]*)(>)/, '$1 onblur="this.value=formatBrazilPhone(this.value)"$2');
-  html=html.replace('<div class="total-line"><span>Frete</span><strong id="checkout-freight">','<div class="external-freight-box"><div class="total-line"><span>Frete à parte</span><strong id="checkout-freight">').replace(/(<strong id="checkout-freight">[\s\S]*?<\/strong><\/div>)/,'$1<small>Pago diretamente ao entregador na entrega, por Pix ou dinheiro. Não entra no total da loja nem nas parcelas.</small></div>');
+  html = html.replace(/<label class="field\s*">Telefone \/ WhatsApp/,'<label class="field full">Telefone / WhatsApp');
+  html=html.replace(/<div class="total-line"><span>Frete<\/span><strong id="checkout-freight">[\s\S]*?<\/strong><\/div>/,'');
   html=html.replace('<span>Total</span><strong id="checkout-total">','<span>Total da loja</span><strong id="checkout-total">');
   return fillCheckoutContact(html, checkoutContact());
 };

@@ -114,7 +114,7 @@ checkoutPage = () => {
   html = html.replace('</select></label><label class="field" style="margin-top:20px">Observações',
     '</select></label><label class="field" style="margin-top:18px">Quando pretende pagar?<select name="paymentTiming"><option>Na entrega</option><option>Antecipado</option></select></label><label class="field" style="margin-top:20px">Observações');
   html = html.replace('A equipe confirmará os próximos passos.',
-    'Confira o total antes de finalizar. O pagamento na entrega pode ser combinado com a equipe.');
+    'O pagamento é feito na entrega ou com a nossa equipe pelo WhatsApp.');
   return html;
 };
 

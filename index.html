@@ -372,6 +372,13 @@ dialog:has(.variation-editor){width:min(790px,calc(100% - 24px))}
 @media(prefers-reduced-motion:reduce){.store-help-bubble{animation:none}.store-help-launcher{transition:none}}
 .outage-page{min-height:100svh;display:grid;place-items:center;padding:40px 22px;background:#f4f6f3;color:#1c2228}.outage-card{width:100%;max-width:620px;padding:44px;background:#fff;border:1px solid #e2e7e1;border-radius:18px;box-shadow:0 12px 50px #1c222808}.outage-logo{width:180px;height:64px;object-fit:contain;display:block;margin-bottom:34px}.outage-label{display:block;font-size:10px;letter-spacing:1.5px;font-weight:650;color:#8b7628;margin-bottom:12px}.outage-card h1{font-size:clamp(24px,4vw,32px);line-height:1.25;letter-spacing:-.7px;margin:0 0 18px}.outage-card p{font-size:15px;line-height:1.85;color:#69736b;margin:0}.outage-actions{display:flex;flex-wrap:wrap;gap:10px;margin:26px 0 22px}.outage-actions .btn{min-height:45px;padding:12px 18px;font-size:13px}.outage-card>small{font-size:11px;line-height:1.8;color:#879088}.outage-actions .btn:focus-visible{outline:2px solid #7d671a;outline-offset:3px}@media(max-width:480px){.outage-page{padding:20px 16px}.outage-card{padding:28px 24px;border-radius:14px}.outage-logo{width:155px;height:55px;margin-bottom:26px}.outage-actions{flex-direction:column}.outage-actions .btn{width:100%}.outage-card p{font-size:14px}}
 
+/* Checkout is a focused step, shared by the live store and theme preview. */
+.store.store-checkout{min-height:100dvh;background:#fff}
+.store-checkout>.store-content{max-width:1130px;padding-top:32px;padding-bottom:40px}
+.store-checkout .checkout-cart-item .cart-line{border-bottom:0}
+.store-checkout .checkout-cart-item:has(+ #checkout-bump-summary){border-bottom:0;margin-bottom:0;padding-bottom:4px}
+@media(max-width:650px){.store-checkout>.store-content{padding-top:22px;padding-bottom:28px}.store-checkout>.store-content>.heading{margin-bottom:20px}}
+
 /* Catalog tools use the same quiet surfaces, yellow accent and spacing as the panel. */
 .collection-order-control{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}.collection-order-control select{min-width:240px}.collection-order-help{padding:0 24px 18px;color:var(--muted);font-size:12px;line-height:1.7}.collection-order-toolbar{flex-wrap:wrap;gap:16px}.collection-product-item[draggable=false]>.drag-handle{cursor:default;opacity:.3}.collection-product-item[draggable=false]>.drag-handle .icon{width:15px;height:15px}
 .menus-save-bar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 20px;margin-bottom:24px;border:1px solid var(--line);background:#fff;border-radius:10px;box-shadow:0 4px 16px #1c222807}.menu-placements{margin-bottom:24px}.menu-placement-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:0 24px 24px}.menus-table .text-link{font-size:14px;font-weight:600}.menu-editor-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:24px;align-items:start}.menu-editor-layout h2{font-size:16px}.menu-editor-layout .field{margin-top:20px}.menu-editor-layout .check-row{margin:18px 0}.menu-editor-layout p.subtle{line-height:1.8}.menu-items-card .card-header{align-items:flex-start;gap:16px}.menu-items-card .card-header .btn{white-space:nowrap}.menu-items-tree{padding:0 18px 18px}.menu-item-row{display:flex;align-items:center;gap:12px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:9px;margin-bottom:10px}.menu-item-copy{flex:1;min-width:0}.menu-item-copy strong{display:block;font-size:13px;overflow-wrap:anywhere}.menu-item-copy small{display:block;margin-top:6px;color:var(--muted);font-size:11px;line-height:1.6;overflow-wrap:anywhere}.menu-item-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:125px}.menu-item-actions .btn{padding:6px;min-height:30px;width:32px}.menu-children{margin-left:26px;padding-left:16px;border-left:2px solid #eee9d9}.menu-item-row .drag-handle{font-size:23px}.menu-link-hint{margin:16px 0;line-height:1.7}.menu-positions .check-row{font-size:12px}.store-nav>.store-menu-branch{position:relative;flex:none}.store-menu-branch summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:inherit}.store-menu-branch summary::-webkit-details-marker{display:none}.store-menu-branch summary>.icon{width:13px;height:13px}.store-submenu{display:flex;flex-direction:column;gap:14px;padding:16px;border:1px solid var(--line);border-radius:10px;background:#fff;box-shadow:0 10px 25px #1c222814}.store-nav .store-submenu{position:absolute;z-index:40;top:calc(100% + 15px);left:0;min-width:220px;max-width:320px}.store-nav .store-submenu .store-submenu{position:static;box-shadow:none;min-width:0;border:none;border-left:2px solid #eee9d9;margin-top:12px;padding:4px 0 4px 14px}.store-submenu a{white-space:normal;line-height:1.6}.store-menu-overview{font-weight:600}.store-footer-menu{display:flex;flex-direction:column;align-items:flex-start;gap:10px}.store-footer-menu>strong{margin-bottom:4px}.store-footer-menu a{font-size:12px;line-height:1.8}.store-footer-menu summary{font-size:12px}.store-footer-menu .store-submenu{position:static;box-shadow:none;background:transparent;border:none;border-left:1px solid #ddd;padding:8px 0 0 14px;margin-top:8px}.store-mobile-menu .store-menu-branch{width:100%}.store-mobile-menu .store-menu-branch summary{padding:12px 0;justify-content:space-between}.store-mobile-menu .store-submenu{position:static;box-shadow:none;border:none;border-left:2px solid #eee9d9;border-radius:0;padding:0 0 0 16px;gap:0}.store-mobile-menu .store-submenu a{padding:12px 0;display:block}
@@ -1560,7 +1567,7 @@ function messageModal(id){const o=db.orders.find(o=>o.id===id);if(!o)return;cons
 async function copyMessage(){try{await navigator.clipboard.writeText($('#whatsapp-text').value);toast('Mensagem copiada.')}catch{$('#whatsapp-text').select();toast('Selecione e copie a mensagem com Ctrl+C.')}}
 function accountPage(){const email=sessionStore.getItem('forte-customer');if(!email)return `<div class="store-content" style="max-width:500px;padding-top:55px;padding-bottom:65px"><section class="card pad"><h1>Minha conta</h1><p class="muted" style="font-size:14px;line-height:1.8;margin:15px 0 25px">Acompanhe o preparo e a entrega dos seus pedidos.</p><form onsubmit="event.preventDefault();sessionStore.setItem('forte-customer',this.email.value.toLowerCase().trim());render()">${field('E-mail usado no pedido','email','','email','required placeholder="mariana@exemplo.com"')}<button class="btn primary" style="width:100%;margin-top:20px">Acessar demonstração</button></form><p class="subtle" style="line-height:1.7;margin-top:20px">Login simulado, sem senha. Teste com mariana@exemplo.com ou com o e-mail de um pedido que você criou.</p></section></div>`;const orders=db.orders.filter(o=>o.email?.toLowerCase()===email);return `<div class="store-content" style="max-width:1000px">${heading('Meus pedidos',esc(email),button('Sair','onclick="sessionStore.removeItem(\'forte-customer\');render()"','','logout'))}<div class="notice">Conta de demonstração. A autenticação segura será conectada na próxima etapa.</div><div class="stack">${orders.map(o=>`<section class="card pad"><div class="card-header" style="padding:0 0 20px"><h2>Pedido #${o.id}</h2>${badge(o)}</div><div class="total-line"><span>${o.items.map(i=>esc(i.name)).join(', ')}</span><strong>${money(orderTotal(o))}</strong></div><div class="actions" style="margin-top:18px"><a class="btn" href="/loja/pedido/${o.id}">Acompanhar pedido</a><span class="subtle">${new Date(o.date+'T12:00:00').toLocaleDateString('pt-BR')}</span></div></section>`).join('')||'<div class="empty">Você ainda não tem pedidos com este e-mail. <a href="/loja/catalogo">Explore a loja.</a></div>'}</div></div>`}
 function infoPage(id){const p=db.pages.find(p=>p.id===id&&p.active);return `<div class="store-content" style="max-width:850px;min-height:400px">${p?`<h1 style="margin:25px 0">${esc(p.title)}</h1><p style="white-space:pre-wrap;line-height:1.9;color:#646b70">${esc(p.content)}</p>`:'<div class="empty">Página não encontrada.</div>'}</div>`}
-function renderStore(){const parts=routePath().split('/'),page=parts[2],id=Number(parts[3]);let content=page==='catalogo'?catalogPage():page==='produto'?productPage(id):page==='carrinho'?cartPage():page==='checkout'?checkoutPage():page==='pedido'?customerOrderPage(id):page==='conta'?accountPage():page==='pagina'?infoPage(id):storeHome();$('#app').innerHTML=`<div class="store">${storeHeader()}${content}${storeFooter()}</div>`;document.title='Forte Outlet · Móveis para sua casa'}
+function renderStore(){const parts=routePath().split('/'),page=parts[2],id=Number(parts[3]);let content=page==='catalogo'?catalogPage():page==='produto'?productPage(id):page==='carrinho'?cartPage():page==='checkout'?checkoutPage():page==='pedido'?customerOrderPage(id):page==='conta'?accountPage():page==='pagina'?infoPage(id):storeHome();const checkoutFocus=page==='checkout';$('#app').innerHTML=`<div class="store${checkoutFocus?' store-checkout':''}">${checkoutFocus?'':storeHeader()}${content}${checkoutFocus?'':storeFooter()}</div>`;document.title='Forte Outlet · Móveis para sua casa'}
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'&&routePath().startsWith('/app')){e.preventDefault();searchModal()}});
 if(document.modelContext?.registerTool){try{Promise.resolve(document.modelContext.registerTool({name:'read_demo_catalog',description:'Read products and available quantities in this local furniture store demonstration.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:true},execute:()=>({products:db.products.filter(p=>p.active).map(p=>({id:p.id,name:p.name,price:p.price,available:available(p.id)}))})})).catch(()=>{})}catch{}}
 function editOrderModal(id){const o=visibleOrders().find(o=>o.id===id);if(!o||!canPay()||completed(o)||o.status==='cancelled')return;modal('Editar dados do pedido',`<form onsubmit="event.preventDefault();saveOrderData(this,${id})"><div class="form-grid">${field('Nome do cliente','customer',o.customer,'text','required')}${field('Telefone','phone',o.phone,'tel','required')}${field('Endereço completo','address',o.address,'text','required data-full')}${field('Frete confirmado (R$)','freight',o.freight,'number',`min="0" step="0.01" required ${o.paid?'readonly':''}`)}${field('Previsão de entrega / retirada','deliveryDate',o.deliveryDate||'','date')}<label class="field full">Observações<textarea name="notes">${esc(o.notes)}</textarea></label></div><p class="subtle" style="margin-top:20px">${o.paid?'O frete não pode ser alterado após confirmar o pagamento.':'Salvar confirma o valor do frete combinado com o cliente. Use zero para entrega gratuita ou retirada.'}</p><div class="form-actions"><button class="btn primary">Salvar dados do pedido</button></div></form>`)}
@@ -2969,7 +2976,7 @@ checkoutPage = () => {
   html = html.replace('</select></label><label class="field" style="margin-top:20px">Observações',
     '</select></label><label class="field" style="margin-top:18px">Quando pretende pagar?<select name="paymentTiming"><option>Na entrega</option><option>Antecipado</option></select></label><label class="field" style="margin-top:20px">Observações');
   html = html.replace('A equipe confirmará os próximos passos.',
-    'Confira o total antes de finalizar. O pagamento na entrega pode ser combinado com a equipe.');
+    'O pagamento é feito na entrega ou com a nossa equipe pelo WhatsApp.');
   return html;
 };
 
@@ -4011,7 +4018,8 @@ checkoutPage = () => {
   html = html.replace(/(<h2>Seu pedido<\/h2>)[\s\S]*?(<div class="total-line"><span>Frete<\/span>)/,
     '$1' + checkoutCartItems() + '$2');
   html = html.replace(/(<input[^>]*name="phone"[^>]*)(>)/, '$1 onblur="this.value=formatBrazilPhone(this.value)"$2');
-  html=html.replace('<div class="total-line"><span>Frete</span><strong id="checkout-freight">','<div class="external-freight-box"><div class="total-line"><span>Frete à parte</span><strong id="checkout-freight">').replace(/(<strong id="checkout-freight">[\s\S]*?<\/strong><\/div>)/,'$1<small>Pago diretamente ao entregador na entrega, por Pix ou dinheiro. Não entra no total da loja nem nas parcelas.</small></div>');
+  html = html.replace(/<label class="field\s*">Telefone \/ WhatsApp/,'<label class="field full">Telefone / WhatsApp');
+  html=html.replace(/<div class="total-line"><span>Frete<\/span><strong id="checkout-freight">[\s\S]*?<\/strong><\/div>/,'');
   html=html.replace('<span>Total</span><strong id="checkout-total">','<span>Total da loja</span><strong id="checkout-total">');
   return fillCheckoutContact(html, checkoutContact());
 };
@@ -4954,7 +4962,7 @@ function checkoutBumpSummary() { return eligibleOrderBumps().filter(b=>selectedB
 const paymentBaseBeforeBumps=paymentFormBase;
 paymentFormBase=form=>paymentBaseBeforeBumps(form)+(form.id==='order-form'?0:orderBumpTotal());
 const checkoutPageBeforeBumps=checkoutPage;
-checkoutPage=()=>{let html=checkoutPageBeforeBumps();if(!db.cart.length)return html;html=html.replace('</textarea></label></section>','</textarea></label>'+orderBumpChoices()+'</section>');return html.replace('<div class="external-freight-box">','<div id="checkout-bump-summary">'+checkoutBumpSummary()+'</div><div class="external-freight-box">');};
+checkoutPage=()=>{let html=checkoutPageBeforeBumps();if(!db.cart.length)return html;html=html.replace('</textarea></label></section>','</textarea></label>'+orderBumpChoices()+'</section>');return html.replace('<div class="payment-preview"','<div id="checkout-bump-summary">'+checkoutBumpSummary()+'</div><div class="payment-preview"');};
 const renderStoreBeforeBumps=renderStore;
 renderStore=()=>{renderStoreBeforeBumps();if(routePath()==='/loja/checkout'){const form=$('#shipping-options')?.closest('form');if(form)updatePaymentTotal(form);}};
 function orderBumpPreviewItems() { return selectedCheckoutBumps().map(item=>{const b=db.orderBumps.find(b=>b.id===item.offerId);return {id:b.kind==='product'?b.productId:0,name:b.title+(optionText(item.options)?' · '+optionText(item.options):''),qty:1,price:Number(b.price),options:item.options,orderBumpId:b.id,stockTracked:b.kind==='product'};}); }
@@ -6728,14 +6736,16 @@ function recoveryIdentity(){
 function recoveryDraft(form,phase){
  const phone=normalizeRegistrationPhone(form.elements.namedItem('phone')?.value);if(!phone)return null;
  const field=name=>String(form.elements.namedItem(name)?.value||'').trim();
+ const checkbox=form.elements.namedItem('recoveryConsent');
+ const choice=recoveryConsentChoice||safeJson(sessionStore.getItem('forte-recovery-choice'),null);
  return {phone,firstName:field('firstName').slice(0,60),lastName:field('lastName').slice(0,60),email:field('email').slice(0,254),
-  consent:form.elements.namedItem('recoveryConsent')?.checked===true,delivery:field('delivery'),
+  consent:checkbox?checkbox.checked===true:Boolean(choice?.phone===phone&&choice?.allowed===true),delivery:field('delivery'),
   locality:[field('neighborhood'),field('city')].filter(Boolean).join(' · ').slice(0,120),
   phase:phase||(!field('email')?'contact':field('paymentMethodId')?'payment':field('city')?'delivery':'contact'),
   items:db.cart.slice(0,30).map(item=>({id:item.id,qty:item.qty,options:item.options||{}}))};
 }
 function scheduleRecoveryCapture(event){
- const form=event?.target?.closest?.('form');if(!recoveryCaptureEligible()||!form?.querySelector('[data-recovery-consent]'))return;
+ const form=event?.target?.closest?.('form');if(!recoveryCaptureEligible()||!form?.querySelector('[data-checkout-recovery]'))return;
  // CPF/address/card edits are not serialized; they can only advance the coarse progress label.
  recoveryTouched=true;const phone=normalizeRegistrationPhone(form.elements.namedItem('phone')?.value);
  const checkbox=form.elements.namedItem('recoveryConsent');
@@ -6762,11 +6772,9 @@ async function saveCheckoutRecovery(form,phase='',final=false,leaving=false){
 const checkoutPageBeforeRecovery=checkoutPage;
 checkoutPage=()=>{
  let html=checkoutPageBeforeRecovery();if(!db.cart.length||new URLSearchParams(location.search).has('storePreview'))return html;
- const privacy=(db.pages||[]).find(page=>page.policyKey==='privacy'&&page.active!==false);
- const phone=normalizeRegistrationPhone(checkoutContact()?.phone),choice=recoveryConsentChoice||safeJson(sessionStore.getItem('forte-recovery-choice'),null);
- const optin=`<div class="checkout-recovery-help full"><label class="recovery-check"><input type="checkbox" name="recoveryConsent" data-recovery-consent ${phone&&choice?.phone===phone&&choice.allowed?'checked':''}><span>Quero receber ajuda pelo WhatsApp se não concluir este pedido.<small>Opcional. Você pode comprar normalmente sem autorizar o contato.</small></span></label></div>`;
- html=html.replace(/(<label class="field\s*">Telefone \/ WhatsApp<input[^>]*><\/label>)/,'$1'+optin);
- html=html.replace('<h2 style="margin-bottom:23px">Seus dados</h2>','<h2 style="margin-bottom:12px">Seus dados</h2><p class="checkout-recovery-notice">Enquanto você preenche, salvamos seus contatos e produtos por até 30 dias para facilitar a retomada. '+(privacy?'<a href="/loja/pagina/'+privacy.id+'" target="_blank" rel="noopener noreferrer">Política de privacidade</a>.':'Você escolhe se deseja ajuda pelo WhatsApp.')+'</p><label class="recovery-honeypot" aria-hidden="true">Website<input name="recoveryWebsite" type="text" tabindex="-1" autocomplete="off"></label>');
+ // Keep only the non-visual spam trap and capture marker. Removing the prompt
+ // never fabricates permission: only an existing explicit choice for this phone is reused.
+ html=html.replace('<h2 style="margin-bottom:23px">Seus dados</h2>','<h2 style="margin-bottom:23px">Seus dados</h2><label class="recovery-honeypot" aria-hidden="true">Website<input name="recoveryWebsite" data-checkout-recovery type="text" tabindex="-1" autocomplete="off"></label>');
  return html;
 };
 function resetCheckoutRecovery(){clearTimeout(recoverySaveTimer);localStore.removeItem(recoveryStorageKey);sessionStore.removeItem('forte-recovery-choice');recoveryTouched=false;recoveryLastPayload='';recoveryLastSentAt=0;recoveryConsentChoice=null;}
@@ -6779,9 +6787,9 @@ document.addEventListener('input',scheduleRecoveryCapture);
 document.addEventListener('change',scheduleRecoveryCapture);
 document.addEventListener('focusout',scheduleRecoveryCapture);
 document.addEventListener('visibilitychange',()=>{
- if(document.visibilityState==='hidden'){const form=document.querySelector('form:has([data-recovery-consent])');if(form)saveCheckoutRecovery(form,'',true);}
+ if(document.visibilityState==='hidden'){const form=document.querySelector('form:has([data-checkout-recovery])');if(form)saveCheckoutRecovery(form,'',true);}
 });
-window.addEventListener('pagehide',()=>{const form=document.querySelector('form:has([data-recovery-consent])');if(form)saveCheckoutRecovery(form,'',true);});
+window.addEventListener('pagehide',()=>{const form=document.querySelector('form:has([data-checkout-recovery])');if(form)saveCheckoutRecovery(form,'',true);});
 
 // Shared links restore cart contents only after a deliberate click; current prices always win.
 function recoveryResumeMarkup(){
@@ -6815,7 +6823,7 @@ const adminPageBeforeRecovery=adminPage;
 adminPage=page=>page==='abandoned-checkouts'?recoveryPageMarkup():adminPageBeforeRecovery(page);
 const renderBeforeRecovery=render;
 render=()=>{
- const oldCheckout=document.querySelector('form:has([data-recovery-consent])');
+ const oldCheckout=document.querySelector('form:has([data-checkout-recovery])');
  if(oldCheckout&&routePath()!=='/loja/checkout')saveCheckoutRecovery(oldCheckout,'',true,true);
  const result=renderBeforeRecovery();
  if(!db.cart.length&&recoveryLastPayload)discardCheckoutRecovery();
@@ -7156,10 +7164,10 @@ if(isStorePreview){
     try{
       updateCheckoutProductOptions();
       const items=db.cart.map(line=>{const product=db.products.find(p=>p.id===line.id&&p.active);if(!product||cartQuantity(line.id)>available(line.id))throw new Error('Revise o estoque do carrinho.');const options=validateProductOptions(product,line.options||{});return {id:product.id,name:product.name+(optionText(options)?' · '+optionText(options):''),options,qty:line.qty,price:salePrice(product)}});
-      items.push(...orderBumpPreviewItems());const quote=paymentFromFields(fields,cartTotal()+orderBumpTotal()+Number(shipping.price));
+      items.push(...orderBumpPreviewItems());const quote=paymentFromFields(fields,cartTotal()+orderBumpTotal());
       if(!authSession){authSession={user:{id:'preview-customer',email:fields.email}};currentProfile={user_id:'preview-customer',name:fields.firstName+' '+fields.lastName,email:fields.email,role:'customer'}}
       const id=Math.max(900000,...db.orders.map(o=>Number(o.id)))+1;
-      const order={id,createdAt:new Date().toISOString(),date:localToday(),firstName:fields.firstName,lastName:fields.lastName,customer:fields.firstName+' '+fields.lastName,email:fields.email,phone:fields.phone,cpf:fields.cpf,delivery:fields.delivery,address:fields.delivery==='Retirada'?db.settings.address:`${fields.street}, ${fields.number} · ${fields.neighborhood} · ${fields.city} · CEP ${fields.cep}`,paymentTiming:fields.paymentTiming,items,freight:Number(shipping.price),freightPending:false,shippingOptionName:shipping.name,status:'pending',paid:false,user_id:authSession.user.id,...quote};
+      const order={id,createdAt:new Date().toISOString(),date:localToday(),firstName:fields.firstName,lastName:fields.lastName,customer:fields.firstName+' '+fields.lastName,email:fields.email,phone:fields.phone,cpf:fields.cpf,delivery:fields.delivery,address:fields.delivery==='Retirada'?db.settings.address:`${fields.street}, ${fields.number} · ${fields.neighborhood} · ${fields.city} · CEP ${fields.cep}`,paymentTiming:fields.paymentTiming,items,freight:Number(shipping.price),freightPending:false,freightBilling:fields.delivery==='Entrega'?'external':'none',shippingOptionName:shipping.name,status:'pending',paid:false,user_id:authSession.user.id,...quote};
       db.orders.unshift(order);db.cart=[];sessionStore.setItem('forte-customer',fields.email);sessionStore.setItem('forte-guest-orders',JSON.stringify([id]));go('/loja/pedido/'+id);toast('Pedido simulado. Nenhum pedido foi enviado à loja.');
     }catch(error){toast(error.message)}
   };

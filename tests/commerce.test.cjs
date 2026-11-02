@@ -80,8 +80,8 @@ run(`db.products=[{id:1,name:'Sofá',active:true,stock:5,min:1,price:1000,cost:5
 const checkout = context.checkoutPage();
 assert.match(checkout, /name="firstName"/);
 assert.match(checkout, /name="lastName"/);
-assert.match(checkout, /external-freight-box/);
-assert.match(checkout, /Pago diretamente ao entregador/);
+assert.doesNotMatch(checkout, /external-freight-box|id="checkout-freight"/);
+assert.match(checkout, /Nenhuma cobrança será feita agora\. O pagamento é feito na entrega ou com a nossa equipe pelo WhatsApp\./);
 assert.match(checkout, /Total da loja/);
 assert.doesNotMatch(checkout, /name="customer"/);
 assert.doesNotMatch(checkout, /name="email"[^>]*readonly/);

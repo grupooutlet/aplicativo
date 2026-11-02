@@ -263,7 +263,7 @@ function checkoutBumpSummary() { return eligibleOrderBumps().filter(b=>selectedB
 const paymentBaseBeforeBumps=paymentFormBase;
 paymentFormBase=form=>paymentBaseBeforeBumps(form)+(form.id==='order-form'?0:orderBumpTotal());
 const checkoutPageBeforeBumps=checkoutPage;
-checkoutPage=()=>{let html=checkoutPageBeforeBumps();if(!db.cart.length)return html;html=html.replace('</textarea></label></section>','</textarea></label>'+orderBumpChoices()+'</section>');return html.replace('<div class="external-freight-box">','<div id="checkout-bump-summary">'+checkoutBumpSummary()+'</div><div class="external-freight-box">');};
+checkoutPage=()=>{let html=checkoutPageBeforeBumps();if(!db.cart.length)return html;html=html.replace('</textarea></label></section>','</textarea></label>'+orderBumpChoices()+'</section>');return html.replace('<div class="payment-preview"','<div id="checkout-bump-summary">'+checkoutBumpSummary()+'</div><div class="payment-preview"');};
 const renderStoreBeforeBumps=renderStore;
 renderStore=()=>{renderStoreBeforeBumps();if(routePath()==='/loja/checkout'){const form=$('#shipping-options')?.closest('form');if(form)updatePaymentTotal(form);}};
 function orderBumpPreviewItems() { return selectedCheckoutBumps().map(item=>{const b=db.orderBumps.find(b=>b.id===item.offerId);return {id:b.kind==='product'?b.productId:0,name:b.title+(optionText(item.options)?' · '+optionText(item.options):''),qty:1,price:Number(b.price),options:item.options,orderBumpId:b.id,stockTracked:b.kind==='product'};}); }

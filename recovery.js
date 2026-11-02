@@ -107,14 +107,16 @@ function recoveryIdentity(){
 function recoveryDraft(form,phase){
  const phone=normalizeRegistrationPhone(form.elements.namedItem('phone')?.value);if(!phone)return null;
  const field=name=>String(form.elements.namedItem(name)?.value||'').trim();
+ const checkbox=form.elements.namedItem('recoveryConsent');
+ const choice=recoveryConsentChoice||safeJson(sessionStore.getItem('forte-recovery-choice'),null);
  return {phone,firstName:field('firstName').slice(0,60),lastName:field('lastName').slice(0,60),email:field('email').slice(0,254),
-  consent:form.elements.namedItem('recoveryConsent')?.checked===true,delivery:field('delivery'),
+  consent:checkbox?checkbox.checked===true:Boolean(choice?.phone===phone&&choice?.allowed===true),delivery:field('delivery'),
   locality:[field('neighborhood'),field('city')].filter(Boolean).join(' · ').slice(0,120),
   phase:phase||(!field('email')?'contact':field('paymentMethodId')?'payment':field('city')?'delivery':'contact'),
   items:db.cart.slice(0,30).map(item=>({id:item.id,qty:item.qty,options:item.options||{}}))};
 }
 function scheduleRecoveryCapture(event){
- const form=event?.target?.closest?.('form');if(!recoveryCaptureEligible()||!form?.querySelector('[data-recovery-consent]'))return;
+ const form=event?.target?.closest?.('form');if(!recoveryCaptureEligible()||!form?.querySelector('[data-checkout-recovery]'))return;
  // CPF/address/card edits are not serialized; they can only advance the coarse progress label.
  recoveryTouched=true;const phone=normalizeRegistrationPhone(form.elements.namedItem('phone')?.value);
  const checkbox=form.elements.namedItem('recoveryConsent');
@@ -141,11 +143,9 @@ async function saveCheckoutRecovery(form,phase='',final=false,leaving=false){
 const checkoutPageBeforeRecovery=checkoutPage;
 checkoutPage=()=>{
  let html=checkoutPageBeforeRecovery();if(!db.cart.length||new URLSearchParams(location.search).has('storePreview'))return html;
- const privacy=(db.pages||[]).find(page=>page.policyKey==='privacy'&&page.active!==false);
- const phone=normalizeRegistrationPhone(checkoutContact()?.phone),choice=recoveryConsentChoice||safeJson(sessionStore.getItem('forte-recovery-choice'),null);
- const optin=`<div class="checkout-recovery-help full"><label class="recovery-check"><input type="checkbox" name="recoveryConsent" data-recovery-consent ${phone&&choice?.phone===phone&&choice.allowed?'checked':''}><span>Quero receber ajuda pelo WhatsApp se não concluir este pedido.<small>Opcional. Você pode comprar normalmente sem autorizar o contato.</small></span></label></div>`;
- html=html.replace(/(<label class="field\s*">Telefone \/ WhatsApp<input[^>]*><\/label>)/,'$1'+optin);
- html=html.replace('<h2 style="margin-bottom:23px">Seus dados</h2>','<h2 style="margin-bottom:12px">Seus dados</h2><p class="checkout-recovery-notice">Enquanto você preenche, salvamos seus contatos e produtos por até 30 dias para facilitar a retomada. '+(privacy?'<a href="/loja/pagina/'+privacy.id+'" target="_blank" rel="noopener noreferrer">Política de privacidade</a>.':'Você escolhe se deseja ajuda pelo WhatsApp.')+'</p><label class="recovery-honeypot" aria-hidden="true">Website<input name="recoveryWebsite" type="text" tabindex="-1" autocomplete="off"></label>');
+ // Keep only the non-visual spam trap and capture marker. Removing the prompt
+ // never fabricates permission: only an existing explicit choice for this phone is reused.
+ html=html.replace('<h2 style="margin-bottom:23px">Seus dados</h2>','<h2 style="margin-bottom:23px">Seus dados</h2><label class="recovery-honeypot" aria-hidden="true">Website<input name="recoveryWebsite" data-checkout-recovery type="text" tabindex="-1" autocomplete="off"></label>');
  return html;
 };
 function resetCheckoutRecovery(){clearTimeout(recoverySaveTimer);localStore.removeItem(recoveryStorageKey);sessionStore.removeItem('forte-recovery-choice');recoveryTouched=false;recoveryLastPayload='';recoveryLastSentAt=0;recoveryConsentChoice=null;}
@@ -158,9 +158,9 @@ document.addEventListener('input',scheduleRecoveryCapture);
 document.addEventListener('change',scheduleRecoveryCapture);
 document.addEventListener('focusout',scheduleRecoveryCapture);
 document.addEventListener('visibilitychange',()=>{
- if(document.visibilityState==='hidden'){const form=document.querySelector('form:has([data-recovery-consent])');if(form)saveCheckoutRecovery(form,'',true);}
+ if(document.visibilityState==='hidden'){const form=document.querySelector('form:has([data-checkout-recovery])');if(form)saveCheckoutRecovery(form,'',true);}
 });
-window.addEventListener('pagehide',()=>{const form=document.querySelector('form:has([data-recovery-consent])');if(form)saveCheckoutRecovery(form,'',true);});
+window.addEventListener('pagehide',()=>{const form=document.querySelector('form:has([data-checkout-recovery])');if(form)saveCheckoutRecovery(form,'',true);});
 
 // Shared links restore cart contents only after a deliberate click; current prices always win.
 function recoveryResumeMarkup(){
@@ -194,7 +194,7 @@ const adminPageBeforeRecovery=adminPage;
 adminPage=page=>page==='abandoned-checkouts'?recoveryPageMarkup():adminPageBeforeRecovery(page);
 const renderBeforeRecovery=render;
 render=()=>{
- const oldCheckout=document.querySelector('form:has([data-recovery-consent])');
+ const oldCheckout=document.querySelector('form:has([data-checkout-recovery])');
  if(oldCheckout&&routePath()!=='/loja/checkout')saveCheckoutRecovery(oldCheckout,'',true,true);
  const result=renderBeforeRecovery();
  if(!db.cart.length&&recoveryLastPayload)discardCheckoutRecovery();
