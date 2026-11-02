@@ -1,7 +1,7 @@
 /* Print and screen use the same document. Payment and logistics remain distinct. */
 .receipt.order-sheet{--status-ink:#886400;--status-accent:#dfb00c;--status-wash:#fff8de;position:relative;isolation:isolate;display:flex;flex-direction:column;width:210mm;max-width:calc(100% - 40px);min-height:272mm;margin:24px auto;padding:12mm;background:#fff;color:#1c2228;font:12px/1.5 Arial,sans-serif;box-shadow:0 3px 24px #1c22280a;overflow:hidden}
 .order-sheet.status-paid{--status-ink:#1c6d48;--status-accent:#238653;--status-wash:#eef8f1}.order-sheet.status-cancelled{--status-ink:#a2353d;--status-accent:#c74d55;--status-wash:#fff0f0}
-.order-sheet .order-sheet-watermark{position:absolute;z-index:3;pointer-events:none;top:41%;left:-5%;width:110%;transform:rotate(-32deg);font:900 88px/1 Arial,sans-serif;letter-spacing:9px;text-align:center;color:var(--status-accent);opacity:.14;white-space:nowrap;user-select:none}
+
 .order-sheet .order-sheet-header{display:flex;justify-content:space-between;align-items:start;gap:25px;padding:0 0 20px;border-bottom:1px solid #dfe3e5}
 .order-sheet .order-sheet-brand{min-width:0;flex:1;display:flex;align-items:center;gap:18px}.order-sheet .order-sheet-brand>img{display:block;width:174px;height:62px;object-fit:contain;object-position:left center;margin:0;flex:0 0 174px}
 .order-sheet-store-contact{min-width:0;display:flex;flex-direction:column;gap:2px;font-size:10px;line-height:1.5;color:#52606a;overflow-wrap:anywhere}
@@ -23,8 +23,42 @@
 .order-sheet .order-sheet-confirmations{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:12px 0 0;margin-top:12px;border-top:1px solid #edf0f1;break-inside:avoid}.order-sheet-confirmations dd{font-size:10px}
 .order-sheet-footer{margin-top:auto;padding-top:24px;break-inside:avoid}.order-sheet-signatures{display:grid;grid-template-columns:1fr 1fr;gap:50px}.order-sheet-signatures>div{border-top:1px solid #aeb7bd;padding-top:8px;text-align:center}.order-sheet-signatures span{display:block;font-size:10px}.order-sheet-signatures small{display:block;font-size:9px;color:#65717a;margin-top:9px}
 .order-sheet-legal{text-align:center;margin-top:18px;font-size:9px;line-height:1.7;color:#65717a}.order-sheet-legal small{font-size:8px;color:#7d8790}.order-sheet-legal p:nth-last-child(2){text-transform:uppercase;letter-spacing:.5px}
-@media screen and (max-width:650px){.receipt.order-sheet{width:auto;max-width:none;margin:12px;padding:22px 18px;min-height:0}.order-sheet .order-sheet-header{gap:12px;padding-bottom:15px}.order-sheet .order-sheet-brand{display:block}.order-sheet .order-sheet-brand>img{width:140px;height:50px}.order-sheet-number>span{font-size:8px;letter-spacing:.7px}.order-sheet .order-sheet-number h1{font-size:25px}.order-sheet-number p{max-width:110px;font-size:9px}.order-sheet-store-contact{font-size:9px}.order-sheet-status{padding:12px;gap:12px}.order-sheet-status-label{font-size:17px}.order-sheet-status p{font-size:9px}.order-sheet-logistics{max-width:105px;text-align:right}.order-sheet-logistics>strong{font-size:10px}.order-sheet .order-sheet-meta{grid-template-columns:1fr 1fr;gap:13px}.order-sheet-parties{grid-template-columns:1fr;gap:18px}.order-sheet-financial{grid-template-columns:1fr;gap:19px}.order-sheet .order-sheet-watermark{font-size:55px;letter-spacing:3px;top:43%}.order-sheet td,.order-sheet th{padding:9px 3px;font-size:9px}.order-sheet .order-sheet-item img{display:none}.order-sheet-item strong{font-size:9px}.order-sheet-sku{font-size:8px!important}.order-sheet .order-sheet-money{font-size:9px}.order-sheet-section-head>span{font-size:9px}.order-sheet-signatures{gap:24px}.order-sheet-signatures small{font-size:8px}.order-sheet .order-sheet-confirmations{grid-template-columns:1fr 1fr}.print-actions{gap:10px}.print-actions .btn{font-size:11px;padding:9px 10px}}
-@media print{@page{size:A4;margin:12mm}.receipt.order-sheet{width:100%;max-width:none;min-height:267mm;margin:0;padding:0;box-shadow:none;overflow:visible}.order-sheet .order-sheet-watermark{position:absolute;top:95mm;left:0;width:100%;font-size:88px}.order-sheet .order-sheet-brand>img{width:174px;height:62px}.order-sheet .order-sheet-header{break-inside:avoid}.order-sheet tr,.order-sheet-financial,.order-sheet-parties,.order-sheet-footer{break-inside:avoid}.order-sheet .order-sheet-meta{grid-template-columns:repeat(4,minmax(0,1fr))}.receipt.order-sheet.delivery-note{break-after:page;page-break-after:always}.receipt.order-sheet.delivery-note:last-child{break-after:auto;page-break-after:auto}.order-sheet *{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media screen and (max-width:650px){.receipt.order-sheet{width:auto;max-width:none;margin:12px;padding:22px 18px;min-height:0}.order-sheet .order-sheet-header{gap:12px;padding-bottom:15px}.order-sheet .order-sheet-brand{display:block}.order-sheet .order-sheet-brand>img{width:140px;height:50px}.order-sheet-number>span{font-size:8px;letter-spacing:.7px}.order-sheet .order-sheet-number h1{font-size:25px}.order-sheet-number p{max-width:110px;font-size:9px}.order-sheet-store-contact{font-size:9px}.order-sheet-status{padding:12px;gap:12px}.order-sheet-status-label{font-size:17px}.order-sheet-status p{font-size:9px}.order-sheet-logistics{max-width:105px;text-align:right}.order-sheet-logistics>strong{font-size:10px}.order-sheet .order-sheet-meta{grid-template-columns:1fr 1fr;gap:13px}.order-sheet-parties{grid-template-columns:1fr;gap:18px}.order-sheet-financial{grid-template-columns:1fr;gap:19px}.order-sheet td,.order-sheet th{padding:9px 3px;font-size:9px}.order-sheet .order-sheet-item img{display:none}.order-sheet-item strong{font-size:9px}.order-sheet-sku{font-size:8px!important}.order-sheet .order-sheet-money{font-size:9px}.order-sheet-section-head>span{font-size:9px}.order-sheet-signatures{gap:24px}.order-sheet-signatures small{font-size:8px}.order-sheet .order-sheet-confirmations{grid-template-columns:1fr 1fr}.print-actions{gap:10px}.print-actions .btn{font-size:11px;padding:9px 10px}}
 
-.order-sheet.status-paid .order-sheet-watermark{font-size:150px;letter-spacing:14px}
-@media screen and (max-width:650px){.order-sheet.status-paid .order-sheet-watermark{font-size:82px;letter-spacing:8px}}
+
+
+
+
+.order-sheet-external{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 14px;margin-top:16px;border:1px solid #dfe3e5;border-radius:7px;background:#f6f8f9;break-inside:avoid}
+.order-sheet-external h2{margin-bottom:4px}.order-sheet-external p{font-size:10px;line-height:1.5;color:#52606a}.order-sheet-external>strong{font-size:16px;white-space:nowrap}
+
+.receipt.order-sheet.order-print-ready{width:190mm;max-width:none;min-height:0;height:auto;margin:0;padding:0;box-shadow:none;overflow:visible;font:10px/1.4 Arial,sans-serif}
+.order-print-ready .order-sheet-header{padding-bottom:10px;gap:16px}
+.order-print-ready .order-sheet-brand{display:flex;gap:12px}.order-print-ready .order-sheet-brand>img{width:135px;height:48px;flex-basis:135px}
+.order-print-ready .order-sheet-store-contact{font-size:8px;line-height:1.4}
+.order-print-ready .order-sheet-number h1{font-size:24px}.order-print-ready .order-sheet-number p{font-size:9px;max-width:none}
+.order-print-ready .order-sheet-status{margin-top:10px;padding:8px 12px}.order-print-ready .order-sheet-status-label{font-size:16px}.order-print-ready .order-sheet-status p{font-size:9px}
+.order-print-ready .order-sheet-logistics{max-width:none}.order-print-ready .order-sheet-logistics>strong{font-size:11px}
+.order-print-ready .order-sheet-meta{grid-template-columns:repeat(4,minmax(0,1fr));padding:10px 0;gap:10px}
+.order-print-ready .order-sheet-field dt{font-size:8px;margin-bottom:2px}.order-print-ready .order-sheet-field dd{font-size:10px;line-height:1.4}
+.order-print-ready .order-sheet-parties{grid-template-columns:1fr 1fr;gap:18px;margin:12px 0}.order-print-ready h2{font-size:11px;margin-bottom:7px}
+.order-print-ready .order-sheet-card h2{padding-bottom:6px}.order-print-ready .order-sheet-customer{font-size:12px;margin-bottom:7px}.order-print-ready .order-sheet-card dl{gap:5px}.order-print-ready .order-sheet-card dd{font-size:9px}
+.order-print-ready .order-sheet-address{font-size:10px;line-height:1.5}.order-print-ready .order-sheet-shipping{margin-top:6px;font-size:9px}
+.order-print-ready td,.order-print-ready th{padding:5px 5px;font-size:9px}.order-print-ready .order-sheet-money{font-size:9px}.order-print-ready .order-sheet-item img{display:block;width:30px;height:30px;flex-basis:30px}
+.order-print-ready .order-sheet-item strong{font-size:10px;line-height:1.4}.order-print-ready .order-sheet-item small{font-size:8px;line-height:1.3}
+.order-print-ready .order-sheet-financial{grid-template-columns:1fr 1fr;gap:24px;margin-top:12px}.order-print-ready .order-sheet-payment dl{gap:5px}.order-print-ready .order-sheet-collect{padding:7px 9px;margin-top:7px}.order-print-ready .order-sheet-collect strong{font-size:15px}
+.order-print-ready .order-sheet-totals dl{gap:7px}.order-print-ready .order-sheet-grand-total{padding-top:9px}.order-print-ready .order-sheet-grand-total dd{font-size:19px}
+.order-print-ready .order-sheet-external{padding:9px 10px;margin-top:12px}.order-print-ready .order-sheet-external p{font-size:9px}.order-print-ready .order-sheet-external>strong{font-size:13px}
+.order-print-ready .order-sheet-notes{padding-top:9px;margin-top:12px}.order-print-ready .order-sheet-notes p{font-size:10px;line-height:1.4}
+.order-print-ready .order-sheet-confirmations{grid-template-columns:repeat(3,minmax(0,1fr));padding-top:8px;margin-top:8px;gap:8px}
+.order-print-ready .order-sheet-footer{padding-top:24px;margin-top:0}.order-print-ready .order-sheet-signatures{gap:45px}.order-print-ready .order-sheet-signatures>div{padding-top:6px}.order-print-ready .order-sheet-signatures span{font-size:9px}.order-print-ready .order-sheet-signatures small{margin-top:6px;font-size:8px}
+.order-print-ready .order-sheet-legal{font-size:8px;line-height:1.4;margin-top:12px}.order-print-ready .order-sheet-legal small{font-size:7px}
+
+@media print{
+ @page{size:A4;margin:10mm}
+ html,body,#app,.delivery-print{margin:0!important;padding:0!important;height:auto!important;min-height:0!important;background:#fff!important;overflow:visible!important}
+ .print-actions,#toast,dialog{display:none!important}
+ .receipt.order-sheet{width:190mm;max-width:none;min-height:0;height:auto;margin:0;padding:0;box-shadow:none;overflow:visible;break-inside:avoid;page-break-inside:avoid}
+ .receipt.order-sheet.delivery-note{break-after:page;page-break-after:always}.receipt.order-sheet.delivery-note:last-child{break-after:auto;page-break-after:auto}
+ .order-sheet *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}

@@ -25,7 +25,7 @@ function setDashboardPeriod(value){if(!dashboardPeriods.some(([id])=>id===value)
 function applyDashboardDates(form){const fields=new FormData(form),start=String(fields.get('start')||''),end=String(fields.get('end')||'');if(!validBusinessDay(start)||!validBusinessDay(end)||start>end)return toast('Escolha uma data inicial anterior ou igual à data final.');dashboardCustomStart=start;dashboardCustomEnd=end;dashboardPeriod='custom';render();}
 function dashboardSummary(orders){
   const valid=orders.filter(order=>order.status!=='cancelled'),sales=valid.filter(completed),pending=valid.filter(order=>!order.paid);
-  const revenue=sales.reduce((sum,order)=>sum+orderTotal(order)-Number(order.freight||0)-Number(order.paymentFee||0),0);
+  const revenue=sales.reduce((sum,order)=>sum+productSubtotal(order),0);
   return {orders:valid,sales,pending,revenue,pendingTotal:pending.reduce((sum,order)=>sum+orderTotal(order),0),profit:canManage()?sales.reduce((sum,order)=>sum+order.items.reduce((n,item)=>n+(Number(item.price)-Number(item.cost||0))*item.qty,0),0):null,ticket:sales.length?revenue/sales.length:0};
 }
 function dashboardDateFilter(){
@@ -34,7 +34,7 @@ function dashboardDateFilter(){
 }
 function dashboardChart(orders,range){
   const totalDays=Math.round((Date.parse(range.end+'T12:00:00Z')-Date.parse(range.start+'T12:00:00Z'))/86400000)+1,step=Math.max(1,Math.ceil(totalDays/12)),groups=[];
-  for(let offset=0;offset<totalDays;offset+=step){const start=shiftBusinessDay(range.start,offset),end=shiftBusinessDay(range.start,Math.min(offset+step-1,totalDays-1));const value=orders.filter(order=>completed(order)&&orderBusinessDay(order)>=start&&orderBusinessDay(order)<=end).reduce((sum,order)=>sum+orderTotal(order)-Number(order.freight||0)-Number(order.paymentFee||0),0);groups.push({start,end,value});}
+  for(let offset=0;offset<totalDays;offset+=step){const start=shiftBusinessDay(range.start,offset),end=shiftBusinessDay(range.start,Math.min(offset+step-1,totalDays-1));const value=orders.filter(order=>completed(order)&&orderBusinessDay(order)>=start&&orderBusinessDay(order)<=end).reduce((sum,order)=>sum+productSubtotal(order),0);groups.push({start,end,value});}
   const maximum=Math.max(1,...groups.map(group=>group.value));
   return '<div class="dashboard-chart" role="img" aria-label="Receita dos produtos no período: '+esc(money(groups.reduce((sum,g)=>sum+g.value,0)))+'">'+groups.map(group=>'<div class="dashboard-chart-column" title="'+businessDateLabel(group.start)+(group.end===group.start?'':' a '+businessDateLabel(group.end))+' · '+money(group.value)+'"><span class="dashboard-chart-value">'+(group.value?esc(money(group.value)):'')+'</span><div class="dashboard-chart-bar" style="height:'+Math.max(3,Math.round(group.value/maximum*150))+'px"></div><small>'+group.start.slice(8)+'/'+group.start.slice(5,7)+(group.start===group.end?'':'–'+group.end.slice(8)+'/'+group.end.slice(5,7))+'</small></div>').join('')+'</div>';
 }

@@ -80,6 +80,9 @@ run(`db.products=[{id:1,name:'Sofá',active:true,stock:5,min:1,price:1000,cost:5
 const checkout = context.checkoutPage();
 assert.match(checkout, /name="firstName"/);
 assert.match(checkout, /name="lastName"/);
+assert.match(checkout, /external-freight-box/);
+assert.match(checkout, /Pago diretamente ao entregador/);
+assert.match(checkout, /Total da loja/);
 assert.doesNotMatch(checkout, /name="customer"/);
 assert.doesNotMatch(checkout, /name="email"[^>]*readonly/);
 assert.match(checkout, /payment-choice-details" hidden/);
@@ -221,13 +224,13 @@ console.log('Payment totals and cents, checkout names, order progression, driver
   const physicalOrder = run('db.orders[0]');
   assert.equal(physicalOrder.freight,300);
   assert.equal(physicalOrder.freightPending,false);
-  assert.equal(physicalOrder.paymentFee,65);
-  assert.equal(run('orderTotal(db.orders[0])'),1365);
+  assert.equal(physicalOrder.paymentFee,50);
+  assert.equal(run('orderTotal(db.orders[0])'),1050);
   const physicalSteps = run('orderSteps(db.orders[0])');
   assert.match(physicalSteps, /class="order-step done"[\s\S]*Agendar entrega/);
   assert.match(physicalSteps, /onclick="paymentModal/);
   assert.doesNotMatch(physicalSteps, /onclick="dispatchOrder/);
-  assert.equal(context.paymentFormBase(physicalForm),1300);
+  assert.equal(context.paymentFormBase(physicalForm),1000);
   run(`authSession={user:{id:'master',email:'original@example.com'}};db.cart=[{id:1,qty:1,options:{}},{id:1,qty:1,options:{}}];
     globalThis.bootCount=0;boot=async()=>{bootCount++;db.orders=[]};`);
   let request;

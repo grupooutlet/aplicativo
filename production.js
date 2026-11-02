@@ -354,7 +354,7 @@ salesChart = orders => {
     return date.toLocaleDateString('en-CA');
   });
   const values = days.map(day => orders.filter(order => order.date === day && completed(order))
-    .reduce((total, order) => total + orderTotal(order) - order.freight, 0));
+    .reduce((total, order) => total + productSubtotal(order), 0));
   const max = Math.max(1, ...values);
   return `<div class="chart" style="display:flex;align-items:end;gap:14px;padding-bottom:26px">
     ${days.map((day, index) => `<div style="flex:1;min-width:0;text-align:center" title="${esc(day)} · ${money(values[index])}">

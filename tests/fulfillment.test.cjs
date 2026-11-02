@@ -55,7 +55,7 @@ assert.match(html, /Quando pretende pagar/);
 assert.match(html, /Na entrega/);
 assert.match(html, /Entrega normal/);
 assert.match(html, /name="shippingOptionId" value="normal"/);
-assert.match(html, /id="checkout-total">432</);
+assert.match(html, /id="checkout-total">397</);
 assert.match(state.settingsPage(), /Frete e retirada/);
 
 (async () => {

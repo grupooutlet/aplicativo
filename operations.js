@@ -67,7 +67,7 @@ function deliveryBoard() {
 }
 function freightSettingsPage() {
   const options = allShippingOptions().filter(option => option.delivery === 'Entrega');
-  return `<section class="card pad"><div class="shipping-settings-head"><div><h2>Opções de frete</h2><p class="subtle">O cliente escolhe uma destas opções no checkout. O preço entra no total do pedido.</p></div>
+  return `<section class="card pad"><div class="shipping-settings-head"><div><h2>Opções de frete</h2><p class="subtle">O cliente escolhe uma destas opções no checkout. O valor é pago à parte ao entregador, por Pix ou dinheiro.</p></div>
     ${button('Novo frete', 'onclick="shippingModal()"', 'primary', 'plus')}</div>
     <div class="shipping-settings-list">${options.map(option => {
       const index = allShippingOptions().findIndex(item => item.id === option.id);
@@ -350,7 +350,7 @@ function deliveryNote(order) {
 }
 function renderDeliveryPrint(key) {
   const orders = deliveryOrders().filter(order => order.deliveryDate && (key.startsWith('order-') ? String(order.id) === key.slice(6) : order.deliveryDate === key));
-  $('#app').innerHTML = `<div class="print-actions">${button('Voltar às entregas', "onclick=\"go('/app/deliveries')\"", '', 'back')}${button('Imprimir / salvar PDF', 'onclick="window.print()"', 'primary', 'print')}</div>
+  $('#app').innerHTML = `<div class="print-actions">${button('Voltar às entregas', "onclick=\"go('/app/deliveries')\"", '', 'back')}${button('Imprimir / salvar PDF', 'onclick="printOrderDocuments()"', 'primary', 'print')}</div>
     <div class="delivery-print">${orders.map(deliveryNote).join('') || '<div class="empty">Nenhum pedido disponível para impressão.</div>'}</div>`;
   document.title = 'Pedidos para entrega · Grupo Outlet';
 }

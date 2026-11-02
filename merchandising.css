@@ -151,3 +151,8 @@ dialog.business-confirmation{width:min(490px,calc(100% - 32px));max-height:calc(
 @media(max-width:420px){.order-price-editor{padding:14px}.order-price-editor-fields{grid-template-columns:minmax(0,1fr)}.order-price-control>[data-order-price-open]{padding:10px 8px;font-size:12px;min-height:42px}.new-order-fields .order-price-control{min-width:0}.internal-price-notes{padding:16px}.order-price-control small{font-size:10px}}
 
 .new-order-fields>.order-price-editor{grid-column:1/-1}
+
+.external-freight-box{border:1px solid #dde3e6;border-radius:8px;background:#f5f7f8;padding:10px 13px;margin:16px 0 4px;min-width:0}
+.external-freight-box .total-line{font-size:13px;padding:2px 0 7px;gap:12px;align-items:baseline}.external-freight-box strong{white-space:nowrap;font-variant-numeric:tabular-nums}
+.external-freight-box small{display:block;font-size:11px;line-height:1.6;color:#5a6670;white-space:normal}
+.team-removal-confirm{align-items:flex-start}

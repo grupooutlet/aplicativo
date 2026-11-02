@@ -295,10 +295,10 @@ createAdminOrder = form => {
   if (!shipping) return toast('Selecione um frete ou retirada disponível.');
   let payment;
   const unitPrice=typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product);
-  try { payment = paymentFromFields(data, unitPrice * qty + Number(shipping.price)); }
+  try { payment = paymentFromFields(data, unitPrice * qty); }
   catch (error) { return toast(error.message); }
   const order = { ...data, addressParts, address: data.delivery === 'Retirada' ? db.settings.address : formatAddress(addressParts),
-    id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: Number(shipping.price), freightPending: false,
+    id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: Number(shipping.price), freightPending: false, freightBilling: data.delivery==='Entrega'?'external':'none',
     shippingOptionId: shipping.id, shippingOptionName: shipping.name,
     items: [{ id: product.id, name: product.name + (detail ? ' · ' + detail : ''), options, price: unitPrice, cost: product.cost, qty,
       ...(form.orderPriceOverride?{priceOverride:{expectedUnitPrice:form.orderPriceOverride.expectedUnitPrice,unitPrice:form.orderPriceOverride.unitPrice,reason:form.orderPriceOverride.reason}}:{}) }],

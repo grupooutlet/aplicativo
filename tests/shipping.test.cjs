@@ -49,8 +49,8 @@ const data={delivery:'Entrega',city:'Niterói / RJ',neighborhood:'Piratininga',c
 const form={data,elements:{namedItem:name=>({value:data[name]})},querySelector:selector=>selector.includes('shippingOptionId')?{value:specific.id}:null};
 assert.equal(context.formShippingOption(form).price,250);
 run(`db.products=[{id:1,name:'Sofá',price:1000,stock:10,active:true}];db.cart=[{id:1,qty:1}];db.settings.paymentMethods=[{id:'credit',title:'Crédito',kind:'credit',active:true,installments:[{count:3,rate:5}]}];`);
-assert.equal(context.paymentFormBase(form),1250,'credit fees must include regional freight');
-assert.equal(context.paymentFromFields(data,context.paymentFormBase(form)).total,1312.5);
+assert.equal(context.paymentFormBase(form),1000,'third-party freight must not receive store credit fees');
+assert.equal(context.paymentFromFields(data,context.paymentFormBase(form)).total,1050);
 assert.equal(run('db.orders[0].freight'),300,'quoting never rewrites existing order freight');
 run(`isOwner=true;role='Proprietário';currentProfile={role:'master'};masterPreviewPosition='Principal';render=()=>{};settleAdminWrites=async()=>{};loadAdminState=async()=>{};closeModal=()=>{};`);
 (async()=>{let writes=[];context.backendRequest=async(route,options)=>{writes.push({route,body:JSON.parse(options.body)});return {version:99};};

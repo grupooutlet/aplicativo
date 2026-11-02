@@ -36,7 +36,7 @@ function updateCheckoutShipping() {
   const freight = form.querySelector('#checkout-freight');
   const total = form.querySelector('#checkout-total');
   if (freight) freight.textContent = option ? money(option.price) : 'Selecione uma opção';
-  if (total) total.textContent = option ? money(cartTotal() + Number(option.price)) : money(cartTotal());
+  if (total) total.textContent = money(cartTotal());
 }
 function updateShippingChoices(delivery) {
   const list = $('#shipping-options');
@@ -110,7 +110,7 @@ checkoutPage = () => {
   html = html.replace('<span class="subtle">A confirmar no atendimento</span>',
     `<strong id="checkout-freight">${shippingOptionsFor('Entrega').length ? money(shippingOptionsFor('Entrega')[0].price) : 'Selecione uma opção'}</strong>`);
   html = html.replace(/<div class="total-line final"><span>Subtotal<\/span><span>[^<]*<\/span><\/div>/,
-    `<div class="total-line final"><span>Total</span><strong id="checkout-total">${money(cartTotal() + Number(shippingOptionsFor('Entrega')[0]?.price || 0))}</strong></div>`);
+    `<div class="total-line final"><span>Total</span><strong id="checkout-total">${money(cartTotal())}</strong></div>`);
   html = html.replace('</select></label><label class="field" style="margin-top:20px">Observações',
     '</select></label><label class="field" style="margin-top:18px">Quando pretende pagar?<select name="paymentTiming"><option>Na entrega</option><option>Antecipado</option></select></label><label class="field" style="margin-top:20px">Observações');
   html = html.replace('A equipe confirmará os próximos passos.',
@@ -240,7 +240,7 @@ customerOrderPage = id => {
       <div class="notice">${order.status === 'transit' ? 'Seu pedido saiu para entrega.' : order.status === 'delivered' ? 'Entrega concluída.' : order.status === 'cancelled' ? 'Este pedido foi cancelado.' : 'Pedido recebido. Nossa equipe seguirá com o atendimento.'}</div>
       <div class="total-line"><span>Status</span>${badge(order)}</div>
       ${order.items.map(item => `<div class="total-line"><span>${item.qty} × ${esc(item.name)}</span><strong>${money(item.price * item.qty)}</strong></div>`).join('')}
-      <div class="total-line"><span>Frete</span><span>${order.freightPending ? 'A combinar' : money(order.freight)}</span></div>
+      ${externalFreight(order)?externalFreightMarkup(order):`<div class="total-line"><span>Frete incluído no acordo original</span><span>${order.freightPending ? 'A combinar' : money(order.freight)}</span></div>`}
       <div class="total-line final"><span>Total</span><strong>${money(orderTotal(order))}</strong></div>
       <div class="actions" style="margin-top:25px;flex-wrap:wrap"><a class="btn primary" href="/loja">Continuar na loja</a><a class="btn" href="/loja/conta">Criar conta ou entrar</a></div>
     </section></div>`;
@@ -289,8 +289,8 @@ orderDetail = id => {
       <section class="card"><div class="card-header"><h2>Itens do pedido</h2>${badge(order)}</div>
         <div class="tablewrap"><table><thead><tr><th>Produto</th><th>Qtd.</th><th>Total</th></tr></thead><tbody>
         ${order.items.map(item => `<tr><td>${esc(item.name)}</td><td>${item.qty}</td><td>${money(item.qty * item.price)}</td></tr>`).join('')}
-        </tbody></table></div><div class="pad"><div class="total-line"><span>Produtos</span><strong>${money(orderTotal(order) - Number(order.freight || 0))}</strong></div>
-        <div class="total-line"><span>Frete</span><span>${order.freightPending ? 'A combinar' : money(order.freight)}</span></div>
+        </tbody></table></div><div class="pad"><div class="total-line"><span>Produtos</span><strong>${money(productSubtotal(order))}</strong></div>
+        ${externalFreight(order)?externalFreightMarkup(order):`<div class="total-line"><span>Frete incluído no acordo original</span><span>${order.freightPending ? 'A combinar' : money(order.freight)}</span></div>`}
         <div class="total-line final"><span>Total</span><strong>${money(orderTotal(order))}</strong></div></div></section>
       <section class="card pad"><h2>Pagamento</h2><div class="total-line"><span>Forma</span><strong>${esc(order.payment)}</strong></div>
         <div class="total-line"><span>Momento</span><strong>${esc(order.paymentTiming || 'A combinar')}</strong></div>

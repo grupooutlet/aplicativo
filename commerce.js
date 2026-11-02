@@ -82,7 +82,7 @@ function paymentMethodModal(index = -1) {
   if (!method) return;
   modal('Personalizar ' + paymentKinds[method.kind], `<form onsubmit="event.preventDefault();savePaymentMethod(this,${index})">
     ${field('Título no checkout', 'title', method.title, 'text', 'required maxlength="60"')}
-    ${method.kind === 'credit' ? `<h3 style="margin:24px 0 8px">Parcelas e taxas</h3><p class="payment-fee-help">Escolha a taxa de cada parcelamento. <strong>Porcentagem</strong> incide sobre produtos e frete. <strong>Valor fixo</strong> é somado uma única vez ao pedido, antes de dividir as parcelas. Use zero para não cobrar taxa.</p>
+    ${method.kind === 'credit' ? `<h3 style="margin:24px 0 8px">Parcelas e taxas</h3><p class="payment-fee-help">Escolha a taxa de cada parcelamento. <strong>Porcentagem</strong> incide somente sobre os produtos. O frete terceirizado não recebe taxa e é pago diretamente ao entregador. <strong>Valor fixo</strong> é somado uma única vez ao pedido, antes de dividir as parcelas. Use zero para não cobrar taxa.</p>
     <div id="payment-rate-editor">${method.installments.map(option => paymentRateRow(option.count, option.rate, true, option.feeType || 'percent')).join('')}</div>
     <button id="add-payment-rate" class="btn small" type="button" onclick="addPaymentRate()">${icon('plus')}Adicionar parcelamento</button>` : '<p class="subtle" style="margin-top:18px">Pagamento à vista, sem taxa adicional.</p>'}
     <div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Salvar pagamento</button></div></form>`);
@@ -131,11 +131,11 @@ function formShippingOption(form) {
 function paymentFormBase(form) {
   if (form.id === 'order-form') {
     const product = db.products.find(item => item.id === Number(form.elements.namedItem('product')?.value));
-    return (typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product)) * Number(form.elements.namedItem('qty')?.value || 0) + Number(formShippingOption(form)?.price || 0);
+    return (typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product)) * Number(form.elements.namedItem('qty')?.value || 0);
   }
   const delivery = form.elements.namedItem('delivery')?.value;
   const selected = form.querySelector('input[name="shippingOptionId"]:checked')?.value;
-  return cartTotal() + Number((typeof regionalShippingEnabled === 'function' && regionalShippingEnabled() ? formShippingOption(form) : shippingOptionsFor(delivery).find(option => option.id === selected))?.price || 0);
+  return cartTotal();
 }
 function updatePaymentChoices(form) {
   const selected = form.elements.namedItem('paymentMethodId')?.value;
@@ -150,6 +150,8 @@ function updatePaymentChoices(form) {
   updatePaymentTotal(form);
 }
 function updatePaymentTotal(form) {
+  const freightBox=form.querySelector('.external-freight-box');
+  if(freightBox)freightBox.hidden=form.elements.namedItem('delivery')?.value!=='Entrega';
   const preview = form.querySelector('.payment-preview');
   const total = form.id === 'order-form' ? form.querySelector('#order-estimate') : form.querySelector('#checkout-total');
   try {
@@ -219,6 +221,8 @@ checkoutPage = () => {
   html = html.replace(/(<h2>Seu pedido<\/h2>)[\s\S]*?(<div class="total-line"><span>Frete<\/span>)/,
     '$1' + checkoutCartItems() + '$2');
   html = html.replace(/(<input[^>]*name="phone"[^>]*)(>)/, '$1 onblur="this.value=formatBrazilPhone(this.value)"$2');
+  html=html.replace('<div class="total-line"><span>Frete</span><strong id="checkout-freight">','<div class="external-freight-box"><div class="total-line"><span>Frete à parte</span><strong id="checkout-freight">').replace(/(<strong id="checkout-freight">[\s\S]*?<\/strong><\/div>)/,'$1<small>Pago diretamente ao entregador na entrega, por Pix ou dinheiro. Não entra no total da loja nem nas parcelas.</small></div>');
+  html=html.replace('<span>Total</span><strong id="checkout-total">','<span>Total da loja</span><strong id="checkout-total">');
   return fillCheckoutContact(html, checkoutContact());
 };
 function checkoutCartItems() {
@@ -260,7 +264,7 @@ newOrder = () => {
     cep.maxLength = 9; cep.setAttribute('oninput', 'lookupAdminCep(this)');
     $('#admin-address-fields').insertAdjacentHTML('afterend', '<p id="admin-cep-feedback" class="subtle full" role="status"></p>');
   }
-  form.querySelector('#order-estimate').closest('.total-line').outerHTML = `<section class="order-summary"><h3>Resumo do pedido</h3><div class="total-line"><span>Produtos</span><strong id="order-products"></strong></div><div class="total-line"><span>Frete</span><strong id="order-freight"></strong></div><div class="payment-preview" aria-live="polite"></div><div class="total-line final"><span>Total</span><strong id="order-estimate"></strong></div></section>`;
+  form.querySelector('#order-estimate').closest('.total-line').outerHTML = `<section class="order-summary"><h3>Resumo do pedido</h3><div class="total-line"><span>Produtos</span><strong id="order-products"></strong></div><div class="payment-preview" aria-live="polite"></div><div class="total-line final"><span>Total da loja</span><strong id="order-estimate"></strong></div><div class="external-freight-box"><div class="total-line"><span>Frete à parte</span><strong id="order-freight"></strong></div><small>Pago diretamente ao entregador na entrega, por Pix ou dinheiro. Não entra no total da loja nem nas parcelas.</small></div></section>`;
   updateAdminShippingOptions(form);
   updateOrderEstimate();
 };
@@ -326,7 +330,7 @@ checkout = async form => {
   let quote, selectedBumps = [];
   try {
     selectedBumps = typeof selectedCheckoutBumps === 'function' ? selectedCheckoutBumps() : [];
-    quote = paymentFromFields(fields, cartTotal() + (typeof orderBumpTotal === 'function' ? orderBumpTotal() : 0) + Number(shipping.price));
+    quote = paymentFromFields(fields, cartTotal() + (typeof orderBumpTotal === 'function' ? orderBumpTotal() : 0));
     for (const item of db.cart) {
       const product = db.products.find(p => p.id === item.id && p.active);
       if (!product || cartQuantity(item.id) > available(item.id)) throw new Error('O estoque mudou. Revise o carrinho.');
@@ -386,6 +390,10 @@ const customerOrderBeforeCommerce = customerOrderPage;
 customerOrderPage = id => {
   const order = db.orders.find(item => item.id === id);
   let html = customerOrderBeforeCommerce(id).replaceAll('Continuar na loja', 'Continuar comprando').replaceAll('Criar conta ou entrar', 'Meus pedidos');
+  if(externalFreight(order)){
+    html=html.replace(/<div class="total-line"><span>Frete<\/span><span>[^<]*<\/span><\/div>/,externalFreightMarkup(order));
+    html=html.replace(/(<div class="total-line final"><span>)(?:Total|Subtotal)(<\/span>)/,'$1Total da loja$2');
+  }
   if (order?.paymentMethodId) html = html.replace('<div class="total-line final">', quoteMarkup({ ...order, total: orderTotal(order) }) + '<div class="total-line final">');
   return html;
 };
@@ -434,7 +442,7 @@ function orderSteps(order, driver = false) {
     detail: released ? momentLabel(order.releasedAt || order.deliveredAt) : 'Confirmar a saída da mercadoria.',
     available: scheduled && (pickup ? paid : payAtDelivery || paid) && mayRelease,
     action: `dispatchOrder(${order.id})`, label: pickup ? 'Confirmar retirada' : 'Liberar para entrega' };
-  const payment = { title: 'Confirmar pagamento', done: paid, detail: paid ? momentLabel(order.paidAt) : 'Anexe o comprovante do valor recebido.',
+  const payment = { title: 'Confirmar pagamento', done: paid, detail: paid ? momentLabel(order.paidAt) : 'Anexe o comprovante do valor dos produtos recebido pela loja.',
     available: scheduled && (pickup || !payAtDelivery || released) && mayPay,
     action: driver ? `driverPaymentModal(${order.id})` : `paymentModal(${order.id})`, label: 'Confirmar pagamento' };
   const finish = { title: 'Confirmar entrega', done: order.status === 'delivered', detail: order.status === 'delivered' ? momentLabel(order.deliveredAt) : 'Finalize após a entrega e o pagamento.',
@@ -503,8 +511,8 @@ orderDetail = id => {
       button('Imprimir pedido', `onclick="go('/imprimir/${id}')"`, '', 'print')) +
     `<div class="order-detail-layout"><div class="stack"><section class="card"><div class="card-header"><h2>Itens do pedido</h2>${badge(order)}</div>
       <div class="tablewrap"><table class="order-items-table"><thead><tr><th>Produto / variações</th><th><abbr title="Quantidade">Qtd.</abbr></th><th>Total</th></tr></thead><tbody>${order.items.map(item => `<tr><td>${orderItemVisual(item)}</td><td>${item.qty}</td><td>${money(item.qty * item.price)}</td></tr>`).join('')}</tbody></table></div>
-      <div class="pad"><div class="total-line"><span>Produtos</span><strong>${money(productSubtotal(order))}</strong></div><div class="total-line"><span>Frete</span><strong>${order.freightPending ? 'A definir no agendamento' : money(order.freight)}</strong></div>
-      ${order.paymentMethodId ? quoteMarkup({ ...order, total: orderTotal(order) }) : ''}<div class="total-line final"><span>Total</span><strong>${money(orderTotal(order))}</strong></div></div></section>
+      <div class="pad"><div class="total-line"><span>Produtos</span><strong>${money(productSubtotal(order))}</strong></div>${externalFreight(order)?'':`<div class="total-line"><span>Frete incluído no acordo original</span><strong>${order.freightPending ? 'A definir no agendamento' : money(order.freight)}</strong></div>`}
+      ${order.paymentMethodId ? quoteMarkup({ ...order, total: orderTotal(order) }) : ''}<div class="total-line final"><span>Total da loja</span><strong>${money(orderTotal(order))}</strong></div>${externalFreightMarkup(order)}</div></section>
       <section class="card pad"><h2>Entrega e retirada</h2><div class="total-line"><span>Status</span>${badge(order)}</div>
       <div class="total-line"><span>${order.delivery === 'Retirada' ? 'Data da retirada' : 'Data agendada'}</span><strong>${order.deliveryDate ? esc(deliveryDateLabel(order.deliveryDate)) : 'A agendar'}</strong></div>
       ${order.shippingOptionName ? `<div class="total-line"><span>Modalidade</span><strong>${esc(order.shippingOptionName)}</strong></div>` : ''}
@@ -549,7 +557,7 @@ function driverPaymentModal(id) {
   if (!canConfirmDriverOrder(order) || order.paid || order.status === 'cancelled') return;
   if (!isDeliveryDate(order.deliveryDate) || order.freightPending ||
       (order.paymentTiming !== 'Antecipado' && order.status !== 'transit')) return toast('Conclua o agendamento e a liberação antes de confirmar o pagamento na entrega.');
-  modal('Confirmar pagamento', `<form onsubmit="event.preventDefault();confirmDriverPayment(${id},this)"><p>Pedido #${id} · ${esc(order.customer)}</p><p style="margin-top:12px">Valor recebido: <strong>${money(orderTotal(order))}</strong></p>
+  modal('Confirmar pagamento', `<form onsubmit="event.preventDefault();confirmDriverPayment(${id},this)"><p>Pedido #${id} · ${esc(order.customer)}</p><p style="margin-top:12px">Valor da loja recebido: <strong>${money(orderTotal(order))}</strong></p>${externalFreightMarkup(order)}
     <label class="field" style="margin-top:18px">Foto do comprovante<input name="receipt" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required></label>
     <label style="display:flex;gap:10px;margin-top:18px"><input name="collected" type="checkbox" required>Conferi e recebi o pagamento.</label>
     <div class="form-actions">${button('Cancelar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Confirmar pagamento</button></div></form>`);
@@ -571,13 +579,13 @@ driverCompleteModal = id => {
   if (!order?.paid) return toast('Confirme o pagamento com comprovante antes de concluir a entrega.');
   modal('Confirmar entrega', `<form onsubmit="event.preventDefault();completeDriverDelivery(${id},this)">
     <p>Confirma a entrega do pedido <strong>#${id}</strong> de ${esc(order.customer)}?</p>
-    <p class="subtle" style="margin-top:14px">O pagamento já foi confirmado. A data e o horário da entrega serão registrados agora.</p>
+    <p class="subtle" style="margin-top:14px">O pagamento da loja já foi confirmado. A data e o horário da entrega serão registrados agora.</p>${freightDeliveryConfirmation(order)}
     <div class="form-actions">${button('Voltar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Confirmar entrega</button></div></form>`);
 };
 completeDriverDelivery = async (id, form) => {
   const order = workflowOrder(id); if (!canConfirmDriverOrder(order) || !order.paid || order.status !== 'transit') return;
   const submit = form.querySelector('button:not([type])'); submit.disabled = true;
-  try { await performOrderAction(id, 'finish'); closeModal(); render(); toast('Entrega concluída. Pagamento e entrega confirmados.'); }
+  try { await performOrderAction(id, 'finish',form?.elements.namedItem('freightPaymentMethod')?.value||null); closeModal(); render(); toast('Entrega concluída. Pagamento e entrega confirmados.'); }
   catch (error) { toast(error.message); }
   finally { submit.disabled = false; }
 };
@@ -594,7 +602,7 @@ deliveryCard = order => {
       ${mayConfirm && order.status === 'transit' && order.paid ? button('Confirmar entrega', `onclick="driverCompleteModal(${order.id})"`, 'small primary', 'check') : ''}
       <a class="btn small" href="/app/deliveries/order/${order.id}">Acompanhar etapas</a></div></article>`);
   }
-  if (order.paymentMethodId) html = html.replace('<div class="delivery-card-actions">', `<p class="subtle">${esc(order.payment)} · ${esc(installmentText({ ...order, total: orderTotal(order) }))}</p><div class="delivery-card-actions">`);
+  if (order.paymentMethodId) html = html.replace('<div class="delivery-card-actions">', `${externalFreightMarkup(order)}<p class="subtle">${esc(order.payment)} · ${esc(installmentText({ ...order, total: orderTotal(order) }))}</p><div class="delivery-card-actions">`);
   return html;
 };
 function driverDashboard() {
@@ -633,7 +641,7 @@ teamPage = () => {
   return heading('Equipe e permissões', 'Sua equipe organizada por função.') + `<div class="stack">${groups.map(group => {
     const people = profiles.filter(profile => (profile.role === 'master' ? 'Principal' : profile.position || 'Outro') === group);
     return `<section class="card"><div class="card-header"><h2>${esc(titles[group] || group)}</h2><span class="badge gray">${people.length}</span></div>
-    <div class="tablewrap"><table><thead><tr><th>Pessoa</th><th>E-mail</th><th>Cargo</th><th class="right">Ações</th></tr></thead><tbody>${people.map(profile => `<tr><td><div class="customer"><span class="avatar">${esc(initials(profile.name || profile.email))}</span>${esc(profile.name || 'Pessoa da equipe')}</div></td><td>${esc(profile.email)}</td><td>${esc(group)}</td><td class="right">${canRemoveTeamMember(profile) ? button('Remover da equipe', `onclick="removeTeamMemberModal('${esc(profile.user_id)}')"`, 'small danger') : '<span class="subtle">'+(profile.role === 'master' ? 'Conta protegida' : profile.user_id === currentProfile?.user_id ? 'Seu perfil' : '—')+'</span>'}</td></tr>`).join('')}</tbody></table></div></section>`;
+    <div class="tablewrap"><table><thead><tr><th>Pessoa</th><th>E-mail</th><th>Cargo</th><th class="right">Ações</th></tr></thead><tbody>${people.map(profile => `<tr><td><div class="customer"><span class="avatar">${esc(initials(profile.name || profile.email))}</span>${esc(profile.name || 'Pessoa da equipe')}</div></td><td>${esc(profile.email)}</td><td>${esc(group)}</td><td class="right">${canRemoveTeamMember(profile) ? button('Alterar função',`onclick="editTeamRoleModal('${esc(profile.user_id)}')"`,'small','edit')+' '+button('Remover da equipe', `onclick="removeTeamMemberModal('${esc(profile.user_id)}')"`, 'small danger') : '<span class="subtle">'+(profile.role === 'master' ? 'Conta protegida' : profile.user_id === currentProfile?.user_id ? 'Seu perfil' : '—')+'</span>'}</td></tr>`).join('')}</tbody></table></div></section>`;
   }).join('') || '<section class="card pad empty">Nenhuma pessoa na equipe.</section>'}</div>`;
 };
 function canRemoveTeamMember(profile){
@@ -738,7 +746,7 @@ render = function () {
       const page = path.split('/')[2] || 'dashboard';
       const orderId = Number(path.match(/^\/app\/deliveries\/order\/(\d+)$/)?.[1]);
       const order = orderId && deliveryOrders().find(item => item.id === orderId);
-      const content = order ? heading(`Entrega #${order.id}`, order.customer) + `<div class="two-col"><section class="card pad"><h2>Endereço de entrega</h2><p style="margin:16px 0;line-height:1.8">${esc(order.address)}<br>${esc(order.phone)}</p><p>${esc(order.notes || '')}</p><div class="total-line final"><span>Total</span><strong>${money(orderTotal(order))}</strong></div></section>${orderSteps(order, true)}</div>`
+      const content = order ? heading(`Entrega #${order.id}`, order.customer) + `<div class="two-col"><section class="card pad"><h2>Endereço de entrega</h2><p style="margin:16px 0;line-height:1.8">${esc(order.address)}<br>${esc(order.phone)}</p><p>${esc(order.notes || '')}</p><div class="total-line final"><span>Valor da loja</span><strong>${money(orderTotal(order))}</strong></div>${externalFreightMarkup(order)}</section>${orderSteps(order, true)}</div>`
         : page === 'deliveries' ? deliveriesPage() : page === 'settings' ? driverSettingsPage() : driverDashboard();
       let html = shell(allowed(page) ? page : 'dashboard', content)
         .replace('<div class="navlabel">CANAIS DE VENDA</div>', '')
@@ -817,12 +825,12 @@ confirmPayment = async (id, form) => {
 finishOrder = id => {
   const order = workflowOrder(id);
   if (!order || order.status !== 'transit' || !order.paid || !['Proprietário','Gerente','Vendedor','Estoque'].includes(role)) return;
-  modal('Confirmar entrega', `<form onsubmit="event.preventDefault();commitFinishOrder(${id},this)"><p>Confirma a entrega do pedido <strong>#${id}</strong> de ${esc(order.customer)}?</p>
+  modal('Confirmar entrega', `<form onsubmit="event.preventDefault();commitFinishOrder(${id},this)"><p>Confirma a entrega do pedido <strong>#${id}</strong> de ${esc(order.customer)}?</p>${freightDeliveryConfirmation(order)}
     <div class="form-actions">${button('Voltar', 'type="button" onclick="closeModal()"')}<button class="btn primary">Concluir entrega</button></div></form>`);
 };
 commitFinishOrder = async (id, form) => {
   const submit = form?.querySelector('button:not([type])'); if (submit) submit.disabled = true;
-  try { await performOrderAction(id, 'finish'); closeModal(); render(); toast('Entrega e pagamento registrados.'); }
+  try { await performOrderAction(id, 'finish',form?.elements.namedItem('freightPaymentMethod')?.value||null); closeModal(); render(); toast('Entrega e pagamento registrados.'); }
   catch (error) { toast(error.message); }
   finally { if (submit) submit.disabled = false; }
 };
@@ -866,3 +874,27 @@ async function releaseDay(day, form) {
   finally { submit.disabled = false; }
 }
 // Startup runs after the shared store navigation and preview runtime.
+
+// Freight remains visible for logistics, separately from the store receivable.
+function externalFreight(order){return order?.delivery==='Entrega'&&order.freightBilling==='external';}
+function externalFreightMarkup(order){
+ if(!externalFreight(order))return '';
+ return `<div class="external-freight-box"><div class="total-line"><span>Frete terceirizado · à parte</span><strong>${order.freightPending?'A confirmar':money(order.freight)}</strong></div><small>Pago diretamente ao entregador na entrega, por Pix ou dinheiro. Fora do total da loja e das parcelas.</small>${order.freightPaidAt?`<small><b>Recebimento do frete registrado:</b> ${order.freightPaymentMethod==='cash'?'Dinheiro':'Pix'} · ${esc(momentLabel(order.freightPaidAt))}</small>`:''}</div>`;
+}
+function editTeamRoleModal(id){
+ const profile=accountProfiles.find(p=>p.user_id===id);if(!canRemoveTeamMember(profile))return;
+ const positions=['Gerente','Vendedor','Entregador','Estoque','Outro'];
+ modal('Alterar função na equipe',`<form onsubmit="event.preventDefault();saveTeamRole(this,'${esc(id)}')"><div class="notice"><p><strong>${esc(profile.name||profile.email)}</strong><br>As permissões serão atualizadas e a pessoa precisará entrar novamente. Os pedidos e o histórico serão preservados.</p></div><label class="field">Nova função<select name="position" required>${positions.map(position=>`<option ${position===profile.position?'selected':''}>${position}</option>`).join('')}</select></label><label class="team-removal-confirm"><input type="checkbox" required>Confirmo a alteração das permissões desta pessoa.</label><div class="form-actions">${button('Cancelar','type="button" onclick="closeModal()"')}<button class="btn primary" type="submit">Confirmar alteração</button></div></form>`);
+}
+async function saveTeamRole(form,id){
+ const profile=accountProfiles.find(p=>p.user_id===id);if(!canRemoveTeamMember(profile)||!form.reportValidity())return;
+ const position=form.elements.namedItem('position').value;if(position===profile.position)return toast('Selecione uma função diferente da atual.');
+ const submit=form.querySelector('[type="submit"]');if(submit.disabled)return;submit.disabled=true;
+ try{await backendRequest('/rest/v1/rpc/change_team_role',{method:'POST',body:JSON.stringify({p_user_id:id,p_position:position,p_expected_position:profile.position||null})},true);Object.assign(profile,{position,role:position==='Entregador'?'driver':'admin'});closeModal();render();toast('Função atualizada. A pessoa deverá entrar novamente.');}
+ catch(error){toast(error.message);submit.disabled=false;}
+}
+
+function freightDeliveryConfirmation(order){
+ if(!externalFreight(order)||!Number(order.freight))return '';
+ return `<fieldset class="external-freight-box"><legend>Frete terceirizado · ${money(order.freight)}</legend><label class="field">Como o entregador recebeu o frete?<select name="freightPaymentMethod" required><option value="">Selecione</option><option value="pix">Pix direto ao entregador</option><option value="cash">Dinheiro direto ao entregador</option></select></label><label class="team-removal-confirm"><input type="checkbox" required>Confirmo a entrega e o recebimento do frete pelo entregador.</label><small>Este valor permanece separado do pagamento e da receita da loja.</small></fieldset>`;
+}
