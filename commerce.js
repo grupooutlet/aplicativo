@@ -131,7 +131,13 @@ function formShippingOption(form) {
 function paymentFormBase(form) {
   if (form.id === 'order-form') {
     const product = db.products.find(item => item.id === Number(form.elements.namedItem('product')?.value));
-    return (typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product)) * Number(form.elements.namedItem('qty')?.value || 0);
+    const qty = Number(form.elements.namedItem('qty')?.value || 0);
+    const draft = (typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product)) * Math.max(0, qty || 0);
+    return (form.orderLines || []).reduce((total, line, index) => {
+      if (form.orderLineEdit === index) return total;
+      const item = db.products.find(product => product.id === line.id);
+      return total + line.qty * (line.priceOverride?.unitPrice ?? salePrice(item));
+    }, draft);
   }
   const delivery = form.elements.namedItem('delivery')?.value;
   const selected = form.querySelector('input[name="shippingOptionId"]:checked')?.value;
@@ -308,11 +314,11 @@ updateOrderEstimate = () => {
   estimateBeforeCommerce();
   const form = $('#order-form');
   if (form?.elements.namedItem('shippingOptionId')) {
-    const product = db.products.find(item => item.id === Number(form.elements.namedItem('product')?.value));
     const products = form.querySelector('#order-products');
     const freight = form.querySelector('#order-freight');
-    if (products) products.textContent = money((typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product)) * Number(form.elements.namedItem('qty')?.value || 0));
-    if (freight) freight.textContent = formShippingOption(form) ? money(formShippingOption(form).price) : 'Selecione um frete';
+    if (products) products.textContent = money(paymentFormBase(form));
+    const shipping = formShippingOption(form);
+    if (freight) freight.textContent = shipping ? money((typeof presaleFreightAdjustment === 'function' ? presaleFreightAdjustment(form, shipping)?.price : null) ?? shipping.price) : 'Selecione um frete';
   }
   if (form?.elements.namedItem('paymentMethodId')) updatePaymentTotal(form);
 };
@@ -469,7 +475,7 @@ function orderNotesCard(order){
 const internalPriceNoteCache=new Map(),internalPriceNoteRequests=new Map();
 function internalPriceNoteKey(id){return String(currentProfile?.user_id||authSession?.user?.id||'')+':'+id;}
 function internalPriceNotesMarkup(rows){
-  return rows.length?`<div class="internal-price-notes"><div class="internal-price-note-label">${icon('shield')}Registros internos do sistema <span>Somente equipe</span></div>${rows.map(row=>`<article><h3>Preço do produto alterado</h3><p class="internal-price-note-product">${esc(row.productName)}</p><p>De <strong>${money(row.originalPrice)}</strong> para <strong>${money(row.unitPrice)}</strong> por unidade.</p><p class="internal-price-note-reason"><strong>Motivo:</strong> ${esc(row.reason)}</p><small>${esc(momentLabel(row.createdAt))} · ${esc(row.actorName)}<br>Registro protegido · não pode ser editado ou removido.</small></article>`).join('')}</div>`:'';
+  return rows.length?`<div class="internal-price-notes"><div class="internal-price-note-label">${icon('shield')}Registros internos do sistema <span>Somente equipe</span></div>${rows.map(row=>`<article><h3>${row.kind==='freight'?'Valor do frete alterado':'Preço do produto alterado'}</h3><p class="internal-price-note-product">${esc(row.kind==='freight'?row.shippingName:row.productName)}</p><p>De <strong>${money(row.originalPrice)}</strong> para <strong>${money(row.unitPrice)}</strong>${row.kind==='freight'?'':' por unidade'}.</p><p class="internal-price-note-reason"><strong>Motivo:</strong> ${esc(row.reason)}</p><small>${esc(momentLabel(row.createdAt))} · ${esc(row.actorName)}<br>Registro protegido · não pode ser editado ou removido.</small></article>`).join('')}</div>`:'';
 }
 function internalOrderPriceNotes(id){
   if(!isOwner||!['master','admin'].includes(currentProfile?.role))return '';

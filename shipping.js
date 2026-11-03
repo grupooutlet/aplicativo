@@ -98,7 +98,7 @@ lookupCep=async input=>{await lookupCepBeforeRegions(input);refreshRegionalShipp
 const lookupAdminCepBeforeRegions=lookupAdminCep;
 lookupAdminCep=async input=>{await lookupAdminCepBeforeRegions(input);refreshRegionalShipping(input.form);};
 const newOrderBeforeRegions=newOrder;
-newOrder=()=>{newOrderBeforeRegions();const form=document.querySelector('#order-form');if(!form)return;setupPresaleProductPicker(form);setupPresaleSellers(form);refreshRegionalShipping(form,true);organizeNewOrder(form);};
+newOrder=()=>{newOrderBeforeRegions();const form=document.querySelector('#order-form');if(!form)return;setupPresaleProductPicker(form);setupPresaleSellers(form);refreshRegionalShipping(form,true);organizeNewOrder(form);updateOrderEstimate();};
 
 function organizeNewOrder(form){
   if(form.classList.contains('new-order-form'))return;
@@ -114,12 +114,17 @@ function organizeNewOrder(form){
   const customer=section(1,'Cliente','Dados para contato e identificação.');
   move(customer,field('customer'),field('phone'),field('cpf'),field('email'));
   const phone=form.elements.namedItem('phone');if(phone){phone.placeholder='+55 (21) 99999-9999';phone.setAttribute('onblur','this.value=formatBrazilPhone(this.value)');}
-  const product=section(2,'Produto','Busque o produto e confira as opções e a quantidade.');
-  move(product,form.querySelector('.presale-product-picker'),form.querySelector('#admin-variation-fields'),field('qty'));
+  const product=section(2,'Produtos','Busque os produtos e configure a quantidade e as variações de cada item.');
+  product.insertAdjacentHTML('beforeend','<ul class="presale-lines full" aria-label="Produtos adicionados" hidden></ul>');
+  const quantityField=field('qty');
+  quantityField.hidden=true;
+  move(product,form.querySelector('.presale-product-picker'),form.querySelector('#admin-variation-fields'),quantityField);
   setupOrderPriceControl(form,product);
+  product.insertAdjacentHTML('beforeend',`<div class="presale-line-actions full"><button class="btn small" type="button" data-cancel-line onclick="finishPresaleItem(this.form)" hidden>Cancelar edição</button><button class="btn small" type="button" data-save-line onclick="savePresaleItem(this.form)" hidden>${icon('plus')}Adicionar à lista</button></div>`);
   const delivery=section(3,'Entrega ou retirada','Defina o recebimento. O frete é calculado pelo endereço.');
   const deliveryField=field('delivery');deliveryField?.classList.remove('full');
   move(delivery,deliveryField,field('deliveryDate'),form.querySelector('#admin-address-fields'),form.querySelector('#admin-cep-feedback'),field('shippingOptionId'),form.querySelector('#admin-shipping-coverage'));
+  setupPresaleFreightControl(delivery);
   const payment=section(4,'Pagamento e responsável','Confira a condição combinada com o cliente.');
   move(payment,field('paymentMethodId'),form.querySelector('.payment-choice-details'),field('paymentTiming'),field('seller'));
   const notes=section(5,'Observações','Informações úteis para a equipe e para a entrega.');
@@ -137,12 +142,17 @@ toggleAdminDelivery=value=>{
   for(const selector of ['#admin-address-fields','#admin-cep-feedback']){const element=form.querySelector(selector);if(element)element.hidden=pickup;}
 };
 
-function presaleProductMatches(query){
-  return searchText(query)?db.products.filter(product=>product.active&&available(product.id)>0&&matchesSearch(product.name,query)).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
+function presaleRemainingStock(form,id){
+  const allocated=(form?.orderLines||[]).reduce((total,line,index)=>line.id===id&&form.orderLineEdit!==index?total+line.qty:total,0);
+  return Math.max(0,available(id)-allocated);
+}
+function presaleProductMatches(query,form){
+  return searchText(query)?db.products.filter(product=>product.active&&presaleRemainingStock(form,product.id)>0&&matchesSearch(product.name,query)).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
 }
 function setupPresaleProductPicker(form){
   const old=form.elements.namedItem('product');if(!old)return;
-  old.closest('label').outerHTML=`<div class="field full presale-product-picker"><label for="presale-product-search">Produto</label><div class="presale-search-input">${icon('search')}<input id="presale-product-search" type="search" placeholder="Busque pelo nome do produto" autocomplete="off" required aria-autocomplete="list" aria-controls="presale-product-results" oninput="searchPresaleProducts(this)" onfocus="showPresaleProductResults(this)" onkeydown="presaleSearchKey(event,this)"></div><input type="hidden" name="product" value=""><div id="presale-product-results" class="presale-product-results" hidden aria-label="Produtos encontrados"></div><div id="presale-selected-product" hidden></div><small id="presale-product-feedback" role="status">Digite o nome e selecione um produto para incluir no pedido.</small></div>`;
+  form.orderLines=[];
+  old.closest('label').outerHTML=`<div class="field full presale-product-picker"><label for="presale-product-search">Buscar produto</label><div class="presale-search-input">${icon('search')}<input id="presale-product-search" type="search" placeholder="Busque pelo nome do produto" autocomplete="off" aria-controls="presale-product-results" oninput="searchPresaleProducts(this)" onfocus="showPresaleProductResults(this)" onkeydown="presaleSearchKey(event,this)"></div><input type="hidden" name="product" value=""><div id="presale-product-results" class="presale-product-results" hidden aria-label="Produtos encontrados"></div><div id="presale-selected-product" hidden></div><small id="presale-product-feedback" role="status">Digite o nome e selecione um produto para incluir no pedido.</small></div>`;
   updateAdminVariationFields();updateOrderEstimate();
 }
 function searchPresaleProducts(input){
@@ -155,19 +165,69 @@ function searchPresaleProducts(input){
 function showPresaleProductResults(input){
   const form=input.form,target=form.querySelector('#presale-product-results');if(!target)return;
   if(form.elements.namedItem('product').value||!searchText(input.value)){target.hidden=true;target.innerHTML='';return;}
-  const matches=presaleProductMatches(input.value),rows=matches.slice(0,15);
-  target.innerHTML=rows.map(product=>`<button class="presale-product-result" type="button" onclick="selectPresaleProduct(${Number(product.id)},this.form)" onkeydown="presaleResultKey(event,this)"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><span><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${available(product.id)} disponíveis</small></span>${icon('plus')}</button>`).join('')||'<p class="presale-no-results">Nenhum produto disponível com esse nome.</p>';
+  const matches=presaleProductMatches(input.value,form),rows=matches.slice(0,15);
+  target.innerHTML=rows.map(product=>`<button class="presale-product-result" type="button" onclick="selectPresaleProduct(${Number(product.id)},this.form)" onkeydown="presaleResultKey(event,this)"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><span><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${presaleRemainingStock(form,product.id)} disponíveis</small></span>${icon('plus')}</button>`).join('')||'<p class="presale-no-results">Nenhum produto disponível com esse nome.</p>';
   target.hidden=false;
   form.querySelector('#presale-product-feedback').textContent=matches.length>15?`${matches.length} produtos encontrados. Exibindo os primeiros 15; refine o nome para encontrar o produto.`:matches.length?`${matches.length} produto(s) encontrado(s). Selecione uma opção.`:'Tente outro nome para buscar no catálogo.';
 }
 function selectPresaleProduct(id,form){
-  const product=db.products.find(item=>item.id===id&&item.active&&available(id)>0);if(!product)return;
+  const product=db.products.find(item=>item.id===id&&item.active&&presaleRemainingStock(form,id)>0);if(!product)return;
+  if(form.orderLines.length>=staffOrderItemLimit&&form.orderLineEdit==null)return toast('O pedido permite até 20 linhas de produtos.');
   form.elements.namedItem('product').value=String(id);const input=form.querySelector('#presale-product-search');input.value=product.name;input.setCustomValidity('');
   const results=form.querySelector('#presale-product-results');results.hidden=true;results.innerHTML='';
-  const selected=form.querySelector('#presale-selected-product');selected.hidden=false;selected.innerHTML=`<div class="presale-product-selected"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><div><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${available(id)} disponíveis</small></div><button class="btn small" type="button" onclick="clearPresaleProduct(this.form)" aria-label="Remover produto selecionado">${icon('trash')}</button></div>`;
+  const selected=form.querySelector('#presale-selected-product');selected.hidden=false;selected.innerHTML=`<div class="presale-product-selected"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><div><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${presaleRemainingStock(form,id)} disponíveis</small></div><button class="btn small" type="button" onclick="clearPresaleProduct(this.form)" aria-label="Remover produto selecionado">${icon('trash')}</button></div>`;
+  form.elements.namedItem('qty').max=Math.min(99,presaleRemainingStock(form,id));
   form.querySelector('#presale-product-feedback').textContent='Confira as variações e a quantidade abaixo.';
   resetOrderPriceOverride(form);
   updateAdminVariationFields();updateOrderEstimate();
+}
+function renderPresaleLines(form){
+  const list=form.querySelector('.presale-lines');
+  list.hidden=!form.orderLines.length;
+  list.innerHTML=form.orderLines.map((line,index)=>{
+    const product=db.products.find(item=>item.id===line.id), detail=optionText(line.options);
+    const unitPrice=line.priceOverride?.unitPrice??salePrice(product),editing=form.orderLineEdit===index;
+    const name=esc(product?.name||'Produto indisponível');
+    return `<li class="presale-line${editing?' is-editing':''}"><img ${mediaImageAttributes(product?.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><div class="presale-line-detail"><strong>${name}</strong>${detail?`<small>${esc(detail)}</small>`:''}<small>${line.qty} × ${money(unitPrice)}${line.priceOverride?' · Preço personalizado':''}</small></div><strong class="presale-line-total">${money(unitPrice*line.qty)}</strong><div class="presale-line-tools"><button class="btn small" type="button" aria-label="Editar item ${index+1}: ${name}" onclick="editPresaleItem(this.form,${index})" ${form.orderLineEdit!=null?'disabled':''}>${icon('edit')}</button><button class="btn small" type="button" aria-label="Remover item ${index+1}: ${name}" onclick="removePresaleItem(this.form,${index})" ${form.orderLineEdit!=null?'disabled':''}>${icon('trash')}</button></div></li>`;
+  }).join('');
+}
+function savePresaleItem(form){
+  if(form.orderSaving||form.querySelector('.order-price-editor:not([hidden])'))return toast('Confirme ou cancele o ajuste de valor primeiro.');
+  const draft=staffOrderDraftItem(form,Object.fromEntries(new FormData(form)));
+  if(!draft)return;
+  const lines=[...form.orderLines];
+  lines[form.orderLineEdit??lines.length]=draft;
+  try{staffOrderItems(lines);}catch(error){return toast(error.message);}
+  form.orderLines=lines;
+  finishPresaleItem(form);
+}
+function finishPresaleItem(form){
+  form.orderLineEdit=null;
+  form.elements.namedItem('qty').value='1';
+  clearPresaleProduct(form);
+  renderPresaleLines(form);
+}
+function editPresaleItem(form,index){
+  const line=form.orderLines[index];
+  if(!line||form.orderSaving||form.orderLineEdit!=null)return;
+  if(form.elements.namedItem('product').value)return toast('Adicione ou remova a seleção atual antes de editar outro item.');
+  const product=db.products.find(item=>item.id===line.id&&item.active&&available(item.id)>0);
+  if(!product)return toast('Este produto está indisponível. Remova o item da lista.');
+  form.orderLineEdit=index;
+  selectPresaleProduct(line.id,form);
+  form.elements.namedItem('qty').value=String(line.qty);
+  form.orderPriceOverride=line.priceOverride;
+  for(const select of form.querySelectorAll('.admin-product-option'))select.value=line.options[select.dataset.optionName]||'';
+  renderPresaleLines(form);
+  updateOrderEstimate();
+  form.elements.namedItem('qty').focus();
+}
+function removePresaleItem(form,index){
+  if(form.orderSaving||form.orderLineEdit!=null)return;
+  form.orderLines.splice(index,1);
+  renderPresaleLines(form);
+  updateOrderEstimate();
+  form.querySelector('#presale-product-search').focus();
 }
 function orderUnitPrice(form,product){
   const change=form?.orderPriceOverride;
@@ -186,6 +246,7 @@ function refreshOrderPriceControl(form){
   reset.hidden=!form.orderPriceOverride;
 }
 function openOrderPriceEditor(form){
+  if(form.orderSaving||form.querySelector('.presale-freight-editor:not([hidden])'))return;
   const product=db.products.find(p=>p.id===Number(form.elements.namedItem('product')?.value));if(!product)return;
   const panel=form.querySelector('.order-price-editor'),value=panel.querySelector('[data-order-price-value]'),reason=panel.querySelector('[data-order-price-reason]');
   panel.hidden=false;value.disabled=reason.disabled=false;value.required=reason.required=true;
@@ -194,7 +255,7 @@ function openOrderPriceEditor(form){
   value.focus();value.select();
 }
 function closeOrderPriceEditor(form){
-  const panel=form.querySelector('.order-price-editor');if(!panel)return;panel.hidden=true;
+  const panel=form.querySelector('.order-price-editor');if(!panel||panel.hidden)return;panel.hidden=true;
   panel.querySelectorAll('input,textarea').forEach(input=>{input.disabled=true;input.required=false;input.setCustomValidity('');});
   form.querySelector('.new-order-sidebar .primary').disabled=Boolean(form.orderSaving);
   form.querySelector('[data-order-price-open]')?.focus();
@@ -209,15 +270,80 @@ function confirmOrderPrice(form){
   closeOrderPriceEditor(form);refreshOrderPriceControl(form);updateOrderEstimate();
 }
 function resetOrderPriceOverride(form){form.orderPriceOverride=null;closeOrderPriceEditor(form);refreshOrderPriceControl(form);}
+function presaleFreightKey(form,shipping){
+  if(!shipping||form.elements.namedItem('delivery').value!=='Entrega')return '';
+  return JSON.stringify([shipping.id,Number(shipping.price),shippingFormAddress(form)]);
+}
+function presaleFreightAdjustment(form,shipping){
+  const change=form.orderFreightOverride;
+  return change&&change.key===presaleFreightKey(form,shipping)?change:null;
+}
+function setupPresaleFreightControl(container){
+  container.insertAdjacentHTML('beforeend',`<div class="field full presale-freight-control" hidden><div class="presale-freight-actions"><button type="button" class="btn small" data-freight-open onclick="openPresaleFreightEditor(this.form)">${icon('edit')}Personalizar frete</button><button type="button" class="text-link" data-freight-reset onclick="this.form.orderFreightOverride=null;updateOrderEstimate()" hidden>Usar valor tabelado</button></div><small class="subtle" data-freight-status role="status"></small></div><section class="order-price-editor presale-freight-editor full" hidden><header><h4>Personalizar frete deste pedido</h4><p>Valor pago à parte ao entregador.</p></header><div class="order-price-editor-fields"><label class="field">Novo valor do frete (R$)<input data-freight-value type="number" min="0" max="1000000" step="0.01" disabled></label><label class="field full">Motivo da alteração<textarea data-freight-reason rows="3" minlength="3" maxlength="1000" placeholder="Ex.: valor negociado para esta entrega." disabled></textarea></label></div><div class="order-price-editor-actions"><button class="btn small" type="button" onclick="closePresaleFreightEditor(this.form,true)">Cancelar</button><button class="btn small primary" type="button" onclick="confirmPresaleFreight(this.form)">Confirmar frete</button></div></section>`);
+}
+function refreshPresaleFreightControl(form){
+  const control=form.querySelector('.presale-freight-control'),shipping=formShippingOption(form);
+  const key=presaleFreightKey(form,shipping),change=presaleFreightAdjustment(form,shipping);
+  const changed=Boolean((form.orderFreightOverride&&!change)||(form.freightEditorKey&&form.freightEditorKey!==key));
+  if(changed){
+    form.orderFreightOverride=null;
+    closePresaleFreightEditor(form);
+  }
+  control.hidden=!key;
+  control.querySelector('[data-freight-reset]').hidden=!change;
+  control.querySelector('[data-freight-status]').textContent=change
+    ? 'Frete personalizado: '+money(change.price)+' · Tabela: '+money(shipping.price)
+    : changed&&key?'A cotação mudou. Confirme o novo valor se precisar personalizar.':'';
+}
+function openPresaleFreightEditor(form){
+  if(form.orderSaving||form.querySelector('.order-price-editor:not([hidden])'))return;
+  const shipping=formShippingOption(form),key=presaleFreightKey(form,shipping);
+  if(!key)return;
+  const panel=form.querySelector('.presale-freight-editor'),value=panel.querySelector('[data-freight-value]'),reason=panel.querySelector('[data-freight-reason]');
+  const change=presaleFreightAdjustment(form,shipping);
+  form.freightEditorKey=key;
+  panel.hidden=false;value.disabled=reason.disabled=false;
+  value.value=change?.price??Number(shipping.price);reason.value=change?.reason||'';
+  form.querySelector('.new-order-sidebar .primary').disabled=true;
+  value.focus();value.select();
+}
+function closePresaleFreightEditor(form,focus=false){
+  const panel=form.querySelector('.presale-freight-editor');if(!panel||panel.hidden)return;
+  panel.hidden=true;
+  form.freightEditorKey='';
+  panel.querySelectorAll('input,textarea').forEach(input=>{input.disabled=true;input.setCustomValidity('');});
+  form.querySelector('.new-order-sidebar .primary').disabled=Boolean(form.orderSaving);
+  if(focus)form.querySelector('[data-freight-open]').focus();
+}
+function confirmPresaleFreight(form){
+  const shipping=formShippingOption(form),key=presaleFreightKey(form,shipping);
+  if(!key||key!==form.freightEditorKey){updateOrderEstimate();return;}
+  const value=form.querySelector('[data-freight-value]'),reason=form.querySelector('[data-freight-reason]');
+  const price=Number(value.value),expectedPrice=Number(shipping.price),why=reason.value.trim();
+  value.setCustomValidity(value.value!==''&&(price===0||validOrderPrice(price))?'':'Informe um valor de frete válido, a partir de zero, com até duas casas decimais.');
+  reason.setCustomValidity(why.length>=3&&why.length<=1000?'':'Escreva o motivo da alteração, entre 3 e 1.000 caracteres.');
+  if(!value.reportValidity()||!reason.reportValidity())return;
+  form.orderFreightOverride=price===expectedPrice?null:{key,expectedPrice,price,reason:why};
+  closePresaleFreightEditor(form,true);
+  updateOrderEstimate();
+}
 function clearPresaleProduct(form){const input=form.querySelector('#presale-product-search');input.value='';searchPresaleProducts(input);form.querySelector('#presale-product-feedback').textContent='Digite o nome e selecione um produto para incluir no pedido.';input.focus();}
 const estimateBeforePresaleSearch=updateOrderEstimate;
 updateOrderEstimate=()=>{
   const form=document.querySelector('#order-form');
-  if(form&&!form.elements.namedItem('product')?.value){
-    const products=form.querySelector('#order-products'),total=form.querySelector('#order-estimate'),quote=form.querySelector('.payment-preview');
-    if(products)products.textContent='—';if(total)total.textContent='—';const freight=form.querySelector('#order-freight');if(freight)freight.textContent='A calcular';if(quote)quote.innerHTML='';return;
+  const result=estimateBeforePresaleSearch();
+  if(form?.classList.contains('new-order-form')){
+    const hasDraft=Boolean(form.elements.namedItem('product').value),editing=form.orderLineEdit!=null;
+    const qty=form.elements.namedItem('qty'),saveLine=form.querySelector('[data-save-line]');
+    qty.closest('.field').hidden=!hasDraft;
+    form.querySelector('.order-price-control').hidden=!hasDraft;
+    saveLine.hidden=!hasDraft;
+    saveLine.innerHTML=editing?'Salvar item':icon('plus')+'Adicionar à lista';
+    form.querySelector('[data-cancel-line]').hidden=!editing;
+    refreshOrderPriceControl(form);
+    refreshPresaleFreightControl(form);
   }
-  return estimateBeforePresaleSearch();
+  return result;
 };
 function presaleSearchKey(event,input){
   if(event.key==='Escape'){input.form.querySelector('#presale-product-results').hidden=true;return;}
@@ -253,13 +379,14 @@ async function loadPresaleSellers(form){
   try{const profiles=await backendRequest('/rest/v1/rpc/order_responsibles',{method:'POST',body:'{}'},true);if(form.isConnected)fillPresaleSellers(form,profiles);}
   catch{if(form.isConnected){const hint=form.querySelector('#presale-seller-feedback');hint.textContent='Não foi possível atualizar os vendedores. Feche e abra o formulário de pedido para tentar novamente.';}}
 }
-const createAdminBeforeRegions=createAdminOrder;
-createAdminOrder=form=>{const option=formShippingOption(form);if(!checkShippingRestriction(form,option))return;return createAdminBeforeRegions(form);};
 const renderBeforeRegions=render;
 render=()=>{const result=renderBeforeRegions();refreshRegionalShipping(document.querySelector('form:has(#shipping-options)'));return result;};
 for(const eventName of ['input','change'])document.addEventListener(eventName,event=>{
-  if(['cep','street','number','neighborhood','city','state','delivery'].includes(event.target?.name)){
-    const form=event.target.form;if(form&&(form.id==='order-form'||form.querySelector('#shipping-options')))refreshRegionalShipping(form);
+  if(['cep','street','number','neighborhood','city','state','complement','delivery'].includes(event.target?.name)){
+    const form=event.target.form;
+    if(event.target.name==='complement'&&form?.id!=='order-form')return;
+    if(form?.id==='order-form'&&!regionalShippingEnabled())updateOrderEstimate();
+    else if(form&&(form.id==='order-form'||form.querySelector('#shipping-options')))refreshRegionalShipping(form);
   }
 });
 

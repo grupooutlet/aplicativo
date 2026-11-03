@@ -272,36 +272,58 @@ function updateAdminVariationFields() {
     </select></label>`).join('');
   target.hidden = !productVariations(product).length;
 }
+const staffOrderItemLimit = 20;
+function staffOrderDraftItem(form, data) {
+  const id = Number(data.product);
+  if (!id) return null;
+  const options = Object.fromEntries([...form.querySelectorAll('.admin-product-option')].map(select => [select.dataset.optionName, select.value]));
+  return {id, qty:Number(data.qty), options, priceOverride:form.orderPriceOverride};
+}
+function staffOrderItems(lines) {
+  if (!lines.length || lines.length > staffOrderItemLimit) throw new Error('Inclua de 1 a 20 linhas de produtos no pedido.');
+  const quantities = new Map();
+  return lines.map(line => {
+    const product = db.products.find(item => item.id === line.id && item.active);
+    if (!product) throw new Error('Um dos produtos do pedido está indisponível.');
+    const quantity = (quantities.get(line.id) || 0) + line.qty;
+    if (!Number.isInteger(line.qty) || line.qty < 1 || line.qty > 99 || quantity > available(line.id))
+      throw new Error('Confira a quantidade disponível de ' + product.name + '.');
+    quantities.set(line.id, quantity);
+    const options = validateProductOptions(product, line.options);
+    const detail = optionText(options), change = line.priceOverride;
+    return {id:line.id, qty:line.qty, options, name:product.name + (detail ? ' · ' + detail : ''),
+      price:change?.unitPrice ?? salePrice(product), cost:product.cost,
+      ...(change ? {priceOverride:{expectedUnitPrice:change.expectedUnitPrice,unitPrice:change.unitPrice,reason:change.reason}} : {})};
+  });
+}
 createAdminOrder = form => {
-  if (!canSell()) return;
-  if(form.querySelector?.('.order-price-editor')&&!form.querySelector('.order-price-editor').hidden)return toast('Confirme ou cancele a personalização do preço antes de criar o pedido.');
-  const sellerProfile=typeof presaleSelectedSeller==='function'?presaleSelectedSeller(form):null;
-  if(typeof presaleSelectedSeller==='function'&&!sellerProfile)return toast('Selecione um perfil de vendedor responsável pelo pedido.');
+  if (!canSell() || form.orderSaving) return;
+  if (form.querySelector?.('.order-price-editor:not([hidden])')) return toast('Confirme ou cancele o ajuste de valor antes de criar o pedido.');
+  const sellerProfile = typeof presaleSelectedSeller === 'function' ? presaleSelectedSeller(form) : null;
+  if (typeof presaleSelectedSeller === 'function' && !sellerProfile) return toast('Selecione um perfil de vendedor responsável pelo pedido.');
   const data = Object.fromEntries(new FormData(form));
-  if (data.delivery === 'Entrega' && !isDeliveryDate(data.deliveryDate, true))
-    return toast('Selecione uma data válida para a entrega.');
-  const product = db.products.find(item => item.id === Number(data.product));
-  const qty = Number(data.qty);
-  if (!product || product.active === false || !Number.isInteger(qty) || qty < 1 || qty > available(product.id))
-    return toast('Quantidade indisponível em estoque.');
-  let options;
-  try {
-    const choices = Object.fromEntries([...form.querySelectorAll('.admin-product-option')].map(select => [select.dataset.optionName, select.value]));
-    options = validateProductOptions(product, choices);
-  } catch (error) { return toast(error.message); }
+  if (data.delivery === 'Entrega' && !isDeliveryDate(data.deliveryDate, true)) return toast('Selecione uma data válida para a entrega.');
   const addressParts = data.delivery === 'Retirada' ? (db.settings.addressParts || parseAddress(db.settings.address)) : addressFromForm(data);
-  const detail = optionText(options);
   const shipping = formShippingOption(form);
   if (!shipping) return toast('Selecione um frete ou retirada disponível.');
-  let payment;
-  const unitPrice=typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product);
-  try { payment = paymentFromFields(data, unitPrice * qty); }
+  if (typeof checkShippingRestriction === 'function' && !checkShippingRestriction(form, shipping)) return;
+  let items, payment;
+  try {
+    const draft = staffOrderDraftItem(form, data), lines = [...(form.orderLines || [])];
+    if (form.orderLineEdit != null && !draft) throw new Error('Selecione um produto para concluir a edição.');
+    if (draft) lines[form.orderLineEdit ?? lines.length] = draft;
+    items = staffOrderItems(lines);
+    payment = paymentFromFields(data, productSubtotal({items}));
+  }
   catch (error) { return toast(error.message); }
+  const freightOverride = typeof presaleFreightAdjustment === 'function' ? presaleFreightAdjustment(form, shipping) : null;
+  delete data.product;
+  delete data.qty;
   const order = { ...data, addressParts, address: data.delivery === 'Retirada' ? db.settings.address : formatAddress(addressParts),
-    id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: Number(shipping.price), freightPending: false, freightBilling: data.delivery==='Entrega'?'external':'none',
+    id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: freightOverride?.price ?? Number(shipping.price), freightPending: false, freightBilling: data.delivery==='Entrega'?'external':'none',
+    ...(freightOverride ? {freightOverride:{expectedPrice:freightOverride.expectedPrice,price:freightOverride.price,reason:freightOverride.reason}} : {}),
     shippingOptionId: shipping.id, shippingOptionName: shipping.name,
-    items: [{ id: product.id, name: product.name + (detail ? ' · ' + detail : ''), options, price: unitPrice, cost: product.cost, qty,
-      ...(form.orderPriceOverride?{priceOverride:{expectedUnitPrice:form.orderPriceOverride.expectedUnitPrice,unitPrice:form.orderPriceOverride.unitPrice,reason:form.orderPriceOverride.reason}}:{}) }],
+    items,
     status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: sellerProfile?sellerProfile.name:role === 'Vendedor' ? currentSeller : data.seller,
     ...(sellerProfile?{seller_id:sellerProfile.user_id}:{}),
     paymentTiming: data.paymentTiming || (data.delivery === 'Entrega' ? 'Na entrega' : 'Na retirada'), ...payment };

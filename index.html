@@ -532,6 +532,26 @@ dialog.business-confirmation{width:min(490px,calc(100% - 32px));max-height:calc(
 @media(max-width:420px){.order-price-editor{padding:14px}.order-price-editor-fields{grid-template-columns:minmax(0,1fr)}.order-price-control>[data-order-price-open]{padding:10px 8px;font-size:12px;min-height:42px}.new-order-fields .order-price-control{min-width:0}.internal-price-notes{padding:16px}.order-price-control small{font-size:10px}}
 
 .new-order-fields>.order-price-editor{grid-column:1/-1}
+.presale-lines{list-style:none;padding:0;margin:0;display:grid;gap:8px;min-width:0}
+.presale-lines,.presale-line-actions{grid-column:1/-1}
+.presale-line{display:grid;grid-template-columns:42px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:10px;border:1px solid #e2e5e8;border-radius:9px;background:#fff}
+.presale-line.is-editing{border-color:#a1abb4;background:#f7f8fa}
+.presale-line img{width:42px;height:42px;object-fit:cover;border-radius:6px}
+.presale-line-detail{display:grid;gap:3px;overflow-wrap:anywhere;font-size:12px;line-height:1.45}
+.presale-line-detail small{color:#66727c;font-size:11px}
+.presale-line-total{font-size:12px;white-space:nowrap}
+.presale-line-tools,.presale-line-actions,.presale-freight-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.presale-line-tools .btn{padding:6px;min-width:32px;justify-content:center}
+.presale-line-actions{justify-content:flex-end}
+.presale-line-actions:not(:has(> :not([hidden]))),.presale-freight-control small:empty{display:none}
+.presale-freight-actions .text-link{font-size:12px}
+@media(max-width:480px){
+  .presale-line{grid-template-columns:36px minmax(0,1fr) auto;gap:6px 9px}
+  .presale-line img{width:36px;height:36px}
+  .presale-line-total{grid-column:2}
+  .presale-line-tools{grid-column:3;grid-row:1/span 2;justify-content:flex-end}
+  .presale-line-tools .btn{min-width:36px;min-height:36px}
+}
 
 .external-freight-box{border:1px solid #dde3e6;border-radius:8px;background:#f5f7f8;padding:10px 13px;margin:16px 0 4px;min-width:0}
 .external-freight-box .total-line{font-size:13px;padding:2px 0 7px;gap:12px;align-items:baseline}.external-freight-box strong{white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -2937,36 +2957,58 @@ function updateAdminVariationFields() {
     </select></label>`).join('');
   target.hidden = !productVariations(product).length;
 }
+const staffOrderItemLimit = 20;
+function staffOrderDraftItem(form, data) {
+  const id = Number(data.product);
+  if (!id) return null;
+  const options = Object.fromEntries([...form.querySelectorAll('.admin-product-option')].map(select => [select.dataset.optionName, select.value]));
+  return {id, qty:Number(data.qty), options, priceOverride:form.orderPriceOverride};
+}
+function staffOrderItems(lines) {
+  if (!lines.length || lines.length > staffOrderItemLimit) throw new Error('Inclua de 1 a 20 linhas de produtos no pedido.');
+  const quantities = new Map();
+  return lines.map(line => {
+    const product = db.products.find(item => item.id === line.id && item.active);
+    if (!product) throw new Error('Um dos produtos do pedido está indisponível.');
+    const quantity = (quantities.get(line.id) || 0) + line.qty;
+    if (!Number.isInteger(line.qty) || line.qty < 1 || line.qty > 99 || quantity > available(line.id))
+      throw new Error('Confira a quantidade disponível de ' + product.name + '.');
+    quantities.set(line.id, quantity);
+    const options = validateProductOptions(product, line.options);
+    const detail = optionText(options), change = line.priceOverride;
+    return {id:line.id, qty:line.qty, options, name:product.name + (detail ? ' · ' + detail : ''),
+      price:change?.unitPrice ?? salePrice(product), cost:product.cost,
+      ...(change ? {priceOverride:{expectedUnitPrice:change.expectedUnitPrice,unitPrice:change.unitPrice,reason:change.reason}} : {})};
+  });
+}
 createAdminOrder = form => {
-  if (!canSell()) return;
-  if(form.querySelector?.('.order-price-editor')&&!form.querySelector('.order-price-editor').hidden)return toast('Confirme ou cancele a personalização do preço antes de criar o pedido.');
-  const sellerProfile=typeof presaleSelectedSeller==='function'?presaleSelectedSeller(form):null;
-  if(typeof presaleSelectedSeller==='function'&&!sellerProfile)return toast('Selecione um perfil de vendedor responsável pelo pedido.');
+  if (!canSell() || form.orderSaving) return;
+  if (form.querySelector?.('.order-price-editor:not([hidden])')) return toast('Confirme ou cancele o ajuste de valor antes de criar o pedido.');
+  const sellerProfile = typeof presaleSelectedSeller === 'function' ? presaleSelectedSeller(form) : null;
+  if (typeof presaleSelectedSeller === 'function' && !sellerProfile) return toast('Selecione um perfil de vendedor responsável pelo pedido.');
   const data = Object.fromEntries(new FormData(form));
-  if (data.delivery === 'Entrega' && !isDeliveryDate(data.deliveryDate, true))
-    return toast('Selecione uma data válida para a entrega.');
-  const product = db.products.find(item => item.id === Number(data.product));
-  const qty = Number(data.qty);
-  if (!product || product.active === false || !Number.isInteger(qty) || qty < 1 || qty > available(product.id))
-    return toast('Quantidade indisponível em estoque.');
-  let options;
-  try {
-    const choices = Object.fromEntries([...form.querySelectorAll('.admin-product-option')].map(select => [select.dataset.optionName, select.value]));
-    options = validateProductOptions(product, choices);
-  } catch (error) { return toast(error.message); }
+  if (data.delivery === 'Entrega' && !isDeliveryDate(data.deliveryDate, true)) return toast('Selecione uma data válida para a entrega.');
   const addressParts = data.delivery === 'Retirada' ? (db.settings.addressParts || parseAddress(db.settings.address)) : addressFromForm(data);
-  const detail = optionText(options);
   const shipping = formShippingOption(form);
   if (!shipping) return toast('Selecione um frete ou retirada disponível.');
-  let payment;
-  const unitPrice=typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product);
-  try { payment = paymentFromFields(data, unitPrice * qty); }
+  if (typeof checkShippingRestriction === 'function' && !checkShippingRestriction(form, shipping)) return;
+  let items, payment;
+  try {
+    const draft = staffOrderDraftItem(form, data), lines = [...(form.orderLines || [])];
+    if (form.orderLineEdit != null && !draft) throw new Error('Selecione um produto para concluir a edição.');
+    if (draft) lines[form.orderLineEdit ?? lines.length] = draft;
+    items = staffOrderItems(lines);
+    payment = paymentFromFields(data, productSubtotal({items}));
+  }
   catch (error) { return toast(error.message); }
+  const freightOverride = typeof presaleFreightAdjustment === 'function' ? presaleFreightAdjustment(form, shipping) : null;
+  delete data.product;
+  delete data.qty;
   const order = { ...data, addressParts, address: data.delivery === 'Retirada' ? db.settings.address : formatAddress(addressParts),
-    id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: Number(shipping.price), freightPending: false, freightBilling: data.delivery==='Entrega'?'external':'none',
+    id: Math.max(1000, ...db.orders.map(item => item.id)) + 1, date: new Date().toLocaleDateString('en-CA'), createdAt: new Date().toISOString(), freight: freightOverride?.price ?? Number(shipping.price), freightPending: false, freightBilling: data.delivery==='Entrega'?'external':'none',
+    ...(freightOverride ? {freightOverride:{expectedPrice:freightOverride.expectedPrice,price:freightOverride.price,reason:freightOverride.reason}} : {}),
     shippingOptionId: shipping.id, shippingOptionName: shipping.name,
-    items: [{ id: product.id, name: product.name + (detail ? ' · ' + detail : ''), options, price: unitPrice, cost: product.cost, qty,
-      ...(form.orderPriceOverride?{priceOverride:{expectedUnitPrice:form.orderPriceOverride.expectedUnitPrice,unitPrice:form.orderPriceOverride.unitPrice,reason:form.orderPriceOverride.reason}}:{}) }],
+    items,
     status: 'pending', paid: false, receipt: null, channel: 'Loja física', seller: sellerProfile?sellerProfile.name:role === 'Vendedor' ? currentSeller : data.seller,
     ...(sellerProfile?{seller_id:sellerProfile.user_id}:{}),
     paymentTiming: data.paymentTiming || (data.delivery === 'Entrega' ? 'Na entrega' : 'Na retirada'), ...payment };
@@ -4043,7 +4085,13 @@ function formShippingOption(form) {
 function paymentFormBase(form) {
   if (form.id === 'order-form') {
     const product = db.products.find(item => item.id === Number(form.elements.namedItem('product')?.value));
-    return (typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product)) * Number(form.elements.namedItem('qty')?.value || 0);
+    const qty = Number(form.elements.namedItem('qty')?.value || 0);
+    const draft = (typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product)) * Math.max(0, qty || 0);
+    return (form.orderLines || []).reduce((total, line, index) => {
+      if (form.orderLineEdit === index) return total;
+      const item = db.products.find(product => product.id === line.id);
+      return total + line.qty * (line.priceOverride?.unitPrice ?? salePrice(item));
+    }, draft);
   }
   const delivery = form.elements.namedItem('delivery')?.value;
   const selected = form.querySelector('input[name="shippingOptionId"]:checked')?.value;
@@ -4220,11 +4268,11 @@ updateOrderEstimate = () => {
   estimateBeforeCommerce();
   const form = $('#order-form');
   if (form?.elements.namedItem('shippingOptionId')) {
-    const product = db.products.find(item => item.id === Number(form.elements.namedItem('product')?.value));
     const products = form.querySelector('#order-products');
     const freight = form.querySelector('#order-freight');
-    if (products) products.textContent = money((typeof orderUnitPrice==='function'?orderUnitPrice(form,product):salePrice(product)) * Number(form.elements.namedItem('qty')?.value || 0));
-    if (freight) freight.textContent = formShippingOption(form) ? money(formShippingOption(form).price) : 'Selecione um frete';
+    if (products) products.textContent = money(paymentFormBase(form));
+    const shipping = formShippingOption(form);
+    if (freight) freight.textContent = shipping ? money((typeof presaleFreightAdjustment === 'function' ? presaleFreightAdjustment(form, shipping)?.price : null) ?? shipping.price) : 'Selecione um frete';
   }
   if (form?.elements.namedItem('paymentMethodId')) updatePaymentTotal(form);
 };
@@ -4381,7 +4429,7 @@ function orderNotesCard(order){
 const internalPriceNoteCache=new Map(),internalPriceNoteRequests=new Map();
 function internalPriceNoteKey(id){return String(currentProfile?.user_id||authSession?.user?.id||'')+':'+id;}
 function internalPriceNotesMarkup(rows){
-  return rows.length?`<div class="internal-price-notes"><div class="internal-price-note-label">${icon('shield')}Registros internos do sistema <span>Somente equipe</span></div>${rows.map(row=>`<article><h3>Preço do produto alterado</h3><p class="internal-price-note-product">${esc(row.productName)}</p><p>De <strong>${money(row.originalPrice)}</strong> para <strong>${money(row.unitPrice)}</strong> por unidade.</p><p class="internal-price-note-reason"><strong>Motivo:</strong> ${esc(row.reason)}</p><small>${esc(momentLabel(row.createdAt))} · ${esc(row.actorName)}<br>Registro protegido · não pode ser editado ou removido.</small></article>`).join('')}</div>`:'';
+  return rows.length?`<div class="internal-price-notes"><div class="internal-price-note-label">${icon('shield')}Registros internos do sistema <span>Somente equipe</span></div>${rows.map(row=>`<article><h3>${row.kind==='freight'?'Valor do frete alterado':'Preço do produto alterado'}</h3><p class="internal-price-note-product">${esc(row.kind==='freight'?row.shippingName:row.productName)}</p><p>De <strong>${money(row.originalPrice)}</strong> para <strong>${money(row.unitPrice)}</strong>${row.kind==='freight'?'':' por unidade'}.</p><p class="internal-price-note-reason"><strong>Motivo:</strong> ${esc(row.reason)}</p><small>${esc(momentLabel(row.createdAt))} · ${esc(row.actorName)}<br>Registro protegido · não pode ser editado ou removido.</small></article>`).join('')}</div>`:'';
 }
 function internalOrderPriceNotes(id){
   if(!isOwner||!['master','admin'].includes(currentProfile?.role))return '';
@@ -5631,7 +5679,7 @@ lookupCep=async input=>{await lookupCepBeforeRegions(input);refreshRegionalShipp
 const lookupAdminCepBeforeRegions=lookupAdminCep;
 lookupAdminCep=async input=>{await lookupAdminCepBeforeRegions(input);refreshRegionalShipping(input.form);};
 const newOrderBeforeRegions=newOrder;
-newOrder=()=>{newOrderBeforeRegions();const form=document.querySelector('#order-form');if(!form)return;setupPresaleProductPicker(form);setupPresaleSellers(form);refreshRegionalShipping(form,true);organizeNewOrder(form);};
+newOrder=()=>{newOrderBeforeRegions();const form=document.querySelector('#order-form');if(!form)return;setupPresaleProductPicker(form);setupPresaleSellers(form);refreshRegionalShipping(form,true);organizeNewOrder(form);updateOrderEstimate();};
 
 function organizeNewOrder(form){
   if(form.classList.contains('new-order-form'))return;
@@ -5647,12 +5695,17 @@ function organizeNewOrder(form){
   const customer=section(1,'Cliente','Dados para contato e identificação.');
   move(customer,field('customer'),field('phone'),field('cpf'),field('email'));
   const phone=form.elements.namedItem('phone');if(phone){phone.placeholder='+55 (21) 99999-9999';phone.setAttribute('onblur','this.value=formatBrazilPhone(this.value)');}
-  const product=section(2,'Produto','Busque o produto e confira as opções e a quantidade.');
-  move(product,form.querySelector('.presale-product-picker'),form.querySelector('#admin-variation-fields'),field('qty'));
+  const product=section(2,'Produtos','Busque os produtos e configure a quantidade e as variações de cada item.');
+  product.insertAdjacentHTML('beforeend','<ul class="presale-lines full" aria-label="Produtos adicionados" hidden></ul>');
+  const quantityField=field('qty');
+  quantityField.hidden=true;
+  move(product,form.querySelector('.presale-product-picker'),form.querySelector('#admin-variation-fields'),quantityField);
   setupOrderPriceControl(form,product);
+  product.insertAdjacentHTML('beforeend',`<div class="presale-line-actions full"><button class="btn small" type="button" data-cancel-line onclick="finishPresaleItem(this.form)" hidden>Cancelar edição</button><button class="btn small" type="button" data-save-line onclick="savePresaleItem(this.form)" hidden>${icon('plus')}Adicionar à lista</button></div>`);
   const delivery=section(3,'Entrega ou retirada','Defina o recebimento. O frete é calculado pelo endereço.');
   const deliveryField=field('delivery');deliveryField?.classList.remove('full');
   move(delivery,deliveryField,field('deliveryDate'),form.querySelector('#admin-address-fields'),form.querySelector('#admin-cep-feedback'),field('shippingOptionId'),form.querySelector('#admin-shipping-coverage'));
+  setupPresaleFreightControl(delivery);
   const payment=section(4,'Pagamento e responsável','Confira a condição combinada com o cliente.');
   move(payment,field('paymentMethodId'),form.querySelector('.payment-choice-details'),field('paymentTiming'),field('seller'));
   const notes=section(5,'Observações','Informações úteis para a equipe e para a entrega.');
@@ -5670,12 +5723,17 @@ toggleAdminDelivery=value=>{
   for(const selector of ['#admin-address-fields','#admin-cep-feedback']){const element=form.querySelector(selector);if(element)element.hidden=pickup;}
 };
 
-function presaleProductMatches(query){
-  return searchText(query)?db.products.filter(product=>product.active&&available(product.id)>0&&matchesSearch(product.name,query)).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
+function presaleRemainingStock(form,id){
+  const allocated=(form?.orderLines||[]).reduce((total,line,index)=>line.id===id&&form.orderLineEdit!==index?total+line.qty:total,0);
+  return Math.max(0,available(id)-allocated);
+}
+function presaleProductMatches(query,form){
+  return searchText(query)?db.products.filter(product=>product.active&&presaleRemainingStock(form,product.id)>0&&matchesSearch(product.name,query)).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')):[];
 }
 function setupPresaleProductPicker(form){
   const old=form.elements.namedItem('product');if(!old)return;
-  old.closest('label').outerHTML=`<div class="field full presale-product-picker"><label for="presale-product-search">Produto</label><div class="presale-search-input">${icon('search')}<input id="presale-product-search" type="search" placeholder="Busque pelo nome do produto" autocomplete="off" required aria-autocomplete="list" aria-controls="presale-product-results" oninput="searchPresaleProducts(this)" onfocus="showPresaleProductResults(this)" onkeydown="presaleSearchKey(event,this)"></div><input type="hidden" name="product" value=""><div id="presale-product-results" class="presale-product-results" hidden aria-label="Produtos encontrados"></div><div id="presale-selected-product" hidden></div><small id="presale-product-feedback" role="status">Digite o nome e selecione um produto para incluir no pedido.</small></div>`;
+  form.orderLines=[];
+  old.closest('label').outerHTML=`<div class="field full presale-product-picker"><label for="presale-product-search">Buscar produto</label><div class="presale-search-input">${icon('search')}<input id="presale-product-search" type="search" placeholder="Busque pelo nome do produto" autocomplete="off" aria-controls="presale-product-results" oninput="searchPresaleProducts(this)" onfocus="showPresaleProductResults(this)" onkeydown="presaleSearchKey(event,this)"></div><input type="hidden" name="product" value=""><div id="presale-product-results" class="presale-product-results" hidden aria-label="Produtos encontrados"></div><div id="presale-selected-product" hidden></div><small id="presale-product-feedback" role="status">Digite o nome e selecione um produto para incluir no pedido.</small></div>`;
   updateAdminVariationFields();updateOrderEstimate();
 }
 function searchPresaleProducts(input){
@@ -5688,19 +5746,69 @@ function searchPresaleProducts(input){
 function showPresaleProductResults(input){
   const form=input.form,target=form.querySelector('#presale-product-results');if(!target)return;
   if(form.elements.namedItem('product').value||!searchText(input.value)){target.hidden=true;target.innerHTML='';return;}
-  const matches=presaleProductMatches(input.value),rows=matches.slice(0,15);
-  target.innerHTML=rows.map(product=>`<button class="presale-product-result" type="button" onclick="selectPresaleProduct(${Number(product.id)},this.form)" onkeydown="presaleResultKey(event,this)"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><span><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${available(product.id)} disponíveis</small></span>${icon('plus')}</button>`).join('')||'<p class="presale-no-results">Nenhum produto disponível com esse nome.</p>';
+  const matches=presaleProductMatches(input.value,form),rows=matches.slice(0,15);
+  target.innerHTML=rows.map(product=>`<button class="presale-product-result" type="button" onclick="selectPresaleProduct(${Number(product.id)},this.form)" onkeydown="presaleResultKey(event,this)"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><span><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${presaleRemainingStock(form,product.id)} disponíveis</small></span>${icon('plus')}</button>`).join('')||'<p class="presale-no-results">Nenhum produto disponível com esse nome.</p>';
   target.hidden=false;
   form.querySelector('#presale-product-feedback').textContent=matches.length>15?`${matches.length} produtos encontrados. Exibindo os primeiros 15; refine o nome para encontrar o produto.`:matches.length?`${matches.length} produto(s) encontrado(s). Selecione uma opção.`:'Tente outro nome para buscar no catálogo.';
 }
 function selectPresaleProduct(id,form){
-  const product=db.products.find(item=>item.id===id&&item.active&&available(id)>0);if(!product)return;
+  const product=db.products.find(item=>item.id===id&&item.active&&presaleRemainingStock(form,id)>0);if(!product)return;
+  if(form.orderLines.length>=staffOrderItemLimit&&form.orderLineEdit==null)return toast('O pedido permite até 20 linhas de produtos.');
   form.elements.namedItem('product').value=String(id);const input=form.querySelector('#presale-product-search');input.value=product.name;input.setCustomValidity('');
   const results=form.querySelector('#presale-product-results');results.hidden=true;results.innerHTML='';
-  const selected=form.querySelector('#presale-selected-product');selected.hidden=false;selected.innerHTML=`<div class="presale-product-selected"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><div><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${available(id)} disponíveis</small></div><button class="btn small" type="button" onclick="clearPresaleProduct(this.form)" aria-label="Remover produto selecionado">${icon('trash')}</button></div>`;
+  const selected=form.querySelector('#presale-selected-product');selected.hidden=false;selected.innerHTML=`<div class="presale-product-selected"><img ${mediaImageAttributes(product.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><div><strong>${esc(product.name)}</strong><small>${money(salePrice(product))} · ${presaleRemainingStock(form,id)} disponíveis</small></div><button class="btn small" type="button" onclick="clearPresaleProduct(this.form)" aria-label="Remover produto selecionado">${icon('trash')}</button></div>`;
+  form.elements.namedItem('qty').max=Math.min(99,presaleRemainingStock(form,id));
   form.querySelector('#presale-product-feedback').textContent='Confira as variações e a quantidade abaixo.';
   resetOrderPriceOverride(form);
   updateAdminVariationFields();updateOrderEstimate();
+}
+function renderPresaleLines(form){
+  const list=form.querySelector('.presale-lines');
+  list.hidden=!form.orderLines.length;
+  list.innerHTML=form.orderLines.map((line,index)=>{
+    const product=db.products.find(item=>item.id===line.id), detail=optionText(line.options);
+    const unitPrice=line.priceOverride?.unitPrice??salePrice(product),editing=form.orderLineEdit===index;
+    const name=esc(product?.name||'Produto indisponível');
+    return `<li class="presale-line${editing?' is-editing':''}"><img ${mediaImageAttributes(product?.image,'thumb',{dimensions:false})} width="42" height="42" alt=""><div class="presale-line-detail"><strong>${name}</strong>${detail?`<small>${esc(detail)}</small>`:''}<small>${line.qty} × ${money(unitPrice)}${line.priceOverride?' · Preço personalizado':''}</small></div><strong class="presale-line-total">${money(unitPrice*line.qty)}</strong><div class="presale-line-tools"><button class="btn small" type="button" aria-label="Editar item ${index+1}: ${name}" onclick="editPresaleItem(this.form,${index})" ${form.orderLineEdit!=null?'disabled':''}>${icon('edit')}</button><button class="btn small" type="button" aria-label="Remover item ${index+1}: ${name}" onclick="removePresaleItem(this.form,${index})" ${form.orderLineEdit!=null?'disabled':''}>${icon('trash')}</button></div></li>`;
+  }).join('');
+}
+function savePresaleItem(form){
+  if(form.orderSaving||form.querySelector('.order-price-editor:not([hidden])'))return toast('Confirme ou cancele o ajuste de valor primeiro.');
+  const draft=staffOrderDraftItem(form,Object.fromEntries(new FormData(form)));
+  if(!draft)return;
+  const lines=[...form.orderLines];
+  lines[form.orderLineEdit??lines.length]=draft;
+  try{staffOrderItems(lines);}catch(error){return toast(error.message);}
+  form.orderLines=lines;
+  finishPresaleItem(form);
+}
+function finishPresaleItem(form){
+  form.orderLineEdit=null;
+  form.elements.namedItem('qty').value='1';
+  clearPresaleProduct(form);
+  renderPresaleLines(form);
+}
+function editPresaleItem(form,index){
+  const line=form.orderLines[index];
+  if(!line||form.orderSaving||form.orderLineEdit!=null)return;
+  if(form.elements.namedItem('product').value)return toast('Adicione ou remova a seleção atual antes de editar outro item.');
+  const product=db.products.find(item=>item.id===line.id&&item.active&&available(item.id)>0);
+  if(!product)return toast('Este produto está indisponível. Remova o item da lista.');
+  form.orderLineEdit=index;
+  selectPresaleProduct(line.id,form);
+  form.elements.namedItem('qty').value=String(line.qty);
+  form.orderPriceOverride=line.priceOverride;
+  for(const select of form.querySelectorAll('.admin-product-option'))select.value=line.options[select.dataset.optionName]||'';
+  renderPresaleLines(form);
+  updateOrderEstimate();
+  form.elements.namedItem('qty').focus();
+}
+function removePresaleItem(form,index){
+  if(form.orderSaving||form.orderLineEdit!=null)return;
+  form.orderLines.splice(index,1);
+  renderPresaleLines(form);
+  updateOrderEstimate();
+  form.querySelector('#presale-product-search').focus();
 }
 function orderUnitPrice(form,product){
   const change=form?.orderPriceOverride;
@@ -5719,6 +5827,7 @@ function refreshOrderPriceControl(form){
   reset.hidden=!form.orderPriceOverride;
 }
 function openOrderPriceEditor(form){
+  if(form.orderSaving||form.querySelector('.presale-freight-editor:not([hidden])'))return;
   const product=db.products.find(p=>p.id===Number(form.elements.namedItem('product')?.value));if(!product)return;
   const panel=form.querySelector('.order-price-editor'),value=panel.querySelector('[data-order-price-value]'),reason=panel.querySelector('[data-order-price-reason]');
   panel.hidden=false;value.disabled=reason.disabled=false;value.required=reason.required=true;
@@ -5727,7 +5836,7 @@ function openOrderPriceEditor(form){
   value.focus();value.select();
 }
 function closeOrderPriceEditor(form){
-  const panel=form.querySelector('.order-price-editor');if(!panel)return;panel.hidden=true;
+  const panel=form.querySelector('.order-price-editor');if(!panel||panel.hidden)return;panel.hidden=true;
   panel.querySelectorAll('input,textarea').forEach(input=>{input.disabled=true;input.required=false;input.setCustomValidity('');});
   form.querySelector('.new-order-sidebar .primary').disabled=Boolean(form.orderSaving);
   form.querySelector('[data-order-price-open]')?.focus();
@@ -5742,15 +5851,80 @@ function confirmOrderPrice(form){
   closeOrderPriceEditor(form);refreshOrderPriceControl(form);updateOrderEstimate();
 }
 function resetOrderPriceOverride(form){form.orderPriceOverride=null;closeOrderPriceEditor(form);refreshOrderPriceControl(form);}
+function presaleFreightKey(form,shipping){
+  if(!shipping||form.elements.namedItem('delivery').value!=='Entrega')return '';
+  return JSON.stringify([shipping.id,Number(shipping.price),shippingFormAddress(form)]);
+}
+function presaleFreightAdjustment(form,shipping){
+  const change=form.orderFreightOverride;
+  return change&&change.key===presaleFreightKey(form,shipping)?change:null;
+}
+function setupPresaleFreightControl(container){
+  container.insertAdjacentHTML('beforeend',`<div class="field full presale-freight-control" hidden><div class="presale-freight-actions"><button type="button" class="btn small" data-freight-open onclick="openPresaleFreightEditor(this.form)">${icon('edit')}Personalizar frete</button><button type="button" class="text-link" data-freight-reset onclick="this.form.orderFreightOverride=null;updateOrderEstimate()" hidden>Usar valor tabelado</button></div><small class="subtle" data-freight-status role="status"></small></div><section class="order-price-editor presale-freight-editor full" hidden><header><h4>Personalizar frete deste pedido</h4><p>Valor pago à parte ao entregador.</p></header><div class="order-price-editor-fields"><label class="field">Novo valor do frete (R$)<input data-freight-value type="number" min="0" max="1000000" step="0.01" disabled></label><label class="field full">Motivo da alteração<textarea data-freight-reason rows="3" minlength="3" maxlength="1000" placeholder="Ex.: valor negociado para esta entrega." disabled></textarea></label></div><div class="order-price-editor-actions"><button class="btn small" type="button" onclick="closePresaleFreightEditor(this.form,true)">Cancelar</button><button class="btn small primary" type="button" onclick="confirmPresaleFreight(this.form)">Confirmar frete</button></div></section>`);
+}
+function refreshPresaleFreightControl(form){
+  const control=form.querySelector('.presale-freight-control'),shipping=formShippingOption(form);
+  const key=presaleFreightKey(form,shipping),change=presaleFreightAdjustment(form,shipping);
+  const changed=Boolean((form.orderFreightOverride&&!change)||(form.freightEditorKey&&form.freightEditorKey!==key));
+  if(changed){
+    form.orderFreightOverride=null;
+    closePresaleFreightEditor(form);
+  }
+  control.hidden=!key;
+  control.querySelector('[data-freight-reset]').hidden=!change;
+  control.querySelector('[data-freight-status]').textContent=change
+    ? 'Frete personalizado: '+money(change.price)+' · Tabela: '+money(shipping.price)
+    : changed&&key?'A cotação mudou. Confirme o novo valor se precisar personalizar.':'';
+}
+function openPresaleFreightEditor(form){
+  if(form.orderSaving||form.querySelector('.order-price-editor:not([hidden])'))return;
+  const shipping=formShippingOption(form),key=presaleFreightKey(form,shipping);
+  if(!key)return;
+  const panel=form.querySelector('.presale-freight-editor'),value=panel.querySelector('[data-freight-value]'),reason=panel.querySelector('[data-freight-reason]');
+  const change=presaleFreightAdjustment(form,shipping);
+  form.freightEditorKey=key;
+  panel.hidden=false;value.disabled=reason.disabled=false;
+  value.value=change?.price??Number(shipping.price);reason.value=change?.reason||'';
+  form.querySelector('.new-order-sidebar .primary').disabled=true;
+  value.focus();value.select();
+}
+function closePresaleFreightEditor(form,focus=false){
+  const panel=form.querySelector('.presale-freight-editor');if(!panel||panel.hidden)return;
+  panel.hidden=true;
+  form.freightEditorKey='';
+  panel.querySelectorAll('input,textarea').forEach(input=>{input.disabled=true;input.setCustomValidity('');});
+  form.querySelector('.new-order-sidebar .primary').disabled=Boolean(form.orderSaving);
+  if(focus)form.querySelector('[data-freight-open]').focus();
+}
+function confirmPresaleFreight(form){
+  const shipping=formShippingOption(form),key=presaleFreightKey(form,shipping);
+  if(!key||key!==form.freightEditorKey){updateOrderEstimate();return;}
+  const value=form.querySelector('[data-freight-value]'),reason=form.querySelector('[data-freight-reason]');
+  const price=Number(value.value),expectedPrice=Number(shipping.price),why=reason.value.trim();
+  value.setCustomValidity(value.value!==''&&(price===0||validOrderPrice(price))?'':'Informe um valor de frete válido, a partir de zero, com até duas casas decimais.');
+  reason.setCustomValidity(why.length>=3&&why.length<=1000?'':'Escreva o motivo da alteração, entre 3 e 1.000 caracteres.');
+  if(!value.reportValidity()||!reason.reportValidity())return;
+  form.orderFreightOverride=price===expectedPrice?null:{key,expectedPrice,price,reason:why};
+  closePresaleFreightEditor(form,true);
+  updateOrderEstimate();
+}
 function clearPresaleProduct(form){const input=form.querySelector('#presale-product-search');input.value='';searchPresaleProducts(input);form.querySelector('#presale-product-feedback').textContent='Digite o nome e selecione um produto para incluir no pedido.';input.focus();}
 const estimateBeforePresaleSearch=updateOrderEstimate;
 updateOrderEstimate=()=>{
   const form=document.querySelector('#order-form');
-  if(form&&!form.elements.namedItem('product')?.value){
-    const products=form.querySelector('#order-products'),total=form.querySelector('#order-estimate'),quote=form.querySelector('.payment-preview');
-    if(products)products.textContent='—';if(total)total.textContent='—';const freight=form.querySelector('#order-freight');if(freight)freight.textContent='A calcular';if(quote)quote.innerHTML='';return;
+  const result=estimateBeforePresaleSearch();
+  if(form?.classList.contains('new-order-form')){
+    const hasDraft=Boolean(form.elements.namedItem('product').value),editing=form.orderLineEdit!=null;
+    const qty=form.elements.namedItem('qty'),saveLine=form.querySelector('[data-save-line]');
+    qty.closest('.field').hidden=!hasDraft;
+    form.querySelector('.order-price-control').hidden=!hasDraft;
+    saveLine.hidden=!hasDraft;
+    saveLine.innerHTML=editing?'Salvar item':icon('plus')+'Adicionar à lista';
+    form.querySelector('[data-cancel-line]').hidden=!editing;
+    refreshOrderPriceControl(form);
+    refreshPresaleFreightControl(form);
   }
-  return estimateBeforePresaleSearch();
+  return result;
 };
 function presaleSearchKey(event,input){
   if(event.key==='Escape'){input.form.querySelector('#presale-product-results').hidden=true;return;}
@@ -5786,13 +5960,14 @@ async function loadPresaleSellers(form){
   try{const profiles=await backendRequest('/rest/v1/rpc/order_responsibles',{method:'POST',body:'{}'},true);if(form.isConnected)fillPresaleSellers(form,profiles);}
   catch{if(form.isConnected){const hint=form.querySelector('#presale-seller-feedback');hint.textContent='Não foi possível atualizar os vendedores. Feche e abra o formulário de pedido para tentar novamente.';}}
 }
-const createAdminBeforeRegions=createAdminOrder;
-createAdminOrder=form=>{const option=formShippingOption(form);if(!checkShippingRestriction(form,option))return;return createAdminBeforeRegions(form);};
 const renderBeforeRegions=render;
 render=()=>{const result=renderBeforeRegions();refreshRegionalShipping(document.querySelector('form:has(#shipping-options)'));return result;};
 for(const eventName of ['input','change'])document.addEventListener(eventName,event=>{
-  if(['cep','street','number','neighborhood','city','state','delivery'].includes(event.target?.name)){
-    const form=event.target.form;if(form&&(form.id==='order-form'||form.querySelector('#shipping-options')))refreshRegionalShipping(form);
+  if(['cep','street','number','neighborhood','city','state','complement','delivery'].includes(event.target?.name)){
+    const form=event.target.form;
+    if(event.target.name==='complement'&&form?.id!=='order-form')return;
+    if(form?.id==='order-form'&&!regionalShippingEnabled())updateOrderEstimate();
+    else if(form&&(form.id==='order-form'||form.querySelector('#shipping-options')))refreshRegionalShipping(form);
   }
 });
 

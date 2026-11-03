@@ -151,6 +151,26 @@ dialog.business-confirmation{width:min(490px,calc(100% - 32px));max-height:calc(
 @media(max-width:420px){.order-price-editor{padding:14px}.order-price-editor-fields{grid-template-columns:minmax(0,1fr)}.order-price-control>[data-order-price-open]{padding:10px 8px;font-size:12px;min-height:42px}.new-order-fields .order-price-control{min-width:0}.internal-price-notes{padding:16px}.order-price-control small{font-size:10px}}
 
 .new-order-fields>.order-price-editor{grid-column:1/-1}
+.presale-lines{list-style:none;padding:0;margin:0;display:grid;gap:8px;min-width:0}
+.presale-lines,.presale-line-actions{grid-column:1/-1}
+.presale-line{display:grid;grid-template-columns:42px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:10px;border:1px solid #e2e5e8;border-radius:9px;background:#fff}
+.presale-line.is-editing{border-color:#a1abb4;background:#f7f8fa}
+.presale-line img{width:42px;height:42px;object-fit:cover;border-radius:6px}
+.presale-line-detail{display:grid;gap:3px;overflow-wrap:anywhere;font-size:12px;line-height:1.45}
+.presale-line-detail small{color:#66727c;font-size:11px}
+.presale-line-total{font-size:12px;white-space:nowrap}
+.presale-line-tools,.presale-line-actions,.presale-freight-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.presale-line-tools .btn{padding:6px;min-width:32px;justify-content:center}
+.presale-line-actions{justify-content:flex-end}
+.presale-line-actions:not(:has(> :not([hidden]))),.presale-freight-control small:empty{display:none}
+.presale-freight-actions .text-link{font-size:12px}
+@media(max-width:480px){
+  .presale-line{grid-template-columns:36px minmax(0,1fr) auto;gap:6px 9px}
+  .presale-line img{width:36px;height:36px}
+  .presale-line-total{grid-column:2}
+  .presale-line-tools{grid-column:3;grid-row:1/span 2;justify-content:flex-end}
+  .presale-line-tools .btn{min-width:36px;min-height:36px}
+}
 
 .external-freight-box{border:1px solid #dde3e6;border-radius:8px;background:#f5f7f8;padding:10px 13px;margin:16px 0 4px;min-width:0}
 .external-freight-box .total-line{font-size:13px;padding:2px 0 7px;gap:12px;align-items:baseline}.external-freight-box strong{white-space:nowrap;font-variant-numeric:tabular-nums}
