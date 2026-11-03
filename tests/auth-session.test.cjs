@@ -24,7 +24,7 @@ function tab() {
   }
   const run = source => vm.runInContext(source, context);
   run('storefront.init(db);db.orders=[]');
-  return { context, run, session, events, location };
+  return { context, run, session, events, location, nodes };
 }
 const fresh = { user: { id: 'test-user', email: 'test@example.invalid' }, access_token: 'test-access', refresh_token: 'test-refresh', expires_at: Math.floor(Date.now() / 1000) + 3600 };
 (async () => {
@@ -80,5 +80,38 @@ const fresh = { user: { id: 'test-user', email: 'test@example.invalid' }, access
   c.context.loginForm = { querySelector: () => ({ disabled: false }), elements: { namedItem: key => fields[key] } };
   await c.run('signInAccount(loginForm)');
   assert.equal(c.location.hash, '#/loja/conta', 'Store login keeps admins in their customer-facing account page');
-  console.log('Shared store sessions, token refresh coordination, logout, account labels and admin store login verified.');
+
+  const d = tab();
+  const payload = d.run('JSON.stringify([{data:defaults()}])');
+  let staff = false, fail = 'history';
+  d.context.fetch = async url => {
+    if (url.includes('shop_public')) {
+      if (fail === 'catalog') throw new Error('Network disconnected');
+      return { ok:true, json:async()=>JSON.parse(payload) };
+    }
+    if (url.includes('profiles') && !url.includes('user_id=eq.')) {
+      if (fail === 'staff') throw new Error('Network disconnected');
+      return { ok:true, json:async()=>[] };
+    }
+    if (url.includes('profiles')) return { ok:true, json:async()=>[{user_id:fresh.user.id,name:'Pessoa de teste',role:staff?'admin':'customer',position:'Vendedor'}] };
+    if (url.includes('customer_contacts') || url.includes('my_orders') && fail !== 'history') return { ok:true, json:async()=>[] };
+    if (url.includes('sales_state')) return { ok:true, json:async()=>({data:JSON.parse(payload)[0].data,version:1}) };
+    throw new Error('Network disconnected');
+  };
+  d.location.hash='#/loja';await d.run('boot()');
+  assert.doesNotMatch(d.nodes['#app'].innerHTML,/indisponibilidade temporária/);
+  assert.match(d.run('accountPage()'),/Não foi possível carregar seu histórico/);
+  staff=true;fail='staff';d.location.hash='#/app/products';await d.run('boot()');
+  assert.match(d.nodes['#app'].innerHTML,/Não foi possível carregar o painel/);
+  assert.equal(d.run('isOwner'),false);
+  d.location.hash='#/loja';d.run('render()');
+  assert.doesNotMatch(d.nodes['#app'].innerHTML,/indisponibilidade temporária|Não foi possível carregar o painel/);
+  fail='';await d.run('boot()');assert.equal(d.run('isOwner'),true);
+  d.run('clearAuth()');fail='catalog';d.location.hash='#/loja/login';await d.run('boot()');
+  assert.match(d.nodes['#app'].innerHTML,/Entrar na minha conta/);
+  d.location.hash='#/loja';d.run('render()');assert.match(d.nodes['#app'].innerHTML,/indisponibilidade temporária/);
+  fail='';d.location.hash='#/loja/pedido/123';d.session.set('forte-guest-order-123','test-only');await d.run('boot()');
+  assert.match(d.run('customerOrderPage(123)'),/Não foi possível carregar este pedido/);
+  assert.doesNotMatch(d.nodes['#app'].innerHTML,/indisponibilidade temporária/);
+  console.log('Shared sessions, token refresh, logout, staff login and isolation of catalog, account and order failures verified.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

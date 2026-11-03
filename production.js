@@ -85,6 +85,10 @@ async function backendJson(response) {
   if (response.status === 204) return null;
   return response.json();
 }
+function startupTimeout(milliseconds = 8000) {
+  return typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+    ? { signal: AbortSignal.timeout(milliseconds) } : {};
+}
 async function backendRequest(path, options = {}, authenticated = false) {
   if (authenticated) await refreshAuth();
   const method = (options.method || 'GET').toUpperCase();
@@ -150,7 +154,7 @@ async function refreshSharedAuth() {
   if (authSession.expires_at > Math.floor(Date.now() / 1000) + 60) return;
   const refreshToken = authSession.refresh_token;
   const response = await fetch(backendUrl + '/auth/v1/token?grant_type=refresh_token', {
-    method: 'POST', headers: requestHeaders(), body: JSON.stringify({ refresh_token: refreshToken })
+    ...startupTimeout(), method: 'POST', headers: requestHeaders(), body: JSON.stringify({ refresh_token: refreshToken })
   });
   const latest = safeJson(localStore.getItem(authStorageKey), null);
   if (localStore.getItem(sharedAuthMarker) && latest?.refresh_token !== refreshToken) {
@@ -170,20 +174,26 @@ function usesPagesCatalog() {
     /^https:\/\/(?:[a-z0-9-]+\.)?forte-outlet\.pages\.dev$/.test(location.origin);
 }
 async function readPublicCatalog(revision) {
-  if (!usesPagesCatalog()) return backendRequest('/rest/v1/shop_public?select=data&id=eq.1');
+  const direct = () => backendRequest('/rest/v1/shop_public?select=data&id=eq.1', { ...startupTimeout(), cache: 'no-store' });
+  if (!usesPagesCatalog()) return direct();
   const headers = {};
   if (publicCatalogSnapshot?.etag) headers['If-None-Match'] = publicCatalogSnapshot.etag;
   if (publicCatalogNeedsFresh) headers['X-Catalog-Refresh'] = '1';
-  const response = await fetch(basePath + 'api/catalog', { headers, credentials: 'omit' });
-  if (response.status === 304) {
-    if (!publicCatalogSnapshot) throw new Error('Não foi possível atualizar o catálogo. Tente novamente.');
-    return JSON.parse(JSON.stringify(publicCatalogSnapshot.rows));
+  try {
+    const response = await fetch(basePath + 'api/catalog', { ...startupTimeout(5000), headers, credentials: 'omit' });
+    if (response.status === 304 && publicCatalogSnapshot) return JSON.parse(JSON.stringify(publicCatalogSnapshot.rows));
+    const rows = await backendJson(response);
+    if (!Array.isArray(rows?.[0]?.data?.products)) throw new Error('Resposta inválida do catálogo.');
+    if (revision === publicCatalogRevision) {
+      publicCatalogSnapshot = { etag: response.headers?.get('ETag') || '', rows: JSON.parse(JSON.stringify(rows)) };
+    }
+    return rows;
+  } catch (error) {
+    if (error.code === 'CATALOG_QUOTA_RESTRICTED' || (error.status && error.status < 500 && error.status !== 429)) throw error;
+    // Use only the public projection as fallback. Never forward account credentials.
+    if (revision === publicCatalogRevision) publicCatalogSnapshot = null;
+    return direct();
   }
-  const rows = await backendJson(response);
-  if (revision === publicCatalogRevision && rows?.[0]?.data) {
-    publicCatalogSnapshot = { etag: response.headers?.get('ETag') || '', rows: JSON.parse(JSON.stringify(rows)) };
-  }
-  return rows;
 }
 async function loadCatalog() {
   const revision = publicCatalogRevision;
@@ -196,7 +206,7 @@ async function loadCatalog() {
   finally { if (publicCatalogPending === pending) publicCatalogPending = null; }
   // A read started before a successful mutation cannot overwrite its newer stock/catalog state.
   if (revision !== publicCatalogRevision) return loadCatalog();
-  if (!rows?.[0]?.data) throw new Error('O catálogo ainda não está disponível.');
+  if (!Array.isArray(rows?.[0]?.data?.products)) throw new Error('O catálogo ainda não está disponível.');
   publicCatalogNeedsFresh = false;
   rememberStoreSupport(rows[0].data.settings);
   const cart = safeJson(localStore.getItem(cartStorageKey), []);
@@ -205,8 +215,8 @@ async function loadCatalog() {
 }
 async function loadAdminState() {
   const seller = currentProfile?.role === 'admin' && currentProfile.position === 'Vendedor';
-  const rows = seller ? [await backendRequest('/rest/v1/rpc/sales_state', { method: 'POST', body: '{}' }, true)]
-    : await backendRequest('/rest/v1/app_state?select=data,version&id=eq.1', {}, true);
+  const rows = seller ? [await backendRequest('/rest/v1/rpc/sales_state', { ...startupTimeout(), method: 'POST', body: '{}' }, true)]
+    : await backendRequest('/rest/v1/app_state?select=data,version&id=eq.1', startupTimeout(), true);
   if (!rows?.[0]?.data) throw new Error('Acesso administrativo não autorizado para esta conta.');
   stateVersion = rows[0].version;
   db = { ...rows[0].data, cart: db.cart || [] };
@@ -220,7 +230,7 @@ async function loadAdminState() {
 }
 async function loadMyOrders() {
   if (!authSession || isOwner) return;
-  const rows = await backendRequest('/rest/v1/rpc/my_orders', { method: 'POST', body: '{}' }, true);
+  const rows = await backendRequest('/rest/v1/rpc/my_orders', { ...startupTimeout(), method: 'POST', body: '{}' }, true);
   db.orders = Array.isArray(rows) ? rows : [];
 }
 async function boot() {

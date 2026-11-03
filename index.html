@@ -1660,6 +1660,10 @@ async function backendJson(response) {
   if (response.status === 204) return null;
   return response.json();
 }
+function startupTimeout(milliseconds = 8000) {
+  return typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+    ? { signal: AbortSignal.timeout(milliseconds) } : {};
+}
 async function backendRequest(path, options = {}, authenticated = false) {
   if (authenticated) await refreshAuth();
   const method = (options.method || 'GET').toUpperCase();
@@ -1725,7 +1729,7 @@ async function refreshSharedAuth() {
   if (authSession.expires_at > Math.floor(Date.now() / 1000) + 60) return;
   const refreshToken = authSession.refresh_token;
   const response = await fetch(backendUrl + '/auth/v1/token?grant_type=refresh_token', {
-    method: 'POST', headers: requestHeaders(), body: JSON.stringify({ refresh_token: refreshToken })
+    ...startupTimeout(), method: 'POST', headers: requestHeaders(), body: JSON.stringify({ refresh_token: refreshToken })
   });
   const latest = safeJson(localStore.getItem(authStorageKey), null);
   if (localStore.getItem(sharedAuthMarker) && latest?.refresh_token !== refreshToken) {
@@ -1745,20 +1749,26 @@ function usesPagesCatalog() {
     /^https:\/\/(?:[a-z0-9-]+\.)?forte-outlet\.pages\.dev$/.test(location.origin);
 }
 async function readPublicCatalog(revision) {
-  if (!usesPagesCatalog()) return backendRequest('/rest/v1/shop_public?select=data&id=eq.1');
+  const direct = () => backendRequest('/rest/v1/shop_public?select=data&id=eq.1', { ...startupTimeout(), cache: 'no-store' });
+  if (!usesPagesCatalog()) return direct();
   const headers = {};
   if (publicCatalogSnapshot?.etag) headers['If-None-Match'] = publicCatalogSnapshot.etag;
   if (publicCatalogNeedsFresh) headers['X-Catalog-Refresh'] = '1';
-  const response = await fetch(basePath + 'api/catalog', { headers, credentials: 'omit' });
-  if (response.status === 304) {
-    if (!publicCatalogSnapshot) throw new Error('Não foi possível atualizar o catálogo. Tente novamente.');
-    return JSON.parse(JSON.stringify(publicCatalogSnapshot.rows));
+  try {
+    const response = await fetch(basePath + 'api/catalog', { ...startupTimeout(5000), headers, credentials: 'omit' });
+    if (response.status === 304 && publicCatalogSnapshot) return JSON.parse(JSON.stringify(publicCatalogSnapshot.rows));
+    const rows = await backendJson(response);
+    if (!Array.isArray(rows?.[0]?.data?.products)) throw new Error('Resposta inválida do catálogo.');
+    if (revision === publicCatalogRevision) {
+      publicCatalogSnapshot = { etag: response.headers?.get('ETag') || '', rows: JSON.parse(JSON.stringify(rows)) };
+    }
+    return rows;
+  } catch (error) {
+    if (error.code === 'CATALOG_QUOTA_RESTRICTED' || (error.status && error.status < 500 && error.status !== 429)) throw error;
+    // Use only the public projection as fallback. Never forward account credentials.
+    if (revision === publicCatalogRevision) publicCatalogSnapshot = null;
+    return direct();
   }
-  const rows = await backendJson(response);
-  if (revision === publicCatalogRevision && rows?.[0]?.data) {
-    publicCatalogSnapshot = { etag: response.headers?.get('ETag') || '', rows: JSON.parse(JSON.stringify(rows)) };
-  }
-  return rows;
 }
 async function loadCatalog() {
   const revision = publicCatalogRevision;
@@ -1771,7 +1781,7 @@ async function loadCatalog() {
   finally { if (publicCatalogPending === pending) publicCatalogPending = null; }
   // A read started before a successful mutation cannot overwrite its newer stock/catalog state.
   if (revision !== publicCatalogRevision) return loadCatalog();
-  if (!rows?.[0]?.data) throw new Error('O catálogo ainda não está disponível.');
+  if (!Array.isArray(rows?.[0]?.data?.products)) throw new Error('O catálogo ainda não está disponível.');
   publicCatalogNeedsFresh = false;
   rememberStoreSupport(rows[0].data.settings);
   const cart = safeJson(localStore.getItem(cartStorageKey), []);
@@ -1780,8 +1790,8 @@ async function loadCatalog() {
 }
 async function loadAdminState() {
   const seller = currentProfile?.role === 'admin' && currentProfile.position === 'Vendedor';
-  const rows = seller ? [await backendRequest('/rest/v1/rpc/sales_state', { method: 'POST', body: '{}' }, true)]
-    : await backendRequest('/rest/v1/app_state?select=data,version&id=eq.1', {}, true);
+  const rows = seller ? [await backendRequest('/rest/v1/rpc/sales_state', { ...startupTimeout(), method: 'POST', body: '{}' }, true)]
+    : await backendRequest('/rest/v1/app_state?select=data,version&id=eq.1', startupTimeout(), true);
   if (!rows?.[0]?.data) throw new Error('Acesso administrativo não autorizado para esta conta.');
   stateVersion = rows[0].version;
   db = { ...rows[0].data, cart: db.cart || [] };
@@ -1795,7 +1805,7 @@ async function loadAdminState() {
 }
 async function loadMyOrders() {
   if (!authSession || isOwner) return;
-  const rows = await backendRequest('/rest/v1/rpc/my_orders', { method: 'POST', body: '{}' }, true);
+  const rows = await backendRequest('/rest/v1/rpc/my_orders', { ...startupTimeout(), method: 'POST', body: '{}' }, true);
   db.orders = Array.isArray(rows) ? rows : [];
 }
 async function boot() {
@@ -2076,56 +2086,77 @@ const priceMarkup = product => salePrice(product) < Number(product.price)
 const productImages = product => Array.isArray(product?.images) && product.images.length
   ? product.images : product?.image ? [product.image] : [];
 
+let accountAccessError = false;
+let orderHistoryError = false;
+let guestOrderError = 0;
+
 async function boot() {
   booted = false;
   bootError = '';
+  accountAccessError = false;
+  orderHistoryError = false;
+  guestOrderError = 0;
+  isOwner = false;
+  currentProfile = null;
+  accountProfiles = [];
+  customerContacts = [];
+  driverDeliveries = [];
   render();
   try {
     authSession = restoreAuth();
-    if (authSession) try { await refreshAuth(); } catch { authSession = null; }
     await loadCatalog();
     db.cart = db.cart.filter(item => db.products.some(product => product.id === item.id && product.active));
-    localStore.setItem(cartStorageKey, JSON.stringify(db.cart));
-    isOwner = false;
-    currentProfile = null;
-    accountProfiles = [];
-    customerContacts = [];
-    driverDeliveries = [];
-    if (authSession) {
+    try { localStore.setItem(cartStorageKey, JSON.stringify(db.cart)); } catch { /* The in-memory cart remains usable. */ }
+  } catch (error) {
+    bootError = error.message || 'Catálogo indisponível';
+    booted = true;
+    render();
+    return;
+  }
+
+  if (authSession) {
+    try {
       const id = authSession.user?.id;
-      const rows = await backendRequest(`/rest/v1/profiles?select=user_id,email,name,phone,role,position&user_id=eq.${encodeURIComponent(id)}`, {}, true);
+      const rows = await backendRequest(`/rest/v1/profiles?select=user_id,email,name,phone,role,position&user_id=eq.${encodeURIComponent(id)}`, startupTimeout(), true);
       currentProfile = rows?.[0] || null;
       if (currentProfile?.role === 'master' || currentProfile?.role === 'admin') {
+        [accountProfiles, customerContacts] = await Promise.all([
+          backendRequest('/rest/v1/profiles?select=user_id,email,name,phone,role,position,created_at&order=created_at.desc', startupTimeout(), true),
+          backendRequest('/rest/v1/customer_contacts?select=id,name,email,phone,cpf,address,created_at&order=created_at.desc', startupTimeout(), true)
+        ]);
         await loadAdminState();
         role = currentProfile.role === 'master' ? 'Proprietário'
           : currentProfile.position === 'Gerente' ? 'Gerente'
           : currentProfile.position === 'Vendedor' ? 'Vendedor' : 'Estoque';
         currentSeller = currentProfile.name || '';
-        accountProfiles = await backendRequest('/rest/v1/profiles?select=user_id,email,name,phone,role,position,created_at&order=created_at.desc', {}, true);
-        customerContacts = await backendRequest('/rest/v1/customer_contacts?select=id,name,email,phone,cpf,address,created_at&order=created_at.desc', {}, true);
       } else if (currentProfile?.role === 'driver') {
+        driverDeliveries = await backendRequest('/rest/v1/rpc/driver_deliveries', { ...startupTimeout(), method: 'POST', body: '{}' }, true);
         role = 'Entregador';
-        driverDeliveries = await backendRequest('/rest/v1/rpc/driver_deliveries', { method: 'POST', body: '{}' }, true);
-        await loadMyOrders();
-      } else {
-        await loadMyOrders();
       }
+    } catch (error) {
+      if (error.status === 401) clearAuth();
+      accountAccessError = Boolean(authSession);
+      currentProfile = null;
+      isOwner = false;
+      accountProfiles = [];
+      customerContacts = [];
     }
-    const orderId = Number(routePath().match(/^\/loja\/pedido\/(\d+)$/)?.[1]);
-    const token = orderId && sessionStore.getItem('forte-guest-order-' + orderId);
-    if (token && !db.orders.some(order => order.id === orderId)) {
+    if (authSession && !isOwner) {
+      try { await loadMyOrders(); } catch { orderHistoryError = Boolean(authSession); }
+    }
+  }
+  const orderId = Number(routePath().match(/^\/loja\/pedido\/(\d+)$/)?.[1]);
+  const token = orderId && sessionStore.getItem('forte-guest-order-' + orderId);
+  if (token && !db.orders.some(order => order.id === orderId)) {
+    try {
       const order = await backendRequest('/rest/v1/rpc/guest_order', {
-        method: 'POST', body: JSON.stringify({ p_order_id: orderId, p_token: token })
+        ...startupTimeout(), method: 'POST', body: JSON.stringify({ p_order_id: orderId, p_token: token })
       });
       if (order?.id) db.orders.unshift(order);
-    }
-    booted = true;
-    render();
-  } catch (error) {
-    bootError = error.message;
-    booted = true;
-    render();
+    } catch { guestOrderError = orderId; }
   }
+  booted = true;
+  render();
 }
 
 // Brazilian fixed and mobile numbering; formatting does not prove line ownership.
@@ -2162,7 +2193,7 @@ function authPage(mode = 'login') {
     <img src="assets/logo.webp?v=bea356cc75c8" alt="Grupo Outlet" class="auth-logo">
     <h1>${signup ? 'Criar minha conta' : 'Entrar na minha conta'}</h1>
     <p>${signup ? 'Cadastre-se para acompanhar seus pedidos e aproveitar a loja.' : 'Acesse a loja e seus pedidos com seu e-mail e senha.'}</p>
-    ${bootError ? `<div class="notice">${esc(bootError)}</div>` : ''}
+    ${bootError ? '<div class="notice">O catálogo está temporariamente indisponível.</div>' : ''}
     <form onsubmit="event.preventDefault();${signup ? 'registerAccount' : 'signInAccount'}(this)">
       ${signup ? '<label class="field">Nome completo<input name="name" autocomplete="name" maxlength="120" required></label>' : ''}
       <label class="field">E-mail<input type="email" name="email" autocomplete="username" required></label>
@@ -2186,12 +2217,15 @@ async function signInAccount(form) {
   button.disabled = true;
   try {
     const response = await fetch(backendUrl + '/auth/v1/token?grant_type=password', {
-      method: 'POST', headers: requestHeaders(),
+      ...startupTimeout(), method: 'POST', headers: requestHeaders(),
       body: JSON.stringify({ email: emailInput.value.trim().toLowerCase(), password: passwordInput.value })
     });
-    if (!response.ok) throw new Error('E-mail ou senha incorretos.');
+    if (!response.ok) throw new Error(response.status === 429 ? 'Aguarde alguns minutos e tente entrar novamente.'
+      : response.status === 400 || response.status === 401 ? 'E-mail ou senha incorretos.'
+        : 'O serviço de login está temporariamente indisponível. Tente novamente.');
     rememberAuth(await response.json());
     await boot();
+    if (!fromStore && accountAccessError) return;
     const destination = sessionStore.getItem('forte-after-login');
     if (destination && /^\/loja(?:\/|$)/.test(destination)) go(destination);
     else if (fromStore) go('/loja/conta');
@@ -2199,7 +2233,7 @@ async function signInAccount(form) {
     else if (isOwner) go('/app');
     else go(sessionStore.getItem('forte-after-login') || '/loja/conta');
     sessionStore.removeItem('forte-after-login');
-  } catch (error) { toast(error.message); }
+  } catch (error) { toast(error instanceof TypeError || error.name === 'TimeoutError' ? 'Falha na conexão com o login. Tente novamente.' : error.message); }
   finally { passwordInput.value = ''; button.disabled = false; }
 }
 async function registerAccount(form) {
@@ -2241,23 +2275,33 @@ async function registerAccount(form) {
 const renderBeforeAccounts = render;
 render = function () {
   if (!booted) return renderBeforeAccounts();
+  const path = routePath();
+  const panelRoute = path.startsWith('/app') || path.startsWith('/imprimir/');
+  if (panelRoute && accountAccessError) {
+    $('#app').innerHTML = `<main class="boot-fallback"><h1>Não foi possível carregar o painel</h1><p>Sua conta está conectada. Tente carregar o painel novamente.</p><button class="btn primary" onclick="boot()">Tentar novamente</button> <a class="btn" href="/loja">Ir para a loja</a></main>`;
+    normalizeLinks();
+    return;
+  }
   if (bootError) {
+    if (path === '/loja/login' || (panelRoute && !authSession)) return authPage();
     $('#app').innerHTML = storeUnavailablePage();
     return;
   }
-  const path = routePath();
   if (path === '/loja/conta' && !authSession) {
     const signup = sessionStore.getItem('forte-open-signup') === '1';
     sessionStore.removeItem('forte-open-signup');
     return authPage(signup ? 'signup' : 'login');
   }
-  if ((path.startsWith('/app') || path.startsWith('/imprimir/')) && !isOwner) {
+  if (panelRoute && !isOwner) {
     if (authSession) return go('/loja/conta');
     return authPage();
   }
   return renderBeforeAccounts();
 };
 
+function orderLoadNotice(message) {
+  return `<div class="notice" role="status"><p>${message}</p><button class="btn small" onclick="boot()">Tentar novamente</button></div>`;
+}
 accountPage = () => {
   if (!authSession) return authPage();
   const orders = db.orders.filter(o => o.user_id === authSession.user.id);
@@ -2265,7 +2309,8 @@ accountPage = () => {
   return `<div class="store-content account-content">${heading('Minha conta', esc(currentProfile?.name || currentEmail()),
     `${adminLink}${button('Sair', 'onclick="signOut()"', '', 'logout')}`)}
     <section class="card pad"><h2>Meus pedidos</h2><div class="stack" style="margin-top:18px">
-      ${orders.map(o => `<a class="total-line" href="/loja/pedido/${o.id}"><span>Pedido #${o.id} · ${esc(o.date)}</span><strong>${money(orderTotal(o))}</strong></a>`).join('') || '<p class="muted">Você ainda não tem pedidos. <a href="/loja/catalogo">Explore os produtos.</a></p>'}
+      ${accountAccessError ? orderLoadNotice('Não foi possível carregar os dados da sua conta.') : ''}
+      ${orderHistoryError ? orderLoadNotice('Não foi possível carregar seu histórico de pedidos.') : orders.map(o => `<a class="total-line" href="/loja/pedido/${o.id}"><span>Pedido #${o.id} · ${esc(o.date)}</span><strong>${money(orderTotal(o))}</strong></a>`).join('') || '<p class="muted">Você ainda não tem pedidos. <a href="/loja/catalogo">Explore os produtos.</a></p>'}
     </div></section></div>`;
 };
 const oldStoreHeader = storeHeader;
@@ -2518,9 +2563,10 @@ checkout = async form => {
 };
 const customerOrderBeforeAuth = customerOrderPage;
 customerOrderPage = id => {
-  if (!authSession) return accountPage();
-  const order = db.orders.find(item => item.id === id && item.user_id === authSession.user.id);
-  if (!order) return accountPage();
+  const order = authSession && db.orders.find(item => item.id === id && item.user_id === authSession.user.id);
+  if (!order) return guestOrderError === id || orderHistoryError
+    ? `<div class="store-content">${orderLoadNotice('Não foi possível carregar este pedido.')}</div>`
+    : accountPage();
   sessionStore.setItem('forte-customer', order.email);
   return customerOrderBeforeAuth(id);
 };
