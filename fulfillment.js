@@ -424,7 +424,7 @@ function deleteOrderModal(id) {
   if (!order) return;
   modal('Excluir pedido', `<p>Excluir permanentemente o pedido <strong>#${id}</strong> de ${esc(order.customer)}?
     Ele sairá dos relatórios e métricas. Se houve saída, o estoque será recomposto e as movimentações desse pedido serão removidas.</p>
-    <div class="form-actions">${button('Manter pedido', 'onclick="closeModal()"')}${button('Excluir pedido', `onclick="deleteOrder(${id})"`, 'danger')}</div>`);
+    <div class="form-actions">${button('Manter pedido', 'onclick="closeModal()"')}${button('Excluir pedido', `onclick="deleteOrder(${id},this)"`, 'danger')}</div>`);
 }
 async function settleAdminWrites() {
   if (pendingState && !persisting) await persistAdminState();
@@ -433,16 +433,22 @@ async function settleAdminWrites() {
     await new Promise(resolve => setTimeout(resolve, 100));
   if (pendingState || persisting) throw new Error('Aguarde a sincronização das alterações anteriores.');
 }
-async function deleteOrder(id) {
+const pendingOrderDeletions=new Set();
+async function deleteOrder(id,submit) {
+  if(pendingOrderDeletions.has(id))return;
   if (!((currentProfile?.role === 'master' && ['Proprietário', 'Gerente'].includes(role)) ||
     (currentProfile?.role === 'admin' && currentProfile.position === 'Gerente'))) return;
+  pendingOrderDeletions.add(id);if(submit)submit.disabled=true;
+  let committed=false;
   try {
     await settleAdminWrites();
     await backendRequest('/rest/v1/rpc/delete_order',
       { method: 'POST', body: JSON.stringify({ p_order_id: id }) }, true);
+    committed=true;
     await loadAdminState();
     closeModal(); go('/app/orders'); toast(`Pedido #${id} excluído. Os produtos retornaram ao estoque.`);
-  } catch (error) { toast(error.message); }
+  } catch (error) { toast(committed?'Pedido #'+id+' excluído. Atualize o painel para carregar a lista.':typeof operationalErrorMessage==='function'?operationalErrorMessage(error):error.message); }
+  finally{pendingOrderDeletions.delete(id);if(submit)submit.disabled=false;}
 }
 
 const renderBeforeFulfillment = render;

@@ -495,16 +495,87 @@ async function loadInternalOrderPriceNotes(id,key){
   }catch{const target=document.querySelector('#internal-price-notes-'+Number(id));if(target&&internalPriceNoteKey(id)===key)target.innerHTML=`<p class="subtle internal-price-notes-error">Não foi possível carregar os registros internos. <button class="text-link" type="button" onclick="loadInternalOrderPriceNotes(${Number(id)},internalPriceNoteKey(${Number(id)}))">Tentar novamente</button></p>`;}
   finally{internalPriceNoteRequests.delete(key);}
 }
+async function showPaymentReceipt(id,button){
+  if(button.disabled)return;
+  const owner=authSession?.user?.id,container=button.closest('.stored-payment-receipt'),status=container.querySelector('[role="status"]');
+  button.disabled=true;status.textContent='Carregando comprovante…';
+  try{
+    const result=await backendRequest('/rest/v1/rpc/payment_receipt',{method:'POST',body:JSON.stringify({p_order_id:id})},true);
+    if(authSession?.user?.id!==owner||!button.isConnected)return;
+    if(!result?.image?.startsWith('data:image/jpeg;base64,'))throw Error('Comprovante não encontrado.');
+    container.innerHTML=`<img class="receipt-preview" src="${esc(result.image)}" alt="Comprovante de pagamento do pedido ${Number(id)}">`;
+  }catch(error){if(button.isConnected){button.disabled=false;status.textContent=operationalErrorMessage(error);}}
+}
+function operationalErrorMessage(error){
+  if(error?.code==='57014'||error?.code==='55P03'||error?.name==='TimeoutError'||error instanceof TypeError)
+    return 'A operação demorou para responder. Confira o estado do pedido antes de tentar novamente.';
+  return error?.message||'Não foi possível concluir a operação. Tente novamente.';
+}
 async function saveStaffOrder(order,form){
   const submit=form.querySelector('.new-order-sidebar .primary');if(form.orderSaving||submit?.disabled)return;form.orderSaving=true;if(submit)submit.disabled=true;
-  let committed=false;
+  const submitLabel=submit?.textContent;
+  if(submit)submit.textContent='Criando pedido…';
+  let record;
   try{
     await settleAdminWrites();
-    form.orderRequestId ||= crypto.randomUUID();
-    const result=await backendRequest('/rest/v1/rpc/create_staff_order',{method:'POST',body:JSON.stringify({p_order:order,p_request_id:form.orderRequestId})},true);committed=true;
-    await loadAdminState();closeModal();go('/app/orders/'+result.id);toast('Pedido criado. Produtos reservados.');
-  }catch(error){toast(committed?'Pedido criado. Atualize a página para carregar a versão mais recente.':error.message);}
-  finally{form.orderSaving=false;if(submit)submit.disabled=false;}
+    if(form.orderCommittedId)return await reopenConfirmedStaffOrder(form);
+    record=await rememberStaffOrderAttempt(order);
+    let result;
+    if(record.reused){
+      if(submit)submit.textContent='Verificando pedido…';
+      result=await backendRequest('/rest/v1/rpc/staff_order_request_status',{method:'POST',body:JSON.stringify({p_request_id:record.requestId})},true);
+      if(result.removed)throw Error('O pedido deste envio já foi removido. Confira o histórico antes de criar outro.');
+    }
+    if(!result?.id){
+      try{
+        result=await backendRequest('/rest/v1/rpc/create_staff_order',{method:'POST',body:JSON.stringify({p_order:order,p_request_id:record.requestId})},true);
+      }catch(error){
+        if(error.status===400&&error.code!=='57014'&&error.code!=='55P03'){forgetStaffOrderAttempt(record.requestId);throw error;}
+        result=await backendRequest('/rest/v1/rpc/staff_order_request_status',{method:'POST',body:JSON.stringify({p_request_id:record.requestId})},true).catch(()=>null);
+        if(!result?.id||result.removed)throw error;
+      }
+    }
+    form.orderCommittedId=Number(result.id);
+    form.orderPendingRequest=record.requestId;
+    await reopenConfirmedStaffOrder(form);
+  }catch(error){toast(operationalErrorMessage(error));}
+  finally{form.orderSaving=false;if(submit){submit.disabled=Boolean(form.orderCommittedId);submit.textContent=form.orderCommittedId?'Pedido #'+form.orderCommittedId+' criado':submitLabel;}}
+}
+const staffOrderAttemptKey='forte-staff-order-attempts-v1';
+function stableStaffOrderValue(value){
+  if(Array.isArray(value))return value.map(stableStaffOrderValue);
+  if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(key=>[key,stableStaffOrderValue(value[key])]));
+  return value;
+}
+async function rememberStaffOrderAttempt(order){
+  const actor=authSession?.user?.id;if(!actor)throw Error('Entre novamente para criar o pedido.');
+  const {id,date,createdAt,...payload}=order;
+  const bytes=new TextEncoder().encode(JSON.stringify(stableStaffOrderValue(payload)));
+  const fingerprint=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),n=>n.toString(16).padStart(2,'0')).join('');
+  const records=safeJson(localStore.getItem(staffOrderAttemptKey),[]).filter(record=>record.createdAt>Date.now()-7*86400000);
+  const previous=records.find(record=>record.actor===actor&&record.fingerprint===fingerprint);
+  if(previous)return {...previous,reused:true};
+  const record={actor,fingerprint,requestId:crypto.randomUUID(),createdAt:Date.now()};
+  localStore.setItem(staffOrderAttemptKey,JSON.stringify([...records,record]));
+  return record;
+}
+function forgetStaffOrderAttempt(requestId){
+  const records=safeJson(localStore.getItem(staffOrderAttemptKey),[]);
+  try{localStore.setItem(staffOrderAttemptKey,JSON.stringify(records.filter(record=>record.requestId!==requestId)));}catch{}
+}
+async function reopenConfirmedStaffOrder(form){
+  const id=form.orderCommittedId;
+  try{
+    await loadAdminState();
+    forgetStaffOrderAttempt(form.orderPendingRequest);
+    closeModal();go('/app/orders/'+id);toast('Pedido #'+id+' confirmado. Produtos reservados.');
+  }catch{
+    const summary=form.querySelector('.order-summary');
+    let notice=summary.querySelector('[data-confirmed-order]');
+    if(!notice){notice=document.createElement('div');notice.className='notice';notice.dataset.confirmedOrder='';summary.append(notice);}
+    notice.innerHTML=`<p>Pedido <strong>#${Number(id)}</strong> criado. Atualize o painel para visualizar os dados.</p><button type="button" class="btn small" onclick="reopenConfirmedStaffOrder(this.form)">Abrir pedido</button>`;
+    toast('Pedido #'+id+' criado. Clique em Abrir pedido para atualizar o painel.');
+  }
 }
 
 orderDetail = id => {
@@ -527,7 +598,7 @@ orderDetail = id => {
       ${order.driver_id ? `<p style="margin-top:14px">Entregador: <strong>${esc(accountProfiles.find(p => p.user_id === order.driver_id)?.name || 'Atribuído')}</strong></p>` : ''}
       ${order.delivery === 'Retirada' && order.pickupReadyAt ? `<div class="total-line"><span>Pronto para retirada</span><strong>${esc(momentLabel(order.pickupReadyAt))}</strong></div>` : ''}<div class="delivery-confirmations"><div><span>${order.delivery === 'Retirada' ? 'Retirada confirmada' : 'Entrega confirmada'}</span><strong>${order.status === 'delivered' ? esc(momentLabel(order.deliveredAt)) : 'Pendente'}</strong></div><div><span>Pagamento confirmado</span><strong>${order.paid ? esc(momentLabel(order.paidAt)) : 'Pendente'}</strong></div></div></section>
       <section class="card pad"><h2>Pagamento</h2><div class="total-line"><span>Forma</span><strong>${esc(order.payment)}</strong></div><div class="total-line"><span>Momento</span><strong>${esc(order.paymentTiming || 'A combinar')}</strong></div>
-      ${order.receipt?.startsWith('data:image/') ? `<img class="receipt-preview" src="${esc(order.receipt)}" alt="Comprovante de pagamento">` : '<p class="subtle" style="margin-top:14px">O comprovante será registrado na etapa de pagamento.</p>'}</section>
+      ${order.receipt?.startsWith('data:image/') ? `<img class="receipt-preview" src="${esc(order.receipt)}" alt="Comprovante de pagamento">` : order.receipt?.startsWith('private-receipt:') ? `<div class="stored-payment-receipt"><button class="btn small" onclick="showPaymentReceipt(${Number(order.id)},this)">${icon('eye')}Ver comprovante</button><p class="subtle" role="status"></p></div>` : '<p class="subtle" style="margin-top:14px">O comprovante será registrado na etapa de pagamento.</p>'}</section>
       <section class="card pad"><h2>Informações do Cliente</h2><p style="margin:16px 0;line-height:1.8"><strong>${esc(order.customer)}</strong><br>${esc(order.phone)}<br>${esc(order.email || '')}<br>CPF: ${esc(order.cpf)}</p><p class="subtle">Pedidos realizados: <strong>${customerOrderCount(order)}</strong></p></section>
       <section class="card pad"><h2>Responsável pela venda</h2><p style="margin-top:14px">${esc(order.seller || 'Loja online')}</p><p class="subtle" style="margin-top:8px">${esc(order.channel)}</p></section>
       ${orderNotesCard(order)}
@@ -801,8 +872,21 @@ async function refreshOperationalState() {
 }
 async function performOrderAction(id, action, receipt = null) {
   await settleAdminWrites();
-  const result = await backendRequest('/rest/v1/rpc/order_action', { method: 'POST', body: JSON.stringify({ p_order_id: id, p_action: action, p_receipt: receipt }) }, true);
-  await refreshOperationalState(); return result;
+  let result;
+  try{
+    result=await backendRequest('/rest/v1/rpc/order_action',{method:'POST',body:JSON.stringify({p_order_id:id,p_action:action,p_receipt:receipt})},true);
+  }catch(error){
+    try{
+      await refreshOperationalState();
+      const order=workflowOrder(id);
+      const applied=action==='payment'?order?.paid:action==='release'?['transit','delivered'].includes(order?.status):action==='finish'?order?.status==='delivered':action==='cancel'?order?.status==='cancelled':Boolean(order?.pickupReadyAt);
+      if(applied)return {id,duplicate:true};
+    }catch{}
+    throw Error(operationalErrorMessage(error));
+  }
+  try{await refreshOperationalState();}
+  catch{throw Error('A etapa foi confirmada. Atualize o painel para visualizar o pedido.');}
+  return result;
 }
 dispatchOrder = id => {
   const order = workflowOrder(id);
